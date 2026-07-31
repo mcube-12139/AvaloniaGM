@@ -13,6 +13,7 @@ using UndertaleModLib;
 using UndertaleModLib.Compiler;
 using UndertaleModLib.Models;
 using UndertaleModLib.Util;
+using AvaloniaGM.Models;
 
 namespace AvaloniaGM.Services;
 
@@ -64,6 +65,7 @@ public class DataWinSerializer
         CreateTimelines(data, project.Timelines);
         CreateRooms(data, project.Rooms, backgroundMap, objectMap);
 
+        /*
         var importer = new CodeImportGroup(data)
         {
             AutoCreateAssets = false,
@@ -75,6 +77,13 @@ public class DataWinSerializer
         QueueTimelineCompilation(importer, project.Timelines, data.Timelines);
         QueueRoomCompilation(importer, project.Rooms, data.Rooms);
         importer.Import();
+        //*/
+
+        //*
+        var importer1 = new CodeImporter(data);
+        AddReplaceObject(data, importer1, project.Objects, objectMap);
+        importer1.Import();
+        //*/
 
         UpdateGeneralInfoCounters(data);
         return data;
@@ -829,6 +838,26 @@ public class DataWinSerializer
                 }
 
                 importer.QueueReplace(code, NormalizeCode(sourceRoom.Instances[instanceIndex].Code));
+            }
+        }
+    }
+
+    static void AddReplaceExtensionScript(CodeImporter importer, IEnumerable<(UndertaleCode Code, string Source)> extensionScripts) {
+        throw new Exception("todo");
+    }
+
+    static void AddReplaceObject(
+        UndertaleData data,
+        CodeImporter importer,
+        IEnumerable<GM.GameObject> objects,
+        IReadOnlyDictionary<GM.GameObject, UndertaleGameObject> objectMap) {
+        foreach (var gameObject in objects) {
+            var objectEntry = objectMap[gameObject];
+            foreach (var gameObjectEvent in gameObject.Events) {
+                var eventType = MapEventType(gameObjectEvent.EventType);
+                var eventSubtype = GetEventSubtype(data, gameObjectEvent, objectMap);
+                var code = objectEntry.EventHandlerFor(eventType, eventSubtype, data);
+                importer.AddReplacement(code, BuildEventCodeSegment(gameObjectEvent.Actions[0]));
             }
         }
     }
@@ -1633,6 +1662,21 @@ public class DataWinSerializer
         }
 
         return string.Join(Environment.NewLine + Environment.NewLine, codeBlocks);
+    }
+
+    static string BuildEventCodeSegment(GameObjectAction action) {
+        string content;
+
+        if (TryExtractCodeAction(action, out var code)) {
+            content = NormalizeCode(code);
+        } else {
+            var functionName = string.IsNullOrWhiteSpace(action.FunctionName) ? "<unnamed>" : action.FunctionName;
+            content = string.Create(
+                CultureInfo.InvariantCulture,
+                $"/* Unsupported DnD action: {functionName}, kind={action.Kind}, exetype={action.ExecuteType} */");
+        }
+
+        return content;
     }
 
     private static bool TryExtractCodeAction(GM.GameObjectAction action, out string code)

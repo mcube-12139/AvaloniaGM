@@ -16,9 +16,9 @@ namespace AvaloniaGM.Services {
             CodeParser parser = new();
             CodeGenerator generator = new(data);
 
-            foreach ((_, string code) in replacements) {
+            foreach ((UndertaleCode replaced, string code) in replacements) {
                 CodeRoot root = parser.Parse(code);
-                generator.Generate(root);
+                generator.Generate(root, replaced);
                 Console.WriteLine(generator);
             }
         }

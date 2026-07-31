@@ -11,8 +11,9 @@ namespace AvaloniaGM.Services {
             {"show_message", new FunctionSymbol(data.Functions.EnsureDefined("show_message", data.Strings), 1)}
         };
         readonly List<UndertaleInstruction> instructions = [];
+        uint byteCount = 0;
         readonly Stack<UndertaleInstruction.DataType> types = [];
-        readonly Dictionary<string, int> stringIds = [];
+        readonly Dictionary<string, int> stringIds = new(data.Strings.Count);
 
         internal ISymbol GetSymbol(string name) {
             if (!symbols.TryGetValue(name, out ISymbol? symbol)) {
@@ -38,6 +39,7 @@ namespace AvaloniaGM.Services {
                 Type1 = UndertaleInstruction.DataType.String,
                 ValueString = new UndertaleResourceById<UndertaleString, UndertaleChunkSTRG>(gameString, id)
             });
+            byteCount += 8;
         }
 
         internal void Convert(UndertaleInstruction.DataType target) {
@@ -49,6 +51,7 @@ namespace AvaloniaGM.Services {
                     Type1 = source,
                     Type2 = target
                 });
+                byteCount += 4;
             }
         }
 
@@ -58,6 +61,7 @@ namespace AvaloniaGM.Services {
                 Kind = UndertaleInstruction.Opcode.Popz,
                 Type1 = type
             });
+            byteCount += 4;
         }
 
         internal void Call(UndertaleFunction fun, int parameterCount) {
@@ -67,14 +71,31 @@ namespace AvaloniaGM.Services {
                 ArgumentsCount = (ushort)parameterCount,
                 ValueFunction = fun
             });
+            byteCount += 8;
         }
 
         internal void PushType(UndertaleInstruction.DataType type) {
             types.Push(type);
         }
 
-        internal void Generate(CodeRoot root) {
+        internal void Generate(CodeRoot root, UndertaleCode replaced) {
+            if (stringIds.Count == 0) {
+                for (int i = 0; i < data.Strings.Count; i++) {
+                    stringIds[data.Strings[i].Content] = i;
+                }
+            }
+
             root.Generate(this);
+
+            replaced.Replace(instructions);
+            replaced.Length = byteCount;
+            replaced.Offset = 0;
+            replaced.ArgumentsCount = 0;
+            replaced.LocalsCount = 1;
+
+            instructions.Clear();
+            byteCount = 0;
+            types.Clear();
         }
     }
 }

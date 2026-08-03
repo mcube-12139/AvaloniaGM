@@ -45,6 +45,21 @@ public class DataWinSerializer
         UndertaleIO.Write(stream, data);
     }
 
+    public void SerializeTypeScriptProject(string dataWinPath, GM.Project project) {
+        ArgumentException.ThrowIfNullOrWhiteSpace(dataWinPath);
+        ArgumentNullException.ThrowIfNull(project);
+
+        var fullPath = Path.GetFullPath(dataWinPath);
+        var directory = Path.GetDirectoryName(fullPath);
+        if (!string.IsNullOrWhiteSpace(directory)) {
+            Directory.CreateDirectory(directory);
+        }
+
+        using var data = BuildTypeScriptData(project);
+        using var stream = File.Create(fullPath);
+        UndertaleIO.Write(stream, data);
+    }
+
     private static UndertaleData BuildData(GM.Project project)
     {
         var data = UndertaleData.CreateNew();
@@ -66,7 +81,6 @@ public class DataWinSerializer
         CreateTimelines(data, project.Timelines);
         CreateRooms(data, project.Rooms, backgroundMap, objectMap);
 
-        /*
         var importer = new CodeImportGroup(data)
         {
             AutoCreateAssets = false,
@@ -78,13 +92,34 @@ public class DataWinSerializer
         QueueTimelineCompilation(importer, project.Timelines, data.Timelines);
         QueueRoomCompilation(importer, project.Rooms, data.Rooms);
         importer.Import();
-        //*/
 
-        //*
-        Importer importer1 = new(data);
-        AddReplaceObject(data, importer1, project.Objects, objectMap);
-        importer1.Import();
-        //*/
+        UpdateGeneralInfoCounters(data);
+        return data;
+    }
+
+    static UndertaleData BuildTypeScriptData(GM.Project project) {
+        var data = UndertaleData.CreateNew();
+        ConfigureGeneralInfo(data, project);
+        ResetDefaultResources(data);
+        AddProjectConstants(data, project);
+
+        var defaultAudioGroup = CreateDefaultAudioGroup(data);
+        var spriteMap = CreateSprites(data, project.Sprites);
+        CreateSounds(data, project.Sounds, defaultAudioGroup);
+        var backgroundMap = CreateBackgrounds(data, project.Backgrounds);
+        CreatePaths(data, project.Paths);
+        var scriptCodeMap = CreateScripts(data, project.Scripts);
+        CreateShaders(data, project.Shaders);
+        CreateFonts(data, project.Fonts);
+        var objectMap = CreateObjectShells(data, project.Objects);
+        PopulateObjects(project.Objects, objectMap, spriteMap);
+        var extensionScripts = CreateExtensions(data, project.Extensions);
+        CreateTimelines(data, project.Timelines);
+        CreateRooms(data, project.Rooms, backgroundMap, objectMap);
+
+        Importer importer = new(data);
+        AddReplaceObject(data, importer, project.Objects, objectMap);
+        importer.Import();
 
         UpdateGeneralInfoCounters(data);
         return data;

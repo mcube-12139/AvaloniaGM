@@ -78,6 +78,19 @@ namespace AvaloniaGM.TypeScript {
 
                 string name = builder.ToString();
                 token = (IToken?)FixedToken.GetKeyword(name) ?? new IdentifierToken(name);
+            } else if (char.IsAsciiDigit(c)) {
+                // 数字
+                builder.Clear();
+                for (; ; ) {
+                    builder.Append(c);
+                    NextChar();
+
+                    if (!char.IsAsciiDigit(c)) {
+                        break;
+                    }
+                }
+
+                token = new IntegerToken(builder.ToString());
             } else if (c == '"') {
                 // 字符串
                 NextChar();
@@ -103,6 +116,12 @@ namespace AvaloniaGM.TypeScript {
             } else if (c == ')') {
                 token = FixedToken.RIGHT_PARENTHESIS;
                 NextChar();
+            } else if (c == '[') {
+                token = FixedToken.LEFT_BRACKET;
+                NextChar();
+            } else if (c == ']') {
+                token = FixedToken.RIGHT_BRACKET;
+                NextChar();
             } else if (c == '{') {
                 token = FixedToken.LEFT_BRACE;
                 NextChar();
@@ -112,15 +131,135 @@ namespace AvaloniaGM.TypeScript {
             } else if (c == ';') {
                 token = FixedToken.SEMICOLON;
                 NextChar();
-            } else if (c == ':') {
-                token = FixedToken.COLON;
-                NextChar();
             } else if (c == ',') {
                 token = FixedToken.COMMA;
                 NextChar();
-            } else if (c == '=') {
-                token = FixedToken.EQUAL;
+            } else if (c == ':') {
                 NextChar();
+                if (c == ':') {
+                    token = FixedToken.DOUBLE_COLON;
+                    NextChar();
+                } else {
+                    token = FixedToken.COLON;
+                }
+            } else if (c == '=') {
+                NextChar();
+                if (c == '=') {
+                    token = FixedToken.DOUBLE_EQUAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.EQUAL;
+                }
+            } else if (c == '+') {
+                NextChar();
+                if (c == '=') {
+                    token = FixedToken.PLUS_EQUAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.PLUS;
+                }
+            } else if (c == '-') {
+                NextChar();
+                if (c == '=') {
+                    token = FixedToken.MINUS_EQUAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.MINUS;
+                }
+            } else if (c == '*') {
+                NextChar();
+                if (c == '=') {
+                    token = FixedToken.STAR_EQUAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.STAR;
+                }
+            } else if (c == '/') {
+                NextChar();
+                if (c == '=') {
+                    token = FixedToken.SLASH_EQUAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.SLASH;
+                }
+            } else if (c == '%') {
+                NextChar();
+                if (c == '=') {
+                    token = FixedToken.PERCENT_EQUAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.PERCENT;
+                }
+            } else if (c == '&') {
+                NextChar();
+                if (c == '=') {
+                    token = FixedToken.AND_EQUAL;
+                    NextChar();
+                } else if (c == '&') {
+                    token = FixedToken.DOUBLE_AND;
+                    NextChar();
+                } else {
+                    token = FixedToken.AND;
+                }
+            } else if (c == '|') {
+                NextChar();
+                if (c == '=') {
+                    token = FixedToken.VERTICAL_EQUAL;
+                    NextChar();
+                } else if (c == '|') {
+                    token = FixedToken.DOUBLE_VERTICAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.VERTICAL;
+                }
+            } else if (c == '^') {
+                NextChar();
+                if (c == '=') {
+                    token = FixedToken.CARET_EQUAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.CARET;
+                }
+            } else if (c == '<') {
+                NextChar();
+                if (c == '<') {
+                    NextChar();
+                    if (c == '=') {
+                        token = FixedToken.DOUBLE_LESS_EQUAL;
+                        NextChar();
+                    } else {
+                        token = FixedToken.DOUBLE_LESS;
+                    }
+                } else if (c == '=') {
+                    token = FixedToken.LESS_EQUAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.LESS;
+                }
+            } else if (c == '>') {
+                NextChar();
+                if (c == '>') {
+                    NextChar();
+                    if (c == '=') {
+                        token = FixedToken.DOUBLE_GREATER_EQUAL;
+                        NextChar();
+                    } else {
+                        token = FixedToken.DOUBLE_GREATER;
+                    }
+                } else if (c == '=') {
+                    token = FixedToken.GREATER_EQUAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.GREATER;
+                }
+            } else if (c == '!') {
+                NextChar();
+                if (c == '=') {
+                    token = FixedToken.EXCLAMATION_EQUAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.EXCLAMATION;
+                }
             } else if (c == '\0') {
                 token = FixedToken.END;
                 NextChar();

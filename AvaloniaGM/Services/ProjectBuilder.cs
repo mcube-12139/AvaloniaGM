@@ -43,6 +43,26 @@ public class ProjectBuilder
         CopyRunnerExecutable(fullExePath);
     }
 
+    public void BuildTypeScript(Project project, string outputExePath) {
+        ArgumentNullException.ThrowIfNull(project);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputExePath);
+
+        var fullExePath = Path.GetFullPath(outputExePath);
+        var outputDirectory = Path.GetDirectoryName(fullExePath);
+        if (string.IsNullOrWhiteSpace(outputDirectory)) {
+            throw new InvalidOperationException("Unable to resolve the output directory for the built executable.");
+        }
+
+        Directory.CreateDirectory(outputDirectory);
+
+        _dataWinSerializer.SerializeTypeScriptProject(Path.Combine(outputDirectory, "data.win"), project);
+        CopyDataFiles(project.DataFiles, outputDirectory);
+        CopyExtensionFiles(project.Extensions, outputDirectory);
+        ConvertStreamedSounds(project.Sounds, outputDirectory);
+
+        CopyRunnerExecutable(fullExePath);
+    }
+
     private static void CopyDataFiles(IEnumerable<DataFile> dataFiles, string outputDirectory)
     {
         foreach (var dataFile in dataFiles)

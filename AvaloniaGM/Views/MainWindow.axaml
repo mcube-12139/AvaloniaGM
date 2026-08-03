@@ -134,6 +134,9 @@
                 <MenuItem Header="_Run Project"
                           InputGesture="F5"
                           Command="{Binding RunProjectCommand}" />
+                <MenuItem Header="_Run TypeScript Project"
+                          InputGesture="F6"
+                          Command="{Binding RunTypeScriptProjectCommand}" />
             </MenuItem>
 
             <MenuItem Header="_Help">

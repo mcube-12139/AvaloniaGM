@@ -122,6 +122,44 @@ namespace AvaloniaGM.ViewModels
             }
         }
 
+        [RelayCommand(CanExecute = nameof(CanRunProject))]
+        private async Task RunTypeScriptProject() {
+            if (string.IsNullOrWhiteSpace(CurrentProjectFilePath)) {
+                AppendOutput("Run Project requires a saved project file.");
+                return;
+            }
+
+            try {
+                IsRunProjectInProgress = true;
+
+                var project = EnsureCurrentProject();
+                var projectFilePath = Path.GetFullPath(CurrentProjectFilePath);
+                var projectDirectory = Path.GetDirectoryName(projectFilePath);
+                if (string.IsNullOrWhiteSpace(projectDirectory)) {
+                    AppendOutput("Unable to resolve the project directory.");
+                    return;
+                }
+
+                var outputDirectory = Path.Combine(projectDirectory, "bin");
+                var outputExePath = Path.Combine(outputDirectory, GetProjectNameFromPath(projectFilePath, project.Name) + ".exe");
+
+                AppendOutput($"Building project to: {outputExePath}");
+                await Task.Run(() => new ProjectBuilder().BuildTypeScript(project, outputExePath));
+
+                Process.Start(new ProcessStartInfo {
+                    FileName = outputExePath,
+                    WorkingDirectory = outputDirectory,
+                    UseShellExecute = true,
+                });
+
+                AppendOutput($"Launched project: {outputExePath}");
+            } catch (Exception ex) {
+                AppendOutput($"Failed to run project: {ex.Message}");
+            } finally {
+                IsRunProjectInProgress = false;
+            }
+        }
+
         [RelayCommand]
         private void ShowHelp()
         {

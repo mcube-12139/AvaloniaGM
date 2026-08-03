@@ -1,6 +1,7 @@
 ﻿using AvaloniaGM.TypeScript.Exceptions;
 using AvaloniaGM.TypeScript.Symbols;
 using System.Collections.Generic;
+using System.Xml.Linq;
 using UndertaleModLib;
 using UndertaleModLib.Models;
 
@@ -18,6 +19,10 @@ namespace AvaloniaGM.TypeScript {
         uint byteCount = 0;
         readonly Stack<UndertaleInstruction.DataType> types = [];
         readonly Dictionary<string, int> stringIds = new(data.Strings.Count);
+
+        internal SemanticException SemanticError(SemanticErrorType type, string[] parameters, TextPosition position) {
+            return new SemanticException(type, parameters, source, position);
+        }
 
         internal void AddSymbol(string name, ISymbol symbol, TextPosition position) {
             if (!symbols.TryAdd(name, symbol)) {
@@ -89,6 +94,36 @@ namespace AvaloniaGM.TypeScript {
             byteCount += 8;
         }
 
+        internal void PushInt16(short value) {
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.PushI,
+                Type1 = UndertaleInstruction.DataType.Int16,
+                Type2 = UndertaleInstruction.DataType.Double,
+                ValueShort = value
+            });
+            byteCount += 4;
+        }
+
+        internal void PushInt32(int value) {
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Push,
+                Type1 = UndertaleInstruction.DataType.Int32,
+                Type2 = UndertaleInstruction.DataType.Double,
+                ValueInt = value
+            });
+            byteCount += 8;
+        }
+
+        internal void PushInt64(long value) {
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Push,
+                Type1 = UndertaleInstruction.DataType.Int64,
+                Type2 = UndertaleInstruction.DataType.Double,
+                ValueLong = value
+            });
+            byteCount += 12;
+        }
+
         internal void Convert(UndertaleInstruction.DataType target) {
             UndertaleInstruction.DataType source = types.Pop();
 
@@ -143,10 +178,76 @@ namespace AvaloniaGM.TypeScript {
                 ValueFunction = fun
             });
             byteCount += 8;
+
+            PushType(UndertaleInstruction.DataType.Variable);
+        }
+
+        internal void Add() {
+            UndertaleInstruction.DataType rightType = types.Pop();
+            UndertaleInstruction.DataType leftType = types.Pop();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Add,
+                Type1 = rightType,
+                Type2 = leftType
+            });
+            byteCount += 4;
+
+            PushType(UndertaleInstruction.DataType.Variable);
+        }
+
+        internal void Subtract() {
+            UndertaleInstruction.DataType rightType = types.Pop();
+            UndertaleInstruction.DataType leftType = types.Pop();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Sub,
+                Type1 = rightType,
+                Type2 = leftType
+            });
+            byteCount += 4;
+
+            PushType(UndertaleInstruction.DataType.Variable);
+        }
+
+        internal void Multiply() {
+            UndertaleInstruction.DataType rightType = types.Pop();
+            UndertaleInstruction.DataType leftType = types.Pop();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Mul,
+                Type1 = rightType,
+                Type2 = leftType
+            });
+            byteCount += 4;
+
+            PushType(UndertaleInstruction.DataType.Variable);
+        }
+
+        internal void Divide() {
+            UndertaleInstruction.DataType rightType = types.Pop();
+            UndertaleInstruction.DataType leftType = types.Pop();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Div,
+                Type1 = rightType,
+                Type2 = leftType
+            });
+            byteCount += 4;
+
+            PushType(UndertaleInstruction.DataType.Variable);
         }
 
         internal void PushType(UndertaleInstruction.DataType type) {
             types.Push(type);
+        }
+
+        internal void PopType() {
+            types.Pop();
+        }
+
+        internal UndertaleInstruction.DataType PeekType() {
+            return types.Peek();
         }
 
         internal void Generate(string source, CodeRoot root, UndertaleCode replaced) {

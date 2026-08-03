@@ -284,7 +284,8 @@ namespace AvaloniaGM.TypeScript {
 
         bool IsExpressionStart() {
             return token is IdentifierToken
-                || token is StringToken;
+                || token is StringToken
+                || token is IntegerToken;
         }
 
         IExpression ParseExpression(int priority) {
@@ -297,33 +298,45 @@ namespace AvaloniaGM.TypeScript {
             } else if (token is StringToken strToken) {
                 result = new StringExpression(position, strToken.value);
                 NextToken();
+            } else if (token is IntegerToken intToken) {
+                result = new IntegerExpression(position, intToken.valueStr);
+                NextToken();
             } else {
                 throw TokenCannotBeHere();
             }
             
             for (; ; ) {
-                if (token == FixedToken.LEFT_PARENTHESIS) {
-                    NextToken();
-                    List<IExpression> parameters = [];
-                    for (; ; ) {
-                        if (token == FixedToken.RIGHT_PARENTHESIS) {
-                            NextToken();
-                            break;
+                if (token is FixedToken fixedToken) {
+                    var op = BinaryOperator.FromToken(priority, fixedToken);
+                    if (op != null) {
+                        NextToken();
+                        IExpression right = ParseExpression(op.priority);
+                        result = new BinaryExpression(position, result, right, op);
+                    } else if (token == FixedToken.LEFT_PARENTHESIS) {
+                        NextToken();
+                        List<IExpression> parameters = [];
+                        for (; ; ) {
+                            if (token == FixedToken.RIGHT_PARENTHESIS) {
+                                NextToken();
+                                break;
+                            }
+
+                            parameters.Add(ParseExpression(0));
+
+                            if (token == FixedToken.COMMA) {
+                                NextToken();
+                            } else if (token == FixedToken.RIGHT_PARENTHESIS) {
+                                NextToken();
+                                break;
+                            } else {
+                                throw TokenCannotBeHere();
+                            }
                         }
 
-                        parameters.Add(ParseExpression(0));
-
-                        if (token == FixedToken.COMMA) {
-                            NextToken();
-                        } else if (token == FixedToken.RIGHT_PARENTHESIS) {
-                            NextToken();
-                            break;
-                        } else {
-                            throw TokenCannotBeHere();
-                        }
+                        result = new CallExpression(position, result, [.. parameters]);
+                    } else {
+                        break;
                     }
-
-                    result = new CallExpression(position, result, [.. parameters]);
                 } else {
                     break;
                 }

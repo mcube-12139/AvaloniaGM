@@ -12,7 +12,6 @@ namespace AvaloniaGM.TypeScript.Expressions {
                 generator.Convert(UndertaleModLib.Models.UndertaleInstruction.DataType.Variable);
             }
             called.Call(generator);
-            generator.PushType(UndertaleModLib.Models.UndertaleInstruction.DataType.Variable);
         }
 
         void IExpression.Call(Generator generator) {

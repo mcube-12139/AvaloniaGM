@@ -73,7 +73,32 @@ namespace AvaloniaGM.TypeScript.Tokens {
         internal static FixedToken EXCLAMATION = new("!");
 
         readonly static Dictionary<string, FixedToken> keywords = new() {
-            { "let", LET }
+            {"let", LET},
+            {"type", TYPE},
+            {"interface", INTERFACE},
+            {"as", AS},
+            {"implement", IMPLEMENT},
+            {"namespace", NAMESPACE},
+            {"enum", ENUM},
+            {"public", PUBLIC},
+            {"never", NEVER},
+            {"return", RETURN},
+            {"yield", YIELD},
+            {"function", FUNCTION},
+            {"class", CLASS},
+            {"if", IF},
+            {"else", ELSE},
+            {"for", FOR},
+            {"while", WHILE},
+            {"break", BREAK},
+            {"continue", CONTINUE},
+            {"of", OF},
+            {"try", TRY},
+            {"catch", CATCH},
+            {"finally", FINALLY},
+            {"throw", THROW},
+            {"true", TRUE},
+            {"false", FALSE},
         };
 
         internal static FixedToken? GetKeyword(string name) {

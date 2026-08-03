@@ -5,11 +5,11 @@ namespace AvaloniaGM.Entities.Expressions {
         readonly TextPosition position = position;
         readonly string value = value;
 
-        void IExpression.Call(CodeGenerator generator) {
+        void IExpression.Call(TypeScriptGenerator generator) {
             throw new System.NotImplementedException();
         }
 
-        void IExpression.Evaluate(CodeGenerator generator) {
+        void IExpression.Evaluate(TypeScriptGenerator generator) {
             generator.PushString(value);
             generator.PushType(UndertaleModLib.Models.UndertaleInstruction.DataType.String);
         }

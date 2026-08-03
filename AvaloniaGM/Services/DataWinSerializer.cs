@@ -80,7 +80,7 @@ public class DataWinSerializer
         //*/
 
         //*
-        var importer1 = new CodeImporter(data);
+        TypeScriptImporter importer1 = new(data);
         AddReplaceObject(data, importer1, project.Objects, objectMap);
         importer1.Import();
         //*/
@@ -842,13 +842,13 @@ public class DataWinSerializer
         }
     }
 
-    static void AddReplaceExtensionScript(CodeImporter importer, IEnumerable<(UndertaleCode Code, string Source)> extensionScripts) {
+    static void AddReplaceExtensionScript(TypeScriptImporter importer, IEnumerable<(UndertaleCode Code, string Source)> extensionScripts) {
         throw new Exception("todo");
     }
 
     static void AddReplaceObject(
         UndertaleData data,
-        CodeImporter importer,
+        TypeScriptImporter importer,
         IEnumerable<GM.GameObject> objects,
         IReadOnlyDictionary<GM.GameObject, UndertaleGameObject> objectMap) {
         foreach (var gameObject in objects) {

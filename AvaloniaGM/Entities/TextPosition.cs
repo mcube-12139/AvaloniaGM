@@ -1,6 +1,6 @@
 ﻿namespace AvaloniaGM.Entities {
-    internal struct TextPosition(int line, int column) {
-        internal int line = line;
-        internal int column = column;
+    public struct TextPosition(int line, int column) {
+        public int line = line;
+        public int column = column;
     }
 }

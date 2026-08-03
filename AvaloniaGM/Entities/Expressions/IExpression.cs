@@ -2,7 +2,7 @@
 
 namespace AvaloniaGM.Entities.Expressions {
     internal interface IExpression {
-        void Evaluate(CodeGenerator generator);
-        void Call(CodeGenerator generator);
+        void Evaluate(TypeScriptGenerator generator);
+        void Call(TypeScriptGenerator generator);
     }
 }

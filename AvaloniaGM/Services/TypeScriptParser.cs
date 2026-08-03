@@ -1,13 +1,15 @@
 ﻿using AvaloniaGM.Entities;
 using AvaloniaGM.Entities.Expressions;
-using AvaloniaGM.Entities.Statement;
-using AvaloniaGM.Entities.Token;
+using AvaloniaGM.Entities.Patterns;
+using AvaloniaGM.Entities.Statements;
+using AvaloniaGM.Entities.Tokens;
 using AvaloniaGM.Exceptions;
 using System.Collections.Generic;
 using System.Text;
 
 namespace AvaloniaGM.Services {
-    internal class CodeParser {
+    internal class TypeScriptParser {
+        string source = string.Empty;
         string code = string.Empty;
         int index;
         char c;
@@ -15,7 +17,7 @@ namespace AvaloniaGM.Services {
         TextPosition charPosition;
         TextPosition tokenPosition;
         IToken token = FixedToken.END;
-        StringBuilder builder = new();
+        readonly StringBuilder builder = new();
 
         void NextChar() {
             if (index != code.Length) {
@@ -35,11 +37,19 @@ namespace AvaloniaGM.Services {
         }
 
         SyntaxException CharCannotBeHere() {
-            return new SyntaxException();
+            if (c != '\0') {
+                return new SyntaxException(SyntaxErrorType.CANNOT_BE_HERE, [c.ToString()], source, charPosition);
+            }
+
+            return new SyntaxException(SyntaxErrorType.CANNOT_END_HERE, [], source, charPosition);
         }
 
         SyntaxException TokenCannotBeHere() {
-            return new SyntaxException();
+            if (token != FixedToken.END) {
+                return new SyntaxException(SyntaxErrorType.CANNOT_BE_HERE, [token.GetAppearance()], source, tokenPosition);
+            }
+
+            return new SyntaxException(SyntaxErrorType.CANNOT_END_HERE, [], source, tokenPosition);
         }
 
         void NextToken() {
@@ -67,7 +77,8 @@ namespace AvaloniaGM.Services {
                     NextChar();
                 }
 
-                token = new IdentifierToken(builder.ToString());
+                string name = builder.ToString();
+                token = (IToken?)FixedToken.GetKeyword(name) ?? new IdentifierToken(name);
             } else if (c == '"') {
                 // 字符串
                 NextChar();
@@ -96,8 +107,14 @@ namespace AvaloniaGM.Services {
             } else if (c == ';') {
                 token = FixedToken.SEMICOLON;
                 NextChar();
+            } else if (c == ':') {
+                token = FixedToken.COLON;
+                NextChar();
             } else if (c == ',') {
                 token = FixedToken.COMMA;
+                NextChar();
+            } else if (c == '=') {
+                token = FixedToken.EQUAL;
                 NextChar();
             } else if (c == '\0') {
                 token = FixedToken.END;
@@ -171,14 +188,54 @@ namespace AvaloniaGM.Services {
             return result;
         }
 
+        IPattern ParsePattern() {
+            TextPosition position = tokenPosition;
+            IPattern result;
+
+            if (token is IdentifierToken idToken) {
+                result = new IdentifierPattern(position, idToken.name);
+                NextToken();
+            } else {
+                throw TokenCannotBeHere();
+            }
+
+            return result;
+        }
+
         bool IsStatementStart() {
-            return IsExpressionStart();
+            return token == FixedToken.LET
+                || IsExpressionStart();
         }
 
         IStatement ParseStatement() {
-            IExpression expression = ParseExpression(0);
-            AssertAndNextToken(FixedToken.SEMICOLON);
-            return new ExpressionStatement(expression);
+            TextPosition position = tokenPosition;
+            IStatement result;
+
+            if (token == FixedToken.LET) {
+                NextToken();
+                IPattern pattern = ParsePattern();
+
+                IExpression? initializer;
+                if (token == FixedToken.EQUAL) {
+                    NextToken();
+                    initializer = ParseExpression(0);
+                } else if (token == FixedToken.COLON) {
+                    initializer = null;
+                } else {
+                    throw TokenCannotBeHere();
+                }
+
+                AssertAndNextToken(FixedToken.SEMICOLON);
+                result = new LetStatement(position, pattern, null, initializer);
+            } else if (IsExpressionStart()) {
+                IExpression expression = ParseExpression(0);
+                AssertAndNextToken(FixedToken.SEMICOLON);
+                result = new ExpressionStatement(expression);
+            } else {
+                throw TokenCannotBeHere();
+            }
+
+            return result;
         }
 
         CodeRoot ParseRoot() {
@@ -196,7 +253,8 @@ namespace AvaloniaGM.Services {
             return new([.. statements]);
         }
 
-        internal CodeRoot Parse(string code) {
+        internal CodeRoot Parse(string source, string code) {
+            this.source = source;
             this.code = code;
 
             index = 0;

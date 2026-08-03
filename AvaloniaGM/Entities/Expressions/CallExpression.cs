@@ -6,7 +6,7 @@ namespace AvaloniaGM.Entities.Expressions {
         readonly IExpression called = called;
         readonly IExpression[] parameters = parameters;
 
-        void IExpression.Evaluate(CodeGenerator generator) {
+        void IExpression.Evaluate(TypeScriptGenerator generator) {
             for (int i = parameters.Length - 1; i != -1; --i) {
                 parameters[i].Evaluate(generator);
                 generator.Convert(UndertaleModLib.Models.UndertaleInstruction.DataType.Variable);
@@ -15,7 +15,7 @@ namespace AvaloniaGM.Entities.Expressions {
             generator.PushType(UndertaleModLib.Models.UndertaleInstruction.DataType.Variable);
         }
 
-        void IExpression.Call(CodeGenerator generator) {
+        void IExpression.Call(TypeScriptGenerator generator) {
             throw new System.NotImplementedException();
         }
     }

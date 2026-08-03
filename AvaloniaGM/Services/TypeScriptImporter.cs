@@ -5,7 +5,7 @@ using UndertaleModLib;
 using UndertaleModLib.Models;
 
 namespace AvaloniaGM.Services {
-    internal class CodeImporter(UndertaleData data) {
+    internal class TypeScriptImporter(UndertaleData data) {
         readonly List<(UndertaleCode replaced, string code)> replacements = [];
 
         internal void AddReplacement(UndertaleCode replaced, string code) {
@@ -13,11 +13,11 @@ namespace AvaloniaGM.Services {
         }
 
         internal void Import() {
-            CodeParser parser = new();
-            CodeGenerator generator = new(data);
+            TypeScriptParser parser = new();
+            TypeScriptGenerator generator = new(data);
 
             foreach ((UndertaleCode replaced, string code) in replacements) {
-                CodeRoot root = parser.Parse(code);
+                CodeRoot root = parser.Parse(replaced.Name.Content, code);
                 generator.Generate(root, replaced);
                 Console.WriteLine(generator);
             }

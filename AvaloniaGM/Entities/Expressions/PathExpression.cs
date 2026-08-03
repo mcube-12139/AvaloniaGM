@@ -1,4 +1,4 @@
-﻿using AvaloniaGM.Entities.Symbol;
+﻿using AvaloniaGM.Entities.Symbols;
 using AvaloniaGM.Services;
 
 namespace AvaloniaGM.Entities.Expressions {
@@ -6,13 +6,14 @@ namespace AvaloniaGM.Entities.Expressions {
         readonly TextPosition position = position;
         readonly string[] segments = segments;
 
-        void IExpression.Call(CodeGenerator generator) {
+        void IExpression.Call(TypeScriptGenerator generator) {
             IValueSymbol symbol = generator.GetSymbol(segments[0]).AsValue(position, generator);
             symbol.Call(position, generator);
         }
 
-        void IExpression.Evaluate(CodeGenerator generator) {
-            throw new System.NotImplementedException();
+        void IExpression.Evaluate(TypeScriptGenerator generator) {
+            IValueSymbol symbol = generator.GetSymbol(segments[0]).AsValue(position, generator);
+            symbol.Load(position, generator);
         }
     }
 }

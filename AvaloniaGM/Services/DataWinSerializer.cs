@@ -14,6 +14,7 @@ using UndertaleModLib.Compiler;
 using UndertaleModLib.Models;
 using UndertaleModLib.Util;
 using AvaloniaGM.Models;
+using AvaloniaGM.TypeScript;
 
 namespace AvaloniaGM.Services;
 
@@ -80,7 +81,7 @@ public class DataWinSerializer
         //*/
 
         //*
-        TypeScriptImporter importer1 = new(data);
+        Importer importer1 = new(data);
         AddReplaceObject(data, importer1, project.Objects, objectMap);
         importer1.Import();
         //*/
@@ -842,15 +843,15 @@ public class DataWinSerializer
         }
     }
 
-    static void AddReplaceExtensionScript(TypeScriptImporter importer, IEnumerable<(UndertaleCode Code, string Source)> extensionScripts) {
+    static void AddReplaceExtensionScript(Importer importer, IEnumerable<(UndertaleCode Code, string Source)> extensionScripts) {
         throw new Exception("todo");
     }
 
     static void AddReplaceObject(
         UndertaleData data,
-        TypeScriptImporter importer,
+        Importer importer,
         IEnumerable<GM.GameObject> objects,
-        IReadOnlyDictionary<GM.GameObject, UndertaleGameObject> objectMap) {
+        Dictionary<GM.GameObject, UndertaleGameObject> objectMap) {
         foreach (var gameObject in objects) {
             var objectEntry = objectMap[gameObject];
             foreach (var gameObjectEvent in gameObject.Events) {

@@ -5,5 +5,6 @@ namespace AvaloniaGM.TypeScript.Symbols {
         IType GetValueType(TextPosition position, Generator generator);
         void Call(TextPosition position, Generator generator);
         void Load(TextPosition position, Generator generator);
+        void Store(TextPosition position, Generator generator);
     }
 }

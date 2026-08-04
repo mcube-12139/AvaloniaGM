@@ -26,5 +26,14 @@ namespace AvaloniaGM.TypeScript.Symbols {
                 throw new System.NotImplementedException();
             }
         }
+
+        void IValueSymbol.Store(TextPosition position, Generator generator) {
+            if (variable.InstanceType == UndertaleInstruction.InstanceType.Local) {
+                generator.Pop(variable, UndertaleInstruction.DataType.Variable, variableType);
+                generator.PushType(UndertaleInstruction.DataType.Variable);
+            } else {
+                throw new System.NotImplementedException();
+            }
+        }
     }
 }

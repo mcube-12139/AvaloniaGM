@@ -153,6 +153,10 @@ namespace AvaloniaGM.TypeScript.Types {
             generator.Compare(UndertaleInstruction.ComparisonType.NEQ);
         }, (right, position, generator) => {
             // Assign
+            IType rightType = right.GetResultType(generator);
+            if (rightType != INTEGER) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int = {rightType.GetAppearance()}"], position);
+            }
         }, (right, position, generator) => {
             // AddAssign
         }, (right, position, generator) => {

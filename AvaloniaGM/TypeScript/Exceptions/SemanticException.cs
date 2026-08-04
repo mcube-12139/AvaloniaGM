@@ -7,6 +7,7 @@ namespace AvaloniaGM.TypeScript.Exceptions {
         SYMBOL_NOT_EXIST,
         TOO_LARGE_INTEGER,
         NOT_CALLABLE,
+        NOT_WRITEABLE,
         NOT_PLACE,
         OPERATION_NOT_EXIST,
     }
@@ -17,6 +18,7 @@ namespace AvaloniaGM.TypeScript.Exceptions {
             { SemanticErrorType.SYMBOL_NOT_EXIST, parameters => $"符号 {parameters[0]} 不存在" },
             { SemanticErrorType.TOO_LARGE_INTEGER, parameters => $"整数 {parameters[0]} 太大" },
             { SemanticErrorType.NOT_CALLABLE, parameters => $"{parameters[0]} 不是可调用的" },
+            { SemanticErrorType.NOT_WRITEABLE, parameters => $"{parameters[0]} 不是可写的" },
             { SemanticErrorType.NOT_PLACE, parameters => "不是位置式" },
             { SemanticErrorType.OPERATION_NOT_EXIST, parameters => $"{parameters[0]} 运算不存在" },
         };

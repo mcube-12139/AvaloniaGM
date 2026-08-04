@@ -1,4 +1,5 @@
-﻿using AvaloniaGM.TypeScript.Symbols;
+﻿using AvaloniaGM.TypeScript.Exceptions;
+using AvaloniaGM.TypeScript.Symbols;
 using AvaloniaGM.TypeScript.Types;
 
 namespace AvaloniaGM.TypeScript.Expressions {
@@ -6,14 +7,21 @@ namespace AvaloniaGM.TypeScript.Expressions {
         readonly TextPosition position = position;
         readonly string[] segments = segments;
 
+        IType? type;
         ISymbol? symbol;
 
         IPlaceExpression IExpression.AsPlace(Generator generator) {
             return this;
         }
 
-        void IPlaceExpression.EvaluatePlace(Generator generator) {
-            // 无事可做
+        void IPlaceExpression.Assign(IExpression right, Generator generator) {
+            right.Evaluate(generator);
+
+            GetResultType(generator);
+            type!.Assign(right, position, generator);
+
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).Store(position, generator);
         }
 
         void SetSymbol(Generator generator) {
@@ -32,9 +40,13 @@ namespace AvaloniaGM.TypeScript.Expressions {
             valueSymbol.Load(position, generator);
         }
 
-        IType IExpression.GetResultType(Generator generator) {
-            SetSymbol(generator);
-            return symbol!.AsValue(position, generator).GetValueType(position, generator);
+        public IType GetResultType(Generator generator) {
+            if (type == null) {
+                SetSymbol(generator);
+                type = symbol!.AsValue(position, generator).GetValueType(position, generator);
+            }
+
+            return type;
         }
     }
 }

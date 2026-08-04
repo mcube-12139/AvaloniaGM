@@ -127,8 +127,7 @@ namespace AvaloniaGM.TypeScript {
             branchInstruction.JumpOffset = (int)(generator.GetByteCount() - branchStart) / 4;
         });
         readonly static BinaryOperator ASSIGN = new(2, (left, right, position, generator) => {
-            left.AsPlace(generator).EvaluatePlace(generator);
-            left.GetResultType(generator).Assign(right, position, generator);
+            left.AsPlace(generator).Assign(right, generator);
         });
         readonly static BinaryOperator ADD_ASSIGN = new(2, (left, right, position, generator) => {
             left.Evaluate(generator);

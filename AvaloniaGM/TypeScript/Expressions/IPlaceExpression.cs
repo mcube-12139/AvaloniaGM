@@ -1,5 +1,5 @@
 ﻿namespace AvaloniaGM.TypeScript.Expressions {
     internal interface IPlaceExpression: IExpression {
-        void EvaluatePlace(Generator generator);
+        void Assign(IExpression right, Generator generator);
     }
 }

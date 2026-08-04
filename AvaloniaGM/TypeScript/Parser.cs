@@ -283,7 +283,9 @@ namespace AvaloniaGM.TypeScript {
         }
 
         bool IsExpressionStart() {
-            return token is IdentifierToken
+            return token == FixedToken.TRUE
+                || token == FixedToken.FALSE
+                || token is IdentifierToken
                 || token is StringToken
                 || token is IntegerToken;
         }
@@ -292,7 +294,13 @@ namespace AvaloniaGM.TypeScript {
             TextPosition position = tokenPosition;
             IExpression result;
 
-            if (token is IdentifierToken idToken) {
+            if (token == FixedToken.TRUE) {
+                result = new BooleanExpression(position, true);
+                NextToken();
+            } else if (token == FixedToken.FALSE) {
+                result = new BooleanExpression(position, false);
+                NextToken();
+            } else if (token is IdentifierToken idToken) {
                 result = new PathExpression(position, [idToken.name]);
                 NextToken();
             } else if (token is StringToken strToken) {

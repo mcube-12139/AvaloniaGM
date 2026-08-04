@@ -1,14 +1,18 @@
-﻿using AvaloniaGM.TypeScript;
+﻿using AvaloniaGM.TypeScript.Types;
 using UndertaleModLib.Models;
 
 namespace AvaloniaGM.TypeScript.Symbols {
-    internal class FunctionSymbol(UndertaleFunction fun, int parameterCount) : IValueSymbol {
+    internal class FunctionSymbol(UndertaleFunction fun, FunctionType type) : IValueSymbol {
         IValueSymbol ISymbol.AsValue(TextPosition position, Generator generator) {
             return this;
         }
 
         void IValueSymbol.Call(TextPosition position, Generator generator) {
-            generator.Call(fun, parameterCount);
+            type.Call(fun, generator);
+        }
+
+        IType IValueSymbol.GetValueType(TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
         }
 
         void IValueSymbol.Load(TextPosition position, Generator generator) {

@@ -1,0 +1,125 @@
+﻿using AvaloniaGM.TypeScript.Exceptions;
+using AvaloniaGM.TypeScript.Expressions;
+using System.Linq;
+
+namespace AvaloniaGM.TypeScript.Types {
+    internal class TupleType(IType[] elementTypes): IType {
+        internal static TupleType EMPTY = new([]);
+
+        public string GetAppearance() {
+            return $"({string.Join(", ", elementTypes.Select(type => type.GetAppearance()))}{(elementTypes.Length == 1 ? ", " : "")})";
+        }
+
+        IType IType.GetCallResultType(TextPosition position, Generator generator) {
+            throw generator.SemanticError(SemanticErrorType.NOT_CALLABLE, [GetAppearance()], position);
+        }
+
+        void IType.Add(IExpression other, TextPosition position, Generator generator) {
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"{GetAppearance()} + ?"], position);
+        }
+
+        void IType.Subtract(IExpression other, TextPosition position, Generator generator) {
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"{GetAppearance()} - ?"], position);
+        }
+
+        void IType.Multiply(IExpression other, TextPosition position, Generator generator) {
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"{GetAppearance()} * ?"], position);
+        }
+
+        void IType.Divide(IExpression other, TextPosition position, Generator generator) {
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"{GetAppearance()} / ?"], position);
+        }
+
+        void IType.Modulo(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.LeftShift(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.RightShift(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.BitAnd(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.BitXor(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.BitOr(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.Greater(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.GreaterEqual(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.Less(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.LessEqual(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.Equal(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.NotEqual(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.Assign(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.AddAssign(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.SubtractAssign(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.MultiplyAssign(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.DivideAssign(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.ModuloAssign(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.BitAndAssign(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.BitOrAssign(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.BitXorAssign(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.LeftShiftAssign(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.RightShiftAssign(IExpression right, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+    }
+}

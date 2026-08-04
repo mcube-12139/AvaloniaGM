@@ -1,7 +1,7 @@
 ﻿using AvaloniaGM.TypeScript.Exceptions;
 using AvaloniaGM.TypeScript.Symbols;
+using AvaloniaGM.TypeScript.Types;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using UndertaleModLib;
 using UndertaleModLib.Models;
 
@@ -10,7 +10,7 @@ namespace AvaloniaGM.TypeScript {
         string source = string.Empty;
         UndertaleCodeLocals codeLocals = null!;
         Dictionary<string, ISymbol> symbols = new() {
-            {"show_message", new FunctionSymbol(data.Functions.EnsureDefined("show_message", data.Strings), 1)}
+            {"show_message", new FunctionSymbol(data.Functions.EnsureDefined("show_message", data.Strings), new FunctionType([PrimitiveType.INTEGER], TupleType.EMPTY))}
         };
         readonly List<Dictionary<string, ISymbol>> blocks = [];
         // fuck Game Maker
@@ -92,6 +92,20 @@ namespace AvaloniaGM.TypeScript {
                 ValueString = new UndertaleResourceById<UndertaleString, UndertaleChunkSTRG>(gameString, id)
             });
             byteCount += 8;
+
+            PushType(UndertaleInstruction.DataType.String);
+        }
+
+        internal void PushBoolean(bool value) {
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.PushI,
+                Type1 = UndertaleInstruction.DataType.Int16,
+                Type2 = UndertaleInstruction.DataType.Double,
+                ValueShort = value ? (short)1 : (short)0
+            });
+            byteCount += 4;
+
+            PushType(UndertaleInstruction.DataType.Boolean);
         }
 
         internal void PushInt16(short value) {
@@ -102,6 +116,8 @@ namespace AvaloniaGM.TypeScript {
                 ValueShort = value
             });
             byteCount += 4;
+
+            PushType(UndertaleInstruction.DataType.Int32);
         }
 
         internal void PushInt32(int value) {
@@ -112,6 +128,8 @@ namespace AvaloniaGM.TypeScript {
                 ValueInt = value
             });
             byteCount += 8;
+
+            PushType(UndertaleInstruction.DataType.Int32);
         }
 
         internal void PushInt64(long value) {
@@ -122,6 +140,8 @@ namespace AvaloniaGM.TypeScript {
                 ValueLong = value
             });
             byteCount += 12;
+
+            PushType(UndertaleInstruction.DataType.Int64);
         }
 
         internal void Convert(UndertaleInstruction.DataType target) {
@@ -135,6 +155,8 @@ namespace AvaloniaGM.TypeScript {
                 });
                 byteCount += 4;
             }
+
+            PushType(target);
         }
 
         internal void PopUnused() {
@@ -168,9 +190,15 @@ namespace AvaloniaGM.TypeScript {
                 TypeInst = variable.InstanceType
             });
             byteCount += 8;
+
+            PushType(UndertaleInstruction.DataType.Variable);
         }
 
         internal void Call(UndertaleFunction fun, int parameterCount) {
+            for (int i = parameterCount; i != 0; --i) {
+                PopType();
+            }
+
             instructions.Add(new() {
                 Kind = UndertaleInstruction.Opcode.Call,
                 Type1 = UndertaleInstruction.DataType.Int32,
@@ -193,7 +221,17 @@ namespace AvaloniaGM.TypeScript {
             });
             byteCount += 4;
 
-            PushType(UndertaleInstruction.DataType.Variable);
+            if (leftType == UndertaleInstruction.DataType.Int32 && rightType == UndertaleInstruction.DataType.Int32) {
+                PushType(UndertaleInstruction.DataType.Int32);
+            } else if (leftType == UndertaleInstruction.DataType.Int64 && rightType == UndertaleInstruction.DataType.Int64) {
+                PushType(UndertaleInstruction.DataType.Int64);
+            } else if (leftType == UndertaleInstruction.DataType.String && rightType == UndertaleInstruction.DataType.String) {
+                PushType(UndertaleInstruction.DataType.String);
+            } else if (leftType == UndertaleInstruction.DataType.Double && rightType == UndertaleInstruction.DataType.Double) {
+                PushType(UndertaleInstruction.DataType.Double);
+            } else {
+                PushType(UndertaleInstruction.DataType.Variable);
+            }
         }
 
         internal void Subtract() {
@@ -207,7 +245,15 @@ namespace AvaloniaGM.TypeScript {
             });
             byteCount += 4;
 
-            PushType(UndertaleInstruction.DataType.Variable);
+            if (leftType == UndertaleInstruction.DataType.Int32 && rightType == UndertaleInstruction.DataType.Int32) {
+                PushType(UndertaleInstruction.DataType.Int32);
+            } else if (leftType == UndertaleInstruction.DataType.Int64 && rightType == UndertaleInstruction.DataType.Int64) {
+                PushType(UndertaleInstruction.DataType.Int64);
+            } else if (leftType == UndertaleInstruction.DataType.Double && rightType == UndertaleInstruction.DataType.Double) {
+                PushType(UndertaleInstruction.DataType.Double);
+            } else {
+                PushType(UndertaleInstruction.DataType.Variable);
+            }
         }
 
         internal void Multiply() {
@@ -221,7 +267,15 @@ namespace AvaloniaGM.TypeScript {
             });
             byteCount += 4;
 
-            PushType(UndertaleInstruction.DataType.Variable);
+            if (leftType == UndertaleInstruction.DataType.Int32 && rightType == UndertaleInstruction.DataType.Int32) {
+                PushType(UndertaleInstruction.DataType.Int32);
+            } else if (leftType == UndertaleInstruction.DataType.Int64 && rightType == UndertaleInstruction.DataType.Int64) {
+                PushType(UndertaleInstruction.DataType.Int64);
+            } else if (leftType == UndertaleInstruction.DataType.Double && rightType == UndertaleInstruction.DataType.Double) {
+                PushType(UndertaleInstruction.DataType.Double);
+            } else {
+                PushType(UndertaleInstruction.DataType.Variable);
+            }
         }
 
         internal void Divide() {
@@ -235,7 +289,179 @@ namespace AvaloniaGM.TypeScript {
             });
             byteCount += 4;
 
-            PushType(UndertaleInstruction.DataType.Variable);
+            if (leftType == UndertaleInstruction.DataType.Int32 && rightType == UndertaleInstruction.DataType.Int32) {
+                PushType(UndertaleInstruction.DataType.Int32);
+            } else if (leftType == UndertaleInstruction.DataType.Int64 && rightType == UndertaleInstruction.DataType.Int64) {
+                PushType(UndertaleInstruction.DataType.Int64);
+            } else if (leftType == UndertaleInstruction.DataType.Double && rightType == UndertaleInstruction.DataType.Double) {
+                PushType(UndertaleInstruction.DataType.Double);
+            } else {
+                PushType(UndertaleInstruction.DataType.Variable);
+            }
+        }
+
+        internal void Modulo() {
+            UndertaleInstruction.DataType rightType = types.Pop();
+            UndertaleInstruction.DataType leftType = types.Pop();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Mod,
+                Type1 = rightType,
+                Type2 = leftType
+            });
+            byteCount += 4;
+
+            if (leftType == UndertaleInstruction.DataType.Int32 && rightType == UndertaleInstruction.DataType.Int32) {
+                PushType(UndertaleInstruction.DataType.Int32);
+            } else if (leftType == UndertaleInstruction.DataType.Int64 && rightType == UndertaleInstruction.DataType.Int64) {
+                PushType(UndertaleInstruction.DataType.Int64);
+            } else {
+                PushType(UndertaleInstruction.DataType.Variable);
+            }
+        }
+
+        internal void LeftShift() {
+            UndertaleInstruction.DataType rightType = types.Pop();
+            UndertaleInstruction.DataType leftType = types.Pop();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Shl,
+                Type1 = rightType,
+                Type2 = leftType
+            });
+            byteCount += 4;
+
+            PushType(UndertaleInstruction.DataType.Int64);
+        }
+
+        internal void RightShift() {
+            UndertaleInstruction.DataType rightType = types.Pop();
+            UndertaleInstruction.DataType leftType = types.Pop();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Shr,
+                Type1 = rightType,
+                Type2 = leftType
+            });
+            byteCount += 4;
+
+            PushType(UndertaleInstruction.DataType.Int64);
+        }
+
+        internal void BitAnd() {
+            UndertaleInstruction.DataType rightType = types.Pop();
+            UndertaleInstruction.DataType leftType = types.Pop();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.And,
+                Type1 = rightType,
+                Type2 = leftType
+            });
+            byteCount += 4;
+
+            if (leftType == UndertaleInstruction.DataType.Int32 && rightType == UndertaleInstruction.DataType.Int32) {
+                PushType(UndertaleInstruction.DataType.Int32);
+            } else if (leftType == UndertaleInstruction.DataType.Int64 && rightType == UndertaleInstruction.DataType.Int64) {
+                PushType(UndertaleInstruction.DataType.Int64);
+            } else {
+                throw new System.Exception("wtf");
+            }
+        }
+
+        internal void BitOr() {
+            UndertaleInstruction.DataType rightType = types.Pop();
+            UndertaleInstruction.DataType leftType = types.Pop();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Or,
+                Type1 = rightType,
+                Type2 = leftType
+            });
+            byteCount += 4;
+
+            if (leftType == UndertaleInstruction.DataType.Int32 && rightType == UndertaleInstruction.DataType.Int32) {
+                PushType(UndertaleInstruction.DataType.Int32);
+            } else if (leftType == UndertaleInstruction.DataType.Int64 && rightType == UndertaleInstruction.DataType.Int64) {
+                PushType(UndertaleInstruction.DataType.Int64);
+            } else {
+                throw new System.Exception("wtf");
+            }
+        }
+
+        internal void BitXor() {
+            UndertaleInstruction.DataType rightType = types.Pop();
+            UndertaleInstruction.DataType leftType = types.Pop();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Xor,
+                Type1 = rightType,
+                Type2 = leftType
+            });
+            byteCount += 4;
+
+            if (leftType == UndertaleInstruction.DataType.Int32 && rightType == UndertaleInstruction.DataType.Int32) {
+                PushType(UndertaleInstruction.DataType.Int32);
+            } else if (leftType == UndertaleInstruction.DataType.Int64 && rightType == UndertaleInstruction.DataType.Int64) {
+                PushType(UndertaleInstruction.DataType.Int64);
+            } else {
+                throw new System.Exception("wtf");
+            }
+        }
+
+        internal void Compare(UndertaleInstruction.ComparisonType comparisonType) {
+            UndertaleInstruction.DataType rightType = types.Pop();
+            UndertaleInstruction.DataType leftType = types.Pop();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Cmp,
+                ComparisonKind = comparisonType,
+                Type1 = rightType,
+                Type2 = leftType
+            });
+            byteCount += 4;
+
+            PushType(UndertaleInstruction.DataType.Boolean);
+        }
+
+        internal UndertaleInstruction Branch() {
+            UndertaleInstruction result = new() {
+                Kind = UndertaleInstruction.Opcode.B
+            };
+
+            instructions.Add(result);
+            byteCount += 4;
+
+            return result;
+        }
+
+        internal UndertaleInstruction BranchTrue() {
+            UndertaleInstruction result = new() {
+                Kind = UndertaleInstruction.Opcode.Bt
+            };
+
+            instructions.Add(result);
+            byteCount += 4;
+
+            PopType();
+
+            return result;
+        }
+
+        internal UndertaleInstruction BranchFalse() {
+            UndertaleInstruction result = new() {
+                Kind = UndertaleInstruction.Opcode.Bf
+            };
+
+            instructions.Add(result);
+            byteCount += 4;
+
+            PopType();
+
+            return result;
+        }
+
+        internal uint GetByteCount() {
+            return byteCount;
         }
 
         internal void PushType(UndertaleInstruction.DataType type) {

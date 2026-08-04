@@ -6,6 +6,9 @@ namespace AvaloniaGM.TypeScript.Exceptions {
         SYMBOL_EXIST,
         SYMBOL_NOT_EXIST,
         TOO_LARGE_INTEGER,
+        NOT_CALLABLE,
+        NOT_PLACE,
+        OPERATION_NOT_EXIST,
     }
 
     public class SemanticException(SemanticErrorType type, string[] parameters, string source, TextPosition position) : Exception($"{source}:{position.line}:{position.column}: {formatter[type](parameters)}") {
@@ -13,6 +16,9 @@ namespace AvaloniaGM.TypeScript.Exceptions {
             { SemanticErrorType.SYMBOL_EXIST, parameters => $"符号 {parameters[0]} 已存在" },
             { SemanticErrorType.SYMBOL_NOT_EXIST, parameters => $"符号 {parameters[0]} 不存在" },
             { SemanticErrorType.TOO_LARGE_INTEGER, parameters => $"整数 {parameters[0]} 太大" },
+            { SemanticErrorType.NOT_CALLABLE, parameters => $"{parameters[0]} 不是可调用的" },
+            { SemanticErrorType.NOT_PLACE, parameters => "不是位置式" },
+            { SemanticErrorType.OPERATION_NOT_EXIST, parameters => $"{parameters[0]} 运算不存在" },
         };
     }
 }

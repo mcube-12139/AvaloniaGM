@@ -1,4 +1,5 @@
 ﻿using AvaloniaGM.TypeScript.Exceptions;
+using AvaloniaGM.TypeScript.Statements;
 using AvaloniaGM.TypeScript.Symbols;
 using AvaloniaGM.TypeScript.Types;
 using System.Collections.Generic;
@@ -9,10 +10,9 @@ namespace AvaloniaGM.TypeScript {
     internal class Generator(UndertaleData data) {
         string source = string.Empty;
         UndertaleCodeLocals codeLocals = null!;
-        Dictionary<string, ISymbol> symbols = new() {
-            {"show_message", new FunctionSymbol(data.Functions.EnsureDefined("show_message", data.Strings), new FunctionType([PrimitiveType.INTEGER], PrimitiveType.DOUBLE))}
-        };
-        readonly List<Dictionary<string, ISymbol>> blocks = [];
+        NameSpace nameSpace = new();
+        readonly List<NameSpace> nameSpaces = [];
+        readonly List<ILoopStatement> loops = [];
         // fuck Game Maker
         uint nextLocalId = 1;
         readonly List<UndertaleInstruction> instructions = [];
@@ -25,14 +25,15 @@ namespace AvaloniaGM.TypeScript {
         }
 
         internal void AddSymbol(string name, ISymbol symbol, TextPosition position) {
-            if (!symbols.TryAdd(name, symbol)) {
+            if (!nameSpace.TryAddSymbol(name, symbol)) {
                 throw new SemanticException(SemanticErrorType.SYMBOL_EXIST, [name], source, position);
             }
         }
 
         internal ISymbol GetSymbol(string name, TextPosition position) {
-            for (int i = blocks.Count - 1; i != -1; --i) {
-                if (blocks[i].TryGetValue(name, out ISymbol? symbol)) {
+            for (int i = nameSpaces.Count - 1; i != -1; --i) {
+                ISymbol? symbol = nameSpaces[i].GetSymbol(name);
+                if (symbol != null) {
                     return symbol;
                 }
             }
@@ -40,14 +41,44 @@ namespace AvaloniaGM.TypeScript {
             throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [name], source, position);
         }
 
-        internal void EnterBlock() {
-            symbols = [];
-            blocks.Add(symbols);
+        internal ILoopStatement GetLoop(string? label, TextPosition position) {
+            if (label == null) {
+                if (loops.Count != 0) {
+                    return loops[^1];
+                } else {
+                    throw new SemanticException(SemanticErrorType.NOT_IN_LOOP, [], source, position);
+                }
+            } else {
+                for (int i = nameSpaces.Count - 1; i != -1; --i) {
+                    ILoopStatement? statement = nameSpaces[i].GetLoop(label);
+                    if (statement != null) {
+                        return statement;
+                    }
+                }
+
+                throw new SemanticException(SemanticErrorType.LABEL_NOT_EXIST, [label], source, position);
+            }
         }
 
-        internal void LeaveBlock() {
-            symbols = blocks[^1];
-            blocks.RemoveAt(blocks.Count - 1);
+        internal void EnterNameSpace() {
+            nameSpace = new();
+            nameSpaces.Add(nameSpace);
+        }
+
+        internal void LeaveNameSpace() {
+            nameSpace = nameSpaces[^1];
+            nameSpaces.RemoveAt(nameSpaces.Count - 1);
+        }
+
+        internal void EnterLoop(string? label, ILoopStatement statement) {
+            loops.Add(statement);
+            if (label != null) {
+                nameSpace.TryAddLoop(label, statement);
+            }
+        }
+
+        internal void LeaveLoop() {
+            loops.RemoveAt(loops.Count - 1);
         }
 
         internal (UndertaleString, int id) GetString(string value) {
@@ -486,7 +517,8 @@ namespace AvaloniaGM.TypeScript {
                 }
             }
 
-            blocks.Add(symbols);
+            nameSpace.TryAddSymbol("show_message", new FunctionSymbol(data.Functions.EnsureDefined("show_message", data.Strings), new FunctionType([PrimitiveType.INTEGER], PrimitiveType.DOUBLE)));
+            nameSpaces.Add(nameSpace);
 
             root.Generate(this);
 
@@ -494,9 +526,10 @@ namespace AvaloniaGM.TypeScript {
             replaced.Length = byteCount;
             replaced.Offset = 0;
             replaced.ArgumentsCount = 0;
-            replaced.LocalsCount = (uint)nextLocalId;
+            replaced.LocalsCount = nextLocalId;
 
-            blocks.Clear();
+            nameSpace.Clear();
+            nameSpaces.Clear();
             instructions.Clear();
             byteCount = 0;
             types.Clear();

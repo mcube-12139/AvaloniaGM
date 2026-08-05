@@ -63,7 +63,7 @@ namespace AvaloniaGM.TypeScript {
 
             tokenPosition = charPosition;
             if (char.IsAsciiLetter(c) || c == '_') {
-                // 标识符
+                // 标识符 | 标签
                 builder.Clear().Append(c);
                 NextChar();
 
@@ -77,7 +77,26 @@ namespace AvaloniaGM.TypeScript {
                 }
 
                 string name = builder.ToString();
-                token = (IToken?)FixedToken.GetKeyword(name) ?? new IdentifierToken(name);
+                if (name != "l" || c != '\'') {
+                    token = (IToken?)FixedToken.GetKeyword(name) ?? new IdentifierToken(name);
+                } else {
+                    NextChar();
+                    builder.Clear();
+
+                    if (!char.IsAsciiLetter(c) && c != '_') {
+                        throw CharCannotBeHere();
+                    }
+                    for (; ; ) {
+                        builder.Append(c);
+                        NextChar();
+
+                        if (!char.IsAsciiLetterOrDigit(c) && c != '_') {
+                            break;
+                        }
+                    }
+
+                    token = new LabelToken(builder.ToString());
+                }
             } else if (char.IsAsciiDigit(c)) {
                 // 数字
                 builder.Clear();
@@ -367,8 +386,56 @@ namespace AvaloniaGM.TypeScript {
             return result;
         }
 
+        IfStatement ParseIfStatement() {
+            TextPosition position = tokenPosition;
+
+            AssertAndNextToken(FixedToken.IF);
+
+            AssertAndNextToken(FixedToken.LEFT_PARENTHESIS);
+            IExpression condition = ParseExpression(0);
+            AssertAndNextToken(FixedToken.RIGHT_PARENTHESIS);
+
+            BlockStatement body = ParseBlockStatement();
+
+            IStatement? elseBody;
+            if (token == FixedToken.ELSE) {
+                NextToken();
+                if (token == FixedToken.IF) {
+                    elseBody = ParseIfStatement();
+                } else {
+                    elseBody = ParseBlockStatement();
+                }
+            } else {
+                elseBody = null;
+            }
+
+            return new IfStatement(position, condition, body, elseBody);
+        }
+
+        BlockStatement ParseBlockStatement() {
+            TextPosition position = tokenPosition;
+
+            AssertAndNextToken(FixedToken.LEFT_BRACE);
+
+            List<IStatement> statements = [];
+            for (; ; ) {
+                if (token == FixedToken.RIGHT_BRACE) {
+                    NextToken();
+                    break;
+                }
+
+                statements.Add(ParseStatement());
+            }
+
+            return new BlockStatement(position, [.. statements]);
+        }
+
         bool IsStatementStart() {
             return token == FixedToken.LET
+                || token == FixedToken.IF
+                || token is LabelToken
+                || token == FixedToken.WHILE
+                || token == FixedToken.CONTINUE
                 || token == FixedToken.LEFT_BRACE
                 || IsExpressionStart();
         }
@@ -393,21 +460,48 @@ namespace AvaloniaGM.TypeScript {
 
                 AssertAndNextToken(FixedToken.SEMICOLON);
                 result = new LetStatement(position, pattern, null, initializer);
-            } else if (token == FixedToken.LEFT_BRACE) {
-                NextToken();
-
-                List<IStatement> statements = [];
-                for (; ; ) {
-                    if (token == FixedToken.RIGHT_BRACE) {
-                        NextToken();
-                        break;
-                    }
-
-                    statements.Add(ParseStatement());
+            } else if (token == FixedToken.IF) {
+                // if
+                result = ParseIfStatement();
+            } else if (token is LabelToken || token == FixedToken.WHILE) {
+                // while
+                string? label;
+                if (token is LabelToken labelToken) {
+                    label = labelToken.name;
+                    NextToken();
+                    AssertAndNextToken(FixedToken.COLON);
+                } else {
+                    label = null;
                 }
 
-                result = new BlockStatement(position, [.. statements]);
+                AssertAndNextToken(FixedToken.WHILE);
+
+                AssertAndNextToken(FixedToken.LEFT_PARENTHESIS);
+                IExpression condition = ParseExpression(0);
+                AssertAndNextToken(FixedToken.RIGHT_PARENTHESIS);
+
+                BlockStatement body = ParseBlockStatement();
+
+                result = new WhileStatement(position, label, condition, body);
+            } else if (token == FixedToken.CONTINUE) {
+                // continue
+                NextToken();
+
+                string? label;
+                if (token is LabelToken labelToken) {
+                    label = labelToken.name;
+                    NextToken();
+                } else {
+                    label = null;
+                }
+
+                AssertAndNextToken(FixedToken.SEMICOLON);
+                result = new ContinueStatement(position, label);
+            } else if (token == FixedToken.LEFT_BRACE) {
+                // 块
+                result = ParseBlockStatement();
             } else if (IsExpressionStart()) {
+                // 算式
                 IExpression expression = ParseExpression(0);
                 AssertAndNextToken(FixedToken.SEMICOLON);
                 result = new ExpressionStatement(expression);

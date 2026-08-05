@@ -1,8 +1,11 @@
 ﻿using AvaloniaGM.TypeScript.Exceptions;
 using AvaloniaGM.TypeScript.Expressions;
+using AvaloniaGM.TypeScript.Items;
+using AvaloniaGM.TypeScript.Parameters;
 using AvaloniaGM.TypeScript.Patterns;
 using AvaloniaGM.TypeScript.Statements;
 using AvaloniaGM.TypeScript.Tokens;
+using AvaloniaGM.TypeScript.TypeNodes;
 using System.Collections.Generic;
 using System.Text;
 
@@ -338,6 +341,13 @@ namespace AvaloniaGM.TypeScript {
             }
         }
 
+        void AssertTokenKind<T>()
+            where T: IToken {
+            if (token is not T) {
+                throw TokenCannotBeHere();
+            }
+        }
+
         bool IsExpressionStart() {
             return token == FixedToken.TRUE
                 || token == FixedToken.FALSE
@@ -407,6 +417,10 @@ namespace AvaloniaGM.TypeScript {
             }
 
             return result;
+        }
+
+        bool IsPatternStart() {
+            return token is IdentifierToken;
         }
 
         IPattern ParsePattern() {
@@ -564,19 +578,127 @@ namespace AvaloniaGM.TypeScript {
             return result;
         }
 
+        IParameter ParseParameter() {
+            TextPosition position = tokenPosition;
+            IParameter result;
+
+            if (token == FixedToken.THIS) {
+                result = new ThisParameter(position);
+            } else if (IsPatternStart()) {
+                IPattern pattern = ParsePattern();
+
+                AssertAndNextToken(FixedToken.COLON);
+                ITypeNode type = ParseType();
+
+                result = new PatternParameter(position, pattern, type);
+            } else {
+                throw TokenCannotBeHere();
+            }
+
+            return result;
+        }
+
+        ITypeNode ParseType() {
+            TextPosition position = tokenPosition;
+            ITypeNode result;
+
+            bool fromGlobal;
+            if (token == FixedToken.DOUBLE_COLON) {
+                fromGlobal = true;
+                NextToken();
+            } else {
+                fromGlobal = false;
+            }
+
+            List<string> segments = [];
+            for (; ; ) {
+                if (token is IdentifierToken idToken) {
+                    segments.Add(idToken.name);
+                } else {
+                    throw TokenCannotBeHere();
+                }
+
+                if (token == FixedToken.DOUBLE_COLON) {
+                    NextToken();
+                } else {
+                    break;
+                }
+            }
+
+            result = new PathType(position, fromGlobal, [.. segments]);
+            return result;
+        }
+
+        bool IsItemStart() {
+            return token == FixedToken.FUNCTION;
+        }
+
+        IItem ParseItem() {
+            TextPosition position = tokenPosition;
+            IItem result;
+
+            if (token == FixedToken.FUNCTION) {
+                NextToken();
+
+                if (token is not IdentifierToken idToken) {
+                    throw TokenCannotBeHere();
+                }
+                string name = idToken.name;
+                NextToken();
+
+                AssertAndNextToken(FixedToken.LEFT_PARENTHESIS);
+                List<IParameter> parameters = [];
+                for (; ; ) {
+                    if (token == FixedToken.RIGHT_PARENTHESIS) {
+                        NextToken();
+                        break;
+                    }
+
+                    parameters.Add(ParseParameter());
+
+                    if (token == FixedToken.COMMA) {
+                        NextToken();
+                    } else if (token == FixedToken.RIGHT_PARENTHESIS) {
+                        NextToken();
+                        break;
+                    } else {
+                        throw TokenCannotBeHere();
+                    }
+                }
+
+                ITypeNode? type;
+                if (token == FixedToken.COLON) {
+                    NextToken();
+                    type = ParseType();
+                } else {
+                    type = null;
+                }
+
+                BlockStatement body = ParseBlockStatement();
+                result = new FunctionItem(position, name, [.. parameters], type, body);
+            } else {
+                throw TokenCannotBeHere();
+            }
+
+            return result;
+        }
+
         CodeRoot ParseRoot() {
             List<IStatement> statements = [];
+            List<IItem> items = [];
 
             for (; ; ) {
                 if (IsStatementStart()) {
                     statements.Add(ParseStatement());
+                } else if (IsItemStart()) {
+                    items.Add(ParseItem());
                 } else {
                     break;
                 }
             }
             AssertToken(FixedToken.END);
 
-            return new([.. statements]);
+            return new([..items], [.. statements]);
         }
 
         internal CodeRoot Parse(string source, string code) {

@@ -26,6 +26,7 @@ namespace AvaloniaGM.TypeScript.Tokens {
         internal static FixedToken CATCH = new("catch");
         internal static FixedToken FINALLY = new("finally");
         internal static FixedToken THROW = new("throw");
+        internal static FixedToken THIS = new("this");
         internal static FixedToken TRUE = new("true");
         internal static FixedToken FALSE = new("false");
 
@@ -97,6 +98,7 @@ namespace AvaloniaGM.TypeScript.Tokens {
             {"catch", CATCH},
             {"finally", FINALLY},
             {"throw", THROW},
+            {"this", THIS},
             {"true", TRUE},
             {"false", FALSE},
         };

@@ -10,8 +10,8 @@ namespace AvaloniaGM.TypeScript {
     internal class Generator(UndertaleData data) {
         string source = string.Empty;
         UndertaleCodeLocals codeLocals = null!;
-        NameSpace nameSpace = new();
-        readonly List<NameSpace> nameSpaces = [];
+        NameSpace space = new();
+        readonly List<NameSpace> spaces = [];
         readonly List<ILoopStatement> loops = [];
         // fuck Game Maker
         uint nextLocalId = 1;
@@ -25,14 +25,14 @@ namespace AvaloniaGM.TypeScript {
         }
 
         internal void AddSymbol(string name, ISymbol symbol, TextPosition position) {
-            if (!nameSpace.TryAddSymbol(name, symbol)) {
+            if (!space.TryAddSymbol(name, symbol)) {
                 throw new SemanticException(SemanticErrorType.SYMBOL_EXIST, [name], source, position);
             }
         }
 
         internal ISymbol GetSymbol(string name, TextPosition position) {
-            for (int i = nameSpaces.Count - 1; i != -1; --i) {
-                ISymbol? symbol = nameSpaces[i].GetSymbol(name);
+            for (int i = spaces.Count - 1; i != -1; --i) {
+                ISymbol? symbol = spaces[i].GetSymbol(name);
                 if (symbol != null) {
                     return symbol;
                 }
@@ -49,8 +49,8 @@ namespace AvaloniaGM.TypeScript {
                     throw new SemanticException(SemanticErrorType.NOT_IN_LOOP, [], source, position);
                 }
             } else {
-                for (int i = nameSpaces.Count - 1; i != -1; --i) {
-                    ILoopStatement? statement = nameSpaces[i].GetLoop(label);
+                for (int i = spaces.Count - 1; i != -1; --i) {
+                    ILoopStatement? statement = spaces[i].GetLoop(label);
                     if (statement != null) {
                         return statement;
                     }
@@ -61,19 +61,19 @@ namespace AvaloniaGM.TypeScript {
         }
 
         internal void EnterNameSpace() {
-            nameSpace = new();
-            nameSpaces.Add(nameSpace);
+            space = new();
+            spaces.Add(space);
         }
 
         internal void LeaveNameSpace() {
-            nameSpace = nameSpaces[^1];
-            nameSpaces.RemoveAt(nameSpaces.Count - 1);
+            space = spaces[^1];
+            spaces.RemoveAt(spaces.Count - 1);
         }
 
         internal void EnterLoop(string? label, ILoopStatement statement) {
             loops.Add(statement);
             if (label != null) {
-                nameSpace.TryAddLoop(label, statement);
+                space.TryAddLoop(label, statement);
             }
         }
 
@@ -517,8 +517,8 @@ namespace AvaloniaGM.TypeScript {
                 }
             }
 
-            nameSpace.TryAddSymbol("show_message", new FunctionSymbol(data.Functions.EnsureDefined("show_message", data.Strings), new FunctionType([PrimitiveType.INTEGER], PrimitiveType.DOUBLE)));
-            nameSpaces.Add(nameSpace);
+            space.TryAddSymbol("show_message", new FunctionSymbol(data.Functions.EnsureDefined("show_message", data.Strings), new FunctionType([PrimitiveType.INTEGER], PrimitiveType.DOUBLE)));
+            spaces.Add(space);
 
             root.Generate(this);
 
@@ -528,8 +528,8 @@ namespace AvaloniaGM.TypeScript {
             replaced.ArgumentsCount = 0;
             replaced.LocalsCount = nextLocalId;
 
-            nameSpace.Clear();
-            nameSpaces.Clear();
+            space.Clear();
+            spaces.Clear();
             instructions.Clear();
             byteCount = 0;
             types.Clear();

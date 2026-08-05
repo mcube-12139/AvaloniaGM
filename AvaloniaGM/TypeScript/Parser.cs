@@ -52,9 +52,54 @@ namespace AvaloniaGM.TypeScript {
         }
 
         void NextToken() {
-            // 跳过空白符
+            // 跳过空白符与注释
             for (; ; ) {
-                if (c != ' ' && c != '\r' && c != '\n' && c != '\t') {
+                if (c == ' ' || c == '\r' || c == '\n' || c == '\t') {
+                    NextChar();
+                } else if (c == '/') {
+                    tokenPosition = charPosition;
+                    NextChar();
+                    if (c == '/') {
+                        // 行注释
+                        NextChar();
+                        for (; ; ) {
+                            if (c == '\n') {
+                                NextChar();
+                                break;
+                            }
+                            if (c == '\0') {
+                                break;
+                            }
+
+                            NextChar();
+                        }
+                    } else if (c == '*') {
+                        // 块注释
+                        NextChar();
+                        for (; ; ) {
+                            if (c == '\0') {
+                                throw CharCannotBeHere();
+                            }
+
+                            if (c == '*') {
+                                NextChar();
+                                if (c == '/') {
+                                    NextChar();
+                                    break;
+                                }
+                            } else {
+                                NextChar();
+                            }
+                        }
+                    } else if (c == '=') {
+                        token = FixedToken.SLASH_EQUAL;
+                        NextChar();
+                        return;
+                    } else {
+                        token = FixedToken.SLASH;
+                        return;
+                    }
+                } else {
                     break;
                 }
 
@@ -192,14 +237,6 @@ namespace AvaloniaGM.TypeScript {
                     NextChar();
                 } else {
                     token = FixedToken.STAR;
-                }
-            } else if (c == '/') {
-                NextChar();
-                if (c == '=') {
-                    token = FixedToken.SLASH_EQUAL;
-                    NextChar();
-                } else {
-                    token = FixedToken.SLASH;
                 }
             } else if (c == '%') {
                 NextChar();
@@ -436,6 +473,7 @@ namespace AvaloniaGM.TypeScript {
                 || token is LabelToken
                 || token == FixedToken.WHILE
                 || token == FixedToken.CONTINUE
+                || token == FixedToken.BREAK
                 || token == FixedToken.LEFT_BRACE
                 || IsExpressionStart();
         }
@@ -497,6 +535,20 @@ namespace AvaloniaGM.TypeScript {
 
                 AssertAndNextToken(FixedToken.SEMICOLON);
                 result = new ContinueStatement(position, label);
+            } else if (token == FixedToken.BREAK) {
+                // break
+                NextToken();
+
+                string? label;
+                if (token is LabelToken labelToken) {
+                    label = labelToken.name;
+                    NextToken();
+                } else {
+                    label = null;
+                }
+
+                AssertAndNextToken(FixedToken.SEMICOLON);
+                result = new BreakStatement(position, label);
             } else if (token == FixedToken.LEFT_BRACE) {
                 // 块
                 result = ParseBlockStatement();

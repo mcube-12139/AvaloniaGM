@@ -1,5 +1,5 @@
-﻿using AvaloniaGM.TypeScript;
-using AvaloniaGM.TypeScript.Expressions;
+﻿using AvaloniaGM.TypeScript.Expressions;
+using AvaloniaGM.TypeScript.Types;
 
 namespace AvaloniaGM.TypeScript.Statements {
     internal class ExpressionStatement(IExpression expression): IStatement {
@@ -7,7 +7,9 @@ namespace AvaloniaGM.TypeScript.Statements {
 
         void IStatement.Execute(Generator generator) {
             expression.Evaluate(generator);
-            generator.PopUnused();
+            if (expression.GetResultType(generator) != TupleType.EMPTY) {
+                generator.PopUnused();
+            }
         }
     }
 }

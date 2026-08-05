@@ -16,7 +16,9 @@ namespace AvaloniaGM.TypeScript.Expressions {
         }
 
         IType IExpression.GetResultType(Generator generator) {
-            throw new System.NotImplementedException();
+            IType leftType = left.GetResultType(generator);
+            IType rightType = right.GetResultType(generator);
+            return op.getResultType(leftType, rightType, position, generator);
         }
     }
 }

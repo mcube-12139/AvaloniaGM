@@ -6,74 +6,111 @@ using System;
 using UndertaleModLib.Models;
 
 namespace AvaloniaGM.TypeScript {
-    internal class BinaryOperator(int priority, Action<IExpression, IExpression, TextPosition, Generator> evaluate) {
-        internal int priority = priority;
-        internal Action<IExpression, IExpression, TextPosition, Generator> evaluate = evaluate;
+    internal class BinaryOperator(
+        int priority,
+        Action<IExpression, IExpression, TextPosition, Generator> evaluate,
+        Func<IType, IType, TextPosition, Generator, IType> getResultType
+    ) {
+        internal readonly int priority = priority;
+        internal readonly Action<IExpression, IExpression, TextPosition, Generator> evaluate = evaluate;
+        internal readonly Func<IType, IType, TextPosition, Generator, IType> getResultType = getResultType;
 
         readonly static BinaryOperator MULTIPLY = new(12, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).Multiply(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetMultiplyResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator DIVIDE = new(12, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).Divide(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetDivideResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator MODULO = new(12, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).Modulo(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetModuloResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator ADD = new(11, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).Add(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetAddResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator SUBTRACT = new(11, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).Subtract(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetSubtractResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator LEFT_SHIFT = new(10, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).LeftShift(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetLeftShiftResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator RIGHT_SHIFT = new(10, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).RightShift(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetRightShiftResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator BIT_AND = new(9, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).BitAnd(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetBitAndResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator BIT_XOR = new(8, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).BitXor(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetBitXorResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator BIT_OR = new(7, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).BitOr(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetBitOrResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator GREATER = new(6, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).Greater(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetGreaterResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator GREATER_EQUAL = new(6, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).GreaterEqual(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetGreaterEqualResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator LESS = new(6, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).Less(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetLessResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator LESS_EQUAL = new(6, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).LessEqual(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetLessEqualResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator EQUAL = new(6, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).Equal(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetEqualResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator NOT_EQUAL = new(6, (left, right, position, generator) => {
             left.Evaluate(generator);
             left.GetResultType(generator).NotEqual(right, position, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            leftType.GetNotEqualResultType(rightType, position, generator)
+        );
         readonly static BinaryOperator AND = new(5, (left, right, position, generator) => {
             left.Evaluate(generator);
             IType leftType = left.GetResultType(generator);
@@ -99,7 +136,9 @@ namespace AvaloniaGM.TypeScript {
             generator.PushBoolean(false);
 
             branchInstruction.JumpOffset = (int)(generator.GetByteCount() - branchStart) / 4;
-        });
+        }, (leftType, rightType, position, generator) =>
+            PrimitiveType.BOOLEAN
+        );
         readonly static BinaryOperator OR = new(4, (left, right, position, generator) => {
             left.Evaluate(generator);
             IType leftType = left.GetResultType(generator);
@@ -125,50 +164,64 @@ namespace AvaloniaGM.TypeScript {
             generator.PushBoolean(true);
 
             branchInstruction.JumpOffset = (int)(generator.GetByteCount() - branchStart) / 4;
-        });
+        }, (leftType, rightType, position, generator) =>
+            PrimitiveType.BOOLEAN
+        );
         readonly static BinaryOperator ASSIGN = new(2, (left, right, position, generator) => {
             left.AsPlace(generator).Assign(right, generator);
-        });
+        }, (leftType, rightType, position, generator) =>
+            TupleType.EMPTY
+        );
         readonly static BinaryOperator ADD_ASSIGN = new(2, (left, right, position, generator) => {
-            left.Evaluate(generator);
-            left.GetResultType(generator).Divide(right, position, generator);
-        });
+            left.AsPlace(generator).AddAssign(right, generator);
+        }, (leftType, rightType, position, generator) =>
+            TupleType.EMPTY
+        );
         readonly static BinaryOperator SUBTRACT_ASSIGN = new(2, (left, right, position, generator) => {
-            left.Evaluate(generator);
-            left.GetResultType(generator).Divide(right, position, generator);
-        });
+            left.AsPlace(generator).SubtractAssign(right, generator);
+        }, (leftType, rightType, position, generator) =>
+            TupleType.EMPTY
+        );
         readonly static BinaryOperator MULTIPLY_ASSIGN = new(2, (left, right, position, generator) => {
-            left.Evaluate(generator);
-            left.GetResultType(generator).Divide(right, position, generator);
-        });
+            left.AsPlace(generator).MultiplyAssign(right, generator);
+        }, (leftType, rightType, position, generator) =>
+            TupleType.EMPTY
+        );
         readonly static BinaryOperator DIVIDE_ASSIGN = new(2, (left, right, position, generator) => {
-            left.Evaluate(generator);
-            left.GetResultType(generator).Divide(right, position, generator);
-        });
+            left.AsPlace(generator).DivideAssign(right, generator);
+        }, (leftType, rightType, position, generator) =>
+            TupleType.EMPTY
+        );
         readonly static BinaryOperator MODULO_ASSIGN = new(2, (left, right, position, generator) => {
-            left.Evaluate(generator);
-            left.GetResultType(generator).Divide(right, position, generator);
-        });
+            left.AsPlace(generator).ModuloAssign(right, generator);
+        }, (leftType, rightType, position, generator) =>
+            TupleType.EMPTY
+        );
         readonly static BinaryOperator BIT_AND_ASSIGN = new(2, (left, right, position, generator) => {
-            left.Evaluate(generator);
-            left.GetResultType(generator).Divide(right, position, generator);
-        });
+            left.AsPlace(generator).BitAndAssign(right, generator);
+        }, (leftType, rightType, position, generator) =>
+            TupleType.EMPTY
+        );
         readonly static BinaryOperator BIT_OR_ASSIGN = new(2, (left, right, position, generator) => {
-            left.Evaluate(generator);
-            left.GetResultType(generator).Divide(right, position, generator);
-        });
+            left.AsPlace(generator).BitOrAssign(right, generator);
+        }, (leftType, rightType, position, generator) =>
+            TupleType.EMPTY
+        );
         readonly static BinaryOperator BIT_XOR_ASSIGN = new(2, (left, right, position, generator) => {
-            left.Evaluate(generator);
-            left.GetResultType(generator).Divide(right, position, generator);
-        });
+            left.AsPlace(generator).BitXorAssign(right, generator);
+        }, (leftType, rightType, position, generator) =>
+            TupleType.EMPTY
+        );
         readonly static BinaryOperator LEFT_SHIFT_ASSIGN = new(2, (left, right, position, generator) => {
-            left.Evaluate(generator);
-            left.GetResultType(generator).Divide(right, position, generator);
-        });
+            left.AsPlace(generator).LeftShiftAssign(right, generator);
+        }, (leftType, rightType, position, generator) =>
+            TupleType.EMPTY
+        );
         readonly static BinaryOperator RIGHT_SHIFT_ASSIGN = new(2, (left, right, position, generator) => {
-            left.Evaluate(generator);
-            left.GetResultType(generator).Divide(right, position, generator);
-        });
+            left.AsPlace(generator).RightShiftAssign(right, generator);
+        }, (leftType, rightType, position, generator) =>
+            TupleType.EMPTY
+        );
 
         internal static BinaryOperator? FromToken(int priority, FixedToken token) {
             BinaryOperator? result;

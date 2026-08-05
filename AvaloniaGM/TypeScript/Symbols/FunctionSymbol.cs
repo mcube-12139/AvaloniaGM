@@ -13,7 +13,7 @@ namespace AvaloniaGM.TypeScript.Symbols {
         }
 
         IType IValueSymbol.GetValueType(TextPosition position, Generator generator) {
-            throw new System.NotImplementedException();
+            return type;
         }
 
         void IValueSymbol.Load(TextPosition position, Generator generator) {

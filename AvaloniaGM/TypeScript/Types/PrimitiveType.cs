@@ -32,7 +32,23 @@ namespace AvaloniaGM.TypeScript.Types {
         Action<IExpression, TextPosition, Generator> bitOrAssign,
         Action<IExpression, TextPosition, Generator> bitXorAssign,
         Action<IExpression, TextPosition, Generator> leftShiftAssign,
-        Action<IExpression, TextPosition, Generator> rightShiftAssign
+        Action<IExpression, TextPosition, Generator> rightShiftAssign,
+        Func<IType, IType, TextPosition, Generator, IType> getMultiplyResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getDivideResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getModuloResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getAddResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getSubtractResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getLeftShiftResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getRightShiftResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getBitAndResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getBitXorResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getBitOrResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getGreaterResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getGreaterEqualResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getLessResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getLessEqualResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getEqualResultType,
+        Func<IType, IType, TextPosition, Generator, IType> getNotEqualResultType
     ) : IType {
         internal static PrimitiveType INTEGER = new("int", (right, position, generator) => {
             right.Evaluate(generator);
@@ -159,24 +175,128 @@ namespace AvaloniaGM.TypeScript.Types {
             }
         }, (right, position, generator) => {
             // AddAssign
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != INTEGER) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int += {rightType.GetAppearance()}"], position);
+            }
+            generator.Add();
         }, (right, position, generator) => {
             // SubtractAssign
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != INTEGER) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int -= {rightType.GetAppearance()}"], position);
+            }
+            generator.Subtract();
         }, (right, position, generator) => {
             // MultiplyAssign
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != INTEGER) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int *= {rightType.GetAppearance()}"], position);
+            }
+            generator.Multiply();
         }, (right, position, generator) => {
             // DivideAssign
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != INTEGER) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int /= {rightType.GetAppearance()}"], position);
+            }
+            generator.Divide();
         }, (right, position, generator) => {
             // ModuloAssign
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != INTEGER) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int %= {rightType.GetAppearance()}"], position);
+            }
+            generator.Modulo();
         }, (right, position, generator) => {
             // BitAndAssign
+            generator.Convert(UndertaleInstruction.DataType.Int32);
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != INTEGER) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int &= {rightType.GetAppearance()}"], position);
+            }
+            generator.Convert(UndertaleInstruction.DataType.Int32);
+            generator.BitAnd();
         }, (right, position, generator) => {
             // BitOrAssign
+            generator.Convert(UndertaleInstruction.DataType.Int32);
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != INTEGER) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int |= {rightType.GetAppearance()}"], position);
+            }
+            generator.Convert(UndertaleInstruction.DataType.Int32);
+            generator.BitOr();
         }, (right, position, generator) => {
             // BitXorAssign
+            generator.Convert(UndertaleInstruction.DataType.Int32);
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != INTEGER) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int ^= {rightType.GetAppearance()}"], position);
+            }
+            generator.Convert(UndertaleInstruction.DataType.Int32);
+            generator.BitXor();
         }, (right, position, generator) => {
             // LeftShiftAssign
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int <<= ?"], position);
         }, (right, position, generator) => {
             // RightShiftAssign
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int >>= ?"], position);
+        }, (self, rightType, position, generator) => {
+            // getMultiplyResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getDivideResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getModuloResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getAddResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getSubtractResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLeftShiftResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getRightShiftResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitAndResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitXorResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitOrResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getGreaterResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getGreaterEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLessResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLessEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getNotEqualResultType
+            return self;
         });
         internal static PrimitiveType DOUBLE = new("double", (right, position, generator) => {
             right.Evaluate(generator);
@@ -267,6 +387,54 @@ namespace AvaloniaGM.TypeScript.Types {
             // LeftShiftAssign
         }, (right, position, generator) => {
             // RightShiftAssign
+        }, (self, rightType, position, generator) => {
+            // getMultiplyResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getDivideResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getModuloResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getAddResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getSubtractResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLeftShiftResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getRightShiftResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitAndResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitXorResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitOrResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getGreaterResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getGreaterEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLessResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLessEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getNotEqualResultType
+            return self;
         });
         internal static PrimitiveType LONG = new("long", (right, position, generator) => {
             right.Evaluate(generator);
@@ -357,96 +525,220 @@ namespace AvaloniaGM.TypeScript.Types {
             // LeftShiftAssign
         }, (right, position, generator) => {
             // RightShiftAssign
+        }, (self, rightType, position, generator) => {
+            // getMultiplyResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getDivideResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getModuloResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getAddResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getSubtractResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLeftShiftResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getRightShiftResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitAndResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitXorResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitOrResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getGreaterResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getGreaterEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLessResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLessEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getNotEqualResultType
+            return self;
         });
         internal static PrimitiveType STRING = new("string", (right, position, generator) => {
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != INTEGER) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int * {rightType.GetAppearance()}"], position);
-            }
-            generator.Multiply();
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string * ?"], position);
+        }, (right, position, generator) => {
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string / ?"], position);
+        }, (right, position, generator) => {
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string % ?"], position);
         }, (right, position, generator) => {
             right.Evaluate(generator);
             IType rightType = right.GetResultType(generator);
-            if (rightType != INTEGER) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int / {rightType.GetAppearance()}"], position);
-            }
-            generator.Divide();
-        }, (right, position, generator) => {
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != INTEGER) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int % {rightType.GetAppearance()}"], position);
-            }
-            generator.Modulo();
-        }, (right, position, generator) => {
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != INTEGER) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int + {rightType.GetAppearance()}"], position);
+            if (rightType != STRING) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string + {rightType.GetAppearance()}"], position);
             }
             generator.Add();
         }, (right, position, generator) => {
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != INTEGER) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int - {rightType.GetAppearance()}"], position);
-            }
-            generator.Subtract();
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string - ?"], position);
         }, (right, position, generator) => {
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != INTEGER) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int << {rightType.GetAppearance()}"], position);
-            }
-            generator.LeftShift();
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string << ?"], position);
         }, (right, position, generator) => {
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != INTEGER) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int >> {rightType.GetAppearance()}"], position);
-            }
-            generator.RightShift();
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string >> ?"], position);
         }, (right, position, generator) => {
             // BitAnd
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string & ?"], position);
         }, (right, position, generator) => {
             // BitXor
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string ^ ?"], position);
         }, (right, position, generator) => {
             // BitOr
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string | ?"], position);
         }, (right, position, generator) => {
             // Greater
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != STRING) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string > {rightType.GetAppearance()}"], position);
+            }
+            generator.Compare(UndertaleInstruction.ComparisonType.GT);
         }, (right, position, generator) => {
             // GreaterEqual
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != STRING) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string >= {rightType.GetAppearance()}"], position);
+            }
+            generator.Compare(UndertaleInstruction.ComparisonType.GTE);
         }, (right, position, generator) => {
             // Less
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != STRING) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string < {rightType.GetAppearance()}"], position);
+            }
+            generator.Compare(UndertaleInstruction.ComparisonType.LT);
         }, (right, position, generator) => {
             // LessEqual
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != STRING) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string <= {rightType.GetAppearance()}"], position);
+            }
+            generator.Compare(UndertaleInstruction.ComparisonType.LTE);
         }, (right, position, generator) => {
             // Equal
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != STRING) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string == {rightType.GetAppearance()}"], position);
+            }
+            generator.Compare(UndertaleInstruction.ComparisonType.EQ);
         }, (right, position, generator) => {
             // NotEqual
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != STRING) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string != {rightType.GetAppearance()}"], position);
+            }
+            generator.Compare(UndertaleInstruction.ComparisonType.NEQ);
         }, (right, position, generator) => {
             // Assign
+            IType rightType = right.GetResultType(generator);
+            if (rightType != STRING) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string = {rightType.GetAppearance()}"], position);
+            }
         }, (right, position, generator) => {
             // AddAssign
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (rightType != STRING) {
+                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string += {rightType.GetAppearance()}"], position);
+            }
+            generator.Add();
         }, (right, position, generator) => {
             // SubtractAssign
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string -= ?"], position);
         }, (right, position, generator) => {
             // MultiplyAssign
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string *= ?"], position);
         }, (right, position, generator) => {
             // DivideAssign
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string /= ?"], position);
         }, (right, position, generator) => {
             // ModuloAssign
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string %= ?"], position);
         }, (right, position, generator) => {
             // BitAndAssign
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string &= ?"], position);
         }, (right, position, generator) => {
             // BitOrAssign
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string |= ?"], position);
         }, (right, position, generator) => {
             // BitXorAssign
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string ^= ?"], position);
         }, (right, position, generator) => {
             // LeftShiftAssign
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string <<= ?"], position);
         }, (right, position, generator) => {
             // RightShiftAssign
+            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string >>= ?"], position);
+        }, (self, rightType, position, generator) => {
+            // getMultiplyResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getDivideResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getModuloResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getAddResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getSubtractResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLeftShiftResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getRightShiftResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitAndResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitXorResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitOrResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getGreaterResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getGreaterEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLessResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLessEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getNotEqualResultType
+            return self;
         });
         internal static PrimitiveType BOOLEAN = new("boolean", (right, position, generator) => {
             right.Evaluate(generator);
@@ -537,6 +829,54 @@ namespace AvaloniaGM.TypeScript.Types {
             // LeftShiftAssign
         }, (right, position, generator) => {
             // RightShiftAssign
+        }, (self, rightType, position, generator) => {
+            // getMultiplyResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getDivideResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getModuloResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getAddResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getSubtractResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLeftShiftResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getRightShiftResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitAndResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitXorResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getBitOrResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getGreaterResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getGreaterEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLessResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getLessEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getEqualResultType
+            return self;
+        }, (self, rightType, position, generator) => {
+            // getNotEqualResultType
+            return self;
         });
 
         public string GetAppearance() {
@@ -649,6 +989,70 @@ namespace AvaloniaGM.TypeScript.Types {
 
         void IType.RightShiftAssign(IExpression right, TextPosition position, Generator generator) {
             rightShiftAssign(right, position, generator);
+        }
+
+        IType IType.GetMultiplyResultType(IType rightType, TextPosition position, Generator generator) {
+            return getMultiplyResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetDivideResultType(IType rightType, TextPosition position, Generator generator) {
+            return getDivideResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetModuloResultType(IType rightType, TextPosition position, Generator generator) {
+            return getModuloResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetAddResultType(IType rightType, TextPosition position, Generator generator) {
+            return getAddResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetSubtractResultType(IType rightType, TextPosition position, Generator generator) {
+            return getSubtractResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetLeftShiftResultType(IType rightType, TextPosition position, Generator generator) {
+            return getLeftShiftResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetRightShiftResultType(IType rightType, TextPosition position, Generator generator) {
+            return getRightShiftResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetBitAndResultType(IType rightType, TextPosition position, Generator generator) {
+            return getBitAndResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetBitXorResultType(IType rightType, TextPosition position, Generator generator) {
+            return getBitXorResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetBitOrResultType(IType rightType, TextPosition position, Generator generator) {
+            return getBitOrResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetGreaterResultType(IType rightType, TextPosition position, Generator generator) {
+            return getGreaterResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetGreaterEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return getGreaterEqualResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetLessResultType(IType rightType, TextPosition position, Generator generator) {
+            return getLessResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetLessEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return getLessEqualResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return getEqualResultType(this, rightType, position, generator);
+        }
+
+        IType IType.GetNotEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return getNotEqualResultType(this, rightType, position, generator);
         }
 
         IType IType.GetCallResultType(TextPosition position, Generator generator) {

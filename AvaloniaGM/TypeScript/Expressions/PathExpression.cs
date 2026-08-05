@@ -24,6 +24,96 @@ namespace AvaloniaGM.TypeScript.Expressions {
             symbol!.AsValue(position, generator).Store(position, generator);
         }
 
+        void IPlaceExpression.AddAssign(IExpression right, Generator generator) {
+            Evaluate(generator);
+            GetResultType(generator);
+            type!.AddAssign(right, position, generator);
+
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).Store(position, generator);
+        }
+
+        void IPlaceExpression.SubtractAssign(IExpression right, Generator generator) {
+            Evaluate(generator);
+            GetResultType(generator);
+            type!.SubtractAssign(right, position, generator);
+
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).Store(position, generator);
+        }
+
+        void IPlaceExpression.MultiplyAssign(IExpression right, Generator generator) {
+            Evaluate(generator);
+            GetResultType(generator);
+            type!.MultiplyAssign(right, position, generator);
+
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).Store(position, generator);
+        }
+
+        void IPlaceExpression.DivideAssign(IExpression right, Generator generator) {
+            Evaluate(generator);
+            GetResultType(generator);
+            type!.DivideAssign(right, position, generator);
+
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).Store(position, generator);
+        }
+
+        void IPlaceExpression.ModuloAssign(IExpression right, Generator generator) {
+            Evaluate(generator);
+            GetResultType(generator);
+            type!.ModuloAssign(right, position, generator);
+
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).Store(position, generator);
+        }
+
+        void IPlaceExpression.BitAndAssign(IExpression right, Generator generator) {
+            Evaluate(generator);
+            GetResultType(generator);
+            type!.BitAndAssign(right, position, generator);
+
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).Store(position, generator);
+        }
+
+        void IPlaceExpression.BitOrAssign(IExpression right, Generator generator) {
+            Evaluate(generator);
+            GetResultType(generator);
+            type!.BitOrAssign(right, position, generator);
+
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).Store(position, generator);
+        }
+
+        void IPlaceExpression.BitXorAssign(IExpression right, Generator generator) {
+            Evaluate(generator);
+            GetResultType(generator);
+            type!.BitXorAssign(right, position, generator);
+
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).Store(position, generator);
+        }
+
+        void IPlaceExpression.LeftShiftAssign(IExpression right, Generator generator) {
+            Evaluate(generator);
+            GetResultType(generator);
+            type!.LeftShiftAssign(right, position, generator);
+
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).Store(position, generator);
+        }
+
+        void IPlaceExpression.RightShiftAssign(IExpression right, Generator generator) {
+            Evaluate(generator);
+            GetResultType(generator);
+            type!.RightShiftAssign(right, position, generator);
+
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).Store(position, generator);
+        }
+
         void SetSymbol(Generator generator) {
             symbol ??= generator.GetSymbol(segments[0], position);
         }
@@ -34,7 +124,7 @@ namespace AvaloniaGM.TypeScript.Expressions {
             valueSymbol.Call(position, generator);
         }
 
-        void IExpression.Evaluate(Generator generator) {
+        public void Evaluate(Generator generator) {
             SetSymbol(generator);
             IValueSymbol valueSymbol = symbol!.AsValue(position, generator);
             valueSymbol.Load(position, generator);

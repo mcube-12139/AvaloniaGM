@@ -10,7 +10,7 @@ namespace AvaloniaGM.TypeScript {
         string source = string.Empty;
         UndertaleCodeLocals codeLocals = null!;
         Dictionary<string, ISymbol> symbols = new() {
-            {"show_message", new FunctionSymbol(data.Functions.EnsureDefined("show_message", data.Strings), new FunctionType([PrimitiveType.INTEGER], TupleType.EMPTY))}
+            {"show_message", new FunctionSymbol(data.Functions.EnsureDefined("show_message", data.Strings), new FunctionType([PrimitiveType.INTEGER], PrimitiveType.DOUBLE))}
         };
         readonly List<Dictionary<string, ISymbol>> blocks = [];
         // fuck Game Maker

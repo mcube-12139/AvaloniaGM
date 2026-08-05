@@ -121,5 +121,69 @@ namespace AvaloniaGM.TypeScript.Types {
         void IType.RightShiftAssign(IExpression right, TextPosition position, Generator generator) {
             throw new System.NotImplementedException();
         }
+
+        IType IType.GetMultiplyResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetDivideResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetModuloResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetAddResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetSubtractResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetLeftShiftResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetRightShiftResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetBitAndResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetBitXorResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetBitOrResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetGreaterResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetGreaterEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetLessResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetLessEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetNotEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
     }
 }

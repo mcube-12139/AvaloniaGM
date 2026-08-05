@@ -3,6 +3,22 @@
 namespace AvaloniaGM.TypeScript.Types {
     internal interface IType {
         string GetAppearance();
+        IType GetMultiplyResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetDivideResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetModuloResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetAddResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetSubtractResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetLeftShiftResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetRightShiftResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetBitAndResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetBitXorResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetBitOrResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetGreaterResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetGreaterEqualResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetLessResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetLessEqualResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetEqualResultType(IType rightType, TextPosition position, Generator generator);
+        IType GetNotEqualResultType(IType rightType, TextPosition position, Generator generator);
         IType GetCallResultType(TextPosition position, Generator generator);
         void Multiply(IExpression right, TextPosition position, Generator generator);
         void Divide(IExpression right, TextPosition position, Generator generator);

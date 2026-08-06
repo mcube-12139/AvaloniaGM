@@ -284,6 +284,11 @@ namespace AvaloniaGM.TypeScript {
                 ReferenceType = variableType
             });
             byteCount += 8;
+
+            if (variableType == UndertaleInstruction.VariableType.Array) {
+                PopType();
+                PopType();
+            }
         }
 
         internal void Load(UndertaleVariable variable, UndertaleInstruction.VariableType variableType) {
@@ -309,6 +314,11 @@ namespace AvaloniaGM.TypeScript {
                 TypeInst = variable.InstanceType
             });
             byteCount += 8;
+
+            if (variableType == UndertaleInstruction.VariableType.Array) {
+                PopType();
+                PopType();
+            }
 
             PushType(UndertaleInstruction.DataType.Variable);
         }

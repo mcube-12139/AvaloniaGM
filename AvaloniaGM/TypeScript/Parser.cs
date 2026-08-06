@@ -349,6 +349,7 @@ namespace AvaloniaGM.TypeScript {
         bool IsExpressionStart() {
             return token == FixedToken.TRUE
                 || token == FixedToken.FALSE
+                || token == FixedToken.LEFT_BRACKET
                 || token is IdentifierToken
                 || token is StringToken
                 || token is IntegerToken;
@@ -364,6 +365,30 @@ namespace AvaloniaGM.TypeScript {
             } else if (token == FixedToken.FALSE) {
                 result = new BooleanExpression(position, false);
                 NextToken();
+            } else if (token == FixedToken.LEFT_BRACKET) {
+                // 数组
+                NextToken();
+
+                List<IExpression> elements = [];
+                for (; ; ) {
+                    if (token == FixedToken.RIGHT_BRACKET) {
+                        NextToken();
+                        break;
+                    }
+
+                    elements.Add(ParseExpression(0));
+
+                    if (token == FixedToken.COMMA) {
+                        NextToken();
+                    } else if (token == FixedToken.RIGHT_BRACKET) {
+                        NextToken();
+                        break;
+                    } else {
+                        throw TokenCannotBeHere();
+                    }
+                }
+
+                result = new ArrayExpression(position, [.. elements]);
             } else if (token is IdentifierToken idToken) {
                 result = new PathExpression(position, [idToken.name]);
                 NextToken();

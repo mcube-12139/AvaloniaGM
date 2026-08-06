@@ -1,5 +1,6 @@
 ﻿using AvaloniaGM.TypeScript.Exceptions;
 using AvaloniaGM.TypeScript.Types;
+using UndertaleModLib.Models;
 
 namespace AvaloniaGM.TypeScript.Expressions {
     internal class ArrayExpression(TextPosition position, IExpression[] elements) : IExpression {
@@ -12,7 +13,20 @@ namespace AvaloniaGM.TypeScript.Expressions {
         }
 
         void IExpression.Evaluate(Generator generator) {
-            
+            UndertaleVariable variable = generator.AddLocalVariable("arr");
+
+            short index = 0;
+            foreach (IExpression element in elements) {
+                element.Evaluate(generator);
+
+                generator.PushInt16((short)UndertaleInstruction.InstanceType.Local);
+                generator.PushInt16(index);
+                ++index;
+
+                generator.Store(variable, UndertaleInstruction.VariableType.Array);
+            }
+
+            generator.Load(variable, UndertaleInstruction.VariableType.Normal);
         }
 
         public IType GetResultType(Generator generator) {

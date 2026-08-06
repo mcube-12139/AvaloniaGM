@@ -3,6 +3,7 @@
 namespace AvaloniaGM.TypeScript.Types {
     internal interface IType {
         string GetAppearance();
+        bool IsType(IType other);
         IType GetMultiplyResultType(IType rightType, TextPosition position, Generator generator);
         IType GetDivideResultType(IType rightType, TextPosition position, Generator generator);
         IType GetModuloResultType(IType rightType, TextPosition position, Generator generator);

@@ -105,8 +105,6 @@ namespace AvaloniaGM.TypeScript {
                 } else {
                     break;
                 }
-
-                NextChar();
             }
 
             tokenPosition = charPosition;
@@ -488,6 +486,7 @@ namespace AvaloniaGM.TypeScript {
                 || token == FixedToken.WHILE
                 || token == FixedToken.CONTINUE
                 || token == FixedToken.BREAK
+                || token == FixedToken.RETURN
                 || token == FixedToken.LEFT_BRACE
                 || IsExpressionStart();
         }
@@ -497,21 +496,33 @@ namespace AvaloniaGM.TypeScript {
             IStatement result;
 
             if (token == FixedToken.LET) {
+                // let
                 NextToken();
                 IPattern pattern = ParsePattern();
 
+                ITypeNode? type;
                 IExpression? initializer;
                 if (token == FixedToken.EQUAL) {
+                    type = null;
+
                     NextToken();
                     initializer = ParseExpression(0);
                 } else if (token == FixedToken.COLON) {
-                    initializer = null;
+                    NextToken();
+                    type = ParseType();
+
+                    if (token == FixedToken.EQUAL) {
+                        NextToken();
+                        initializer = ParseExpression(0);
+                    } else {
+                        initializer = null;
+                    }
                 } else {
                     throw TokenCannotBeHere();
                 }
 
                 AssertAndNextToken(FixedToken.SEMICOLON);
-                result = new LetStatement(position, pattern, null, initializer);
+                result = new LetStatement(position, pattern, type, initializer);
             } else if (token == FixedToken.IF) {
                 // if
                 result = ParseIfStatement();
@@ -563,6 +574,19 @@ namespace AvaloniaGM.TypeScript {
 
                 AssertAndNextToken(FixedToken.SEMICOLON);
                 result = new BreakStatement(position, label);
+            } else if (token == FixedToken.RETURN) {
+                // return
+                NextToken();
+
+                IExpression? expression;
+                if (IsExpressionStart()) {
+                    expression = ParseExpression(0);
+                } else {
+                    expression = null;
+                }
+
+                AssertAndNextToken(FixedToken.SEMICOLON);
+                result = new ReturnStatement(position, expression);
             } else if (token == FixedToken.LEFT_BRACE) {
                 // 块
                 result = ParseBlockStatement();
@@ -614,6 +638,7 @@ namespace AvaloniaGM.TypeScript {
             for (; ; ) {
                 if (token is IdentifierToken idToken) {
                     segments.Add(idToken.name);
+                    NextToken();
                 } else {
                     throw TokenCannotBeHere();
                 }

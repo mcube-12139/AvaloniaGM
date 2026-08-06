@@ -1,45 +1,28 @@
 ﻿using AvaloniaGM.TypeScript.Exceptions;
 using AvaloniaGM.TypeScript.Expressions;
-using System.Linq;
-using UndertaleModLib.Models;
 
 namespace AvaloniaGM.TypeScript.Types {
-    internal class FunctionType(IType[] parameterTypes, IType resultType) : IType {
-        private readonly IType[] parameterTypes = parameterTypes;
-        private readonly IType resultType = resultType;
+    internal class ArrayType(IType elementType): IType {
+        internal readonly IType elementType = elementType;
 
         public string GetAppearance() {
-            return $"({string.Join(", ", parameterTypes.Select(type => type.GetAppearance()))}) => {resultType.GetAppearance()}";
+            return $"{elementType.GetAppearance()}[]";
         }
 
         bool IType.IsType(IType other) {
-            if (other is not FunctionType otherFun) {
+            if (other is not ArrayType otherArray) {
                 return false;
             }
 
-            if (!resultType.IsType(otherFun.resultType)) {
+            if (!elementType.IsType(otherArray.elementType)) {
                 return false;
-            }
-
-            if (parameterTypes.Length != otherFun.parameterTypes.Length) {
-                return false;
-            }
-
-            for (int i = 0; i != parameterTypes.Length; ++i) {
-                if (!parameterTypes[i].IsType(otherFun.parameterTypes[i])) {
-                    return false;
-                }
             }
 
             return true;
         }
 
         IType IType.GetCallResultType(TextPosition position, Generator generator) {
-            return resultType;
-        }
-
-        internal void Call(UndertaleFunction fun, Generator generator) {
-            generator.Call(fun, parameterTypes.Length);
+            throw generator.SemanticError(SemanticErrorType.NOT_CALLABLE, [GetAppearance()], position);
         }
 
         void IType.Add(IExpression other, TextPosition position, Generator generator) {

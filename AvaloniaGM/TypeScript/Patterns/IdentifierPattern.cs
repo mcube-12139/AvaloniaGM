@@ -6,7 +6,12 @@ using UndertaleModLib.Models;
 
 namespace AvaloniaGM.TypeScript.Patterns {
     internal class IdentifierPattern(TextPosition position, string name) : IPattern {
-        TextPosition position = position;
+        void IPattern.AddParameter(ITypeNode typeNode, Generator generator) {
+            uint index = generator.NextParameterIndex();
+            UndertaleVariable variable = generator.AddSelfVariable($"argument{index}", true);
+            IType type = typeNode.GetSharkType(generator);
+            generator.AddSymbol(name, new VariableSymbol(name, UndertaleInstruction.VariableType.Normal, variable, type), position);
+        }
 
         void IPattern.AddVariable(ITypeNode? typeNode, IExpression? initializer, Generator generator, TextPosition position) {
             UndertaleVariable variable = generator.AddLocalVariable(name);
@@ -15,12 +20,12 @@ namespace AvaloniaGM.TypeScript.Patterns {
             if (initializer != null) {
                 initializer.Evaluate(generator);
                 type = initializer.GetResultType(generator);
-                generator.Pop(variable, UndertaleInstruction.DataType.Variable, UndertaleInstruction.VariableType.Normal);
+                generator.Store(variable, UndertaleInstruction.VariableType.Normal);
             } else {
                 throw new System.NotImplementedException();
             }
 
-            generator.AddSymbol(name, new VariableSymbol(UndertaleInstruction.VariableType.Normal, variable, type), position);
+            generator.AddSymbol(name, new VariableSymbol(name, UndertaleInstruction.VariableType.Normal, variable, type), position);
         }
     }
 }

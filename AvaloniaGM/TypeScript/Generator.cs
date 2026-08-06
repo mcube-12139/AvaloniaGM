@@ -9,16 +9,23 @@ using UndertaleModLib.Models;
 namespace AvaloniaGM.TypeScript {
     internal class Generator(UndertaleData data) {
         string source = string.Empty;
+
+        readonly Stack<FunctionContext> functionContexts = [];
+        IType resultType = TupleType.EMPTY;
         UndertaleCodeLocals codeLocals = null!;
+        List<UndertaleInstruction> instructions = [];
+        uint byteCount = 0;
+        // fuck Game Maker
+        uint nextLocalId = 1;
+        uint nextParameterIndex = 0;
+
         NameSpace space = new();
         readonly List<NameSpace> spaces = [];
         readonly List<ILoopStatement> loops = [];
-        // fuck Game Maker
-        uint nextLocalId = 1;
-        readonly List<UndertaleInstruction> instructions = [];
-        uint byteCount = 0;
+        uint nextFunctionId = 0;
         readonly Stack<UndertaleInstruction.DataType> types = [];
         readonly Dictionary<string, int> stringIds = new(data.Strings.Count);
+        readonly Dictionary<string, UndertaleVariable> selfVariables = [];
 
         internal SemanticException SemanticError(SemanticErrorType type, string[] parameters, TextPosition position) {
             return new SemanticException(type, parameters, source, position);
@@ -66,8 +73,8 @@ namespace AvaloniaGM.TypeScript {
         }
 
         internal void LeaveNameSpace() {
-            space = spaces[^1];
             spaces.RemoveAt(spaces.Count - 1);
+            space = spaces[^1];
         }
 
         internal void EnterLoop(string? label, ILoopStatement statement) {
@@ -80,6 +87,46 @@ namespace AvaloniaGM.TypeScript {
         internal void LeaveLoop() {
             loops.RemoveAt(loops.Count - 1);
         }
+
+        internal void EnterFunction(UndertaleCode code, IType resultType) {
+            functionContexts.Push(new(instructions, byteCount, resultType, codeLocals, nextLocalId));
+
+            instructions = [];
+            byteCount = 0;
+            this.resultType = resultType;
+            codeLocals = data.CodeLocals.For(code);
+            nextLocalId = 1;
+
+            nextParameterIndex = 0;
+
+            EnterNameSpace();
+        }
+
+        internal void LeaveFunction(UndertaleCode code) {
+            code.Replace(instructions);
+            code.Length = byteCount;
+            code.Offset = 0;
+            code.ArgumentsCount = 0;
+            code.LocalsCount = nextLocalId;
+
+            FunctionContext context = functionContexts.Pop();
+
+            instructions = context.instructions;
+            byteCount = context.byteCount;
+            resultType = context.resultType;
+            codeLocals = context.codeLocals;
+            nextLocalId = context.nextLocalId;
+
+            LeaveNameSpace();
+        }
+
+        internal uint NextParameterIndex() {
+            uint result = nextParameterIndex;
+            ++nextParameterIndex;
+            return result;
+        }
+
+        internal IType GetResultType() => resultType;
 
         internal (UndertaleString, int id) GetString(string value) {
             UndertaleString gameString;
@@ -112,6 +159,33 @@ namespace AvaloniaGM.TypeScript {
             }
 
             return result;
+        }
+
+        internal UndertaleVariable AddSelfVariable(string name, bool builtin) {
+            (UndertaleString gameString, int id) = GetString(name);
+
+            if (!selfVariables.TryGetValue(name, out UndertaleVariable? result)) {
+                result = data.Variables.Define(gameString, id, UndertaleInstruction.InstanceType.Self, builtin, data);
+            }
+
+            return result;
+        }
+
+        internal (UndertaleFunction, UndertaleCode) CreateFunction(string name) {
+            string funName = $"{name}_{nextFunctionId}";
+            ++nextFunctionId;
+
+            var entry = UndertaleCode.CreateEmptyEntry(data, $"gml_Script_{funName}");
+            UndertaleString nameStr = data.Strings.MakeString(funName);
+            UndertaleScript script = new() {
+                Name = nameStr,
+                Code = entry
+            };
+
+            data.Scripts.Add(script);
+
+            UndertaleFunction fun = data.Functions.EnsureDefined(funName, data.Strings);
+            return (fun, entry);
         }
 
         internal void PushString(string value) {
@@ -199,11 +273,11 @@ namespace AvaloniaGM.TypeScript {
             byteCount += 4;
         }
 
-        internal void Pop(UndertaleVariable variable, UndertaleInstruction.DataType dataType, UndertaleInstruction.VariableType variableType) {
+        internal void Store(UndertaleVariable variable, UndertaleInstruction.VariableType variableType) {
             UndertaleInstruction.DataType valueType = types.Pop();
             instructions.Add(new() {
                 Kind = UndertaleInstruction.Opcode.Pop,
-                Type1 = dataType,
+                Type1 = UndertaleInstruction.DataType.Variable,
                 Type2 = valueType,
                 ValueVariable = variable,
                 TypeInst = variable.InstanceType,
@@ -212,10 +286,24 @@ namespace AvaloniaGM.TypeScript {
             byteCount += 8;
         }
 
-        internal void PushLocal(UndertaleVariable variable, UndertaleInstruction.DataType dataType, UndertaleInstruction.VariableType variableType) {
+        internal void Load(UndertaleVariable variable, UndertaleInstruction.VariableType variableType) {
+            UndertaleInstruction.Opcode opcode;
+
+            if (variable.InstanceType == UndertaleInstruction.InstanceType.Local) {
+                opcode = UndertaleInstruction.Opcode.PushLoc;
+            } else if (variable.InstanceType == UndertaleInstruction.InstanceType.Self) {
+                if (variable.VarID == (int)UndertaleInstruction.InstanceType.Builtin) {
+                    opcode = UndertaleInstruction.Opcode.PushBltn;
+                } else {
+                    opcode = UndertaleInstruction.Opcode.Push;
+                }
+            } else {
+                throw new System.NotImplementedException();
+            }
+
             instructions.Add(new() {
-                Kind = UndertaleInstruction.Opcode.PushLoc,
-                Type1 = dataType,
+                Kind = opcode,
+                Type1 = UndertaleInstruction.DataType.Variable,
                 ValueVariable = variable,
                 ReferenceType = variableType,
                 TypeInst = variable.InstanceType
@@ -491,6 +579,25 @@ namespace AvaloniaGM.TypeScript {
             return result;
         }
 
+        internal void Return() {
+            Convert(UndertaleInstruction.DataType.Variable);
+            PopType();
+
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Ret,
+                Type1 = UndertaleInstruction.DataType.Variable
+            });
+            byteCount += 4;
+        }
+
+        internal void Exit() {
+            instructions.Add(new() {
+                Kind = UndertaleInstruction.Opcode.Exit,
+                Type1 = UndertaleInstruction.DataType.Int32
+            });
+            byteCount += 4;
+        }
+
         internal uint GetByteCount() {
             return byteCount;
         }
@@ -517,7 +624,8 @@ namespace AvaloniaGM.TypeScript {
                 }
             }
 
-            space.TryAddSymbol("show_message", new FunctionSymbol(data.Functions.EnsureDefined("show_message", data.Strings), new FunctionType([PrimitiveType.INTEGER], PrimitiveType.DOUBLE)));
+            space.TryAddSymbol("show_message", FunctionSymbol.NewResolved("show_message", data.Functions.EnsureDefined("show_message", data.Strings), new FunctionType([PrimitiveType.INTEGER], PrimitiveType.DOUBLE)));
+            space.TryAddSymbol("int", new PrimitiveTypeSymbol("int", PrimitiveType.INTEGER));
             spaces.Add(space);
 
             root.Generate(this);

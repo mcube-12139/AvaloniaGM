@@ -9,9 +9,12 @@ namespace AvaloniaGM.TypeScript.Exceptions {
         TOO_LARGE_INTEGER,
         NOT_CALLABLE,
         NOT_WRITEABLE,
+        NOT_VALUE,
+        NOT_TYPE,
         NOT_PLACE,
         OPERATION_NOT_EXIST,
         NOT_IN_LOOP,
+        WRONG_TYPE,
     }
 
     public class SemanticException(SemanticErrorType type, string[] parameters, string source, TextPosition position) : Exception($"{source}:{position.line}:{position.column}: {formatter[type](parameters)}") {
@@ -22,9 +25,12 @@ namespace AvaloniaGM.TypeScript.Exceptions {
             { SemanticErrorType.TOO_LARGE_INTEGER, parameters => $"整数 {parameters[0]} 太大" },
             { SemanticErrorType.NOT_CALLABLE, parameters => $"{parameters[0]} 不是可调用的" },
             { SemanticErrorType.NOT_WRITEABLE, parameters => $"{parameters[0]} 不是可写的" },
+            { SemanticErrorType.NOT_VALUE, parameters => $"{parameters[0]} 不是值" },
+            { SemanticErrorType.NOT_TYPE, parameters => $"{parameters[0]} 不是类型" },
             { SemanticErrorType.NOT_PLACE, parameters => "不是位置式" },
             { SemanticErrorType.OPERATION_NOT_EXIST, parameters => $"{parameters[0]} 运算不存在" },
             { SemanticErrorType.NOT_IN_LOOP, parameters => "不在循环中" },
+            { SemanticErrorType.WRONG_TYPE, parameters => $"类型 {parameters[0]} 不是所需的 {parameters[1]}" },
         };
     }
 }

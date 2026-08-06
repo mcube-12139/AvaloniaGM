@@ -108,7 +108,7 @@ public class DataWinSerializer
         CreateSounds(data, project.Sounds, defaultAudioGroup);
         var backgroundMap = CreateBackgrounds(data, project.Backgrounds);
         CreatePaths(data, project.Paths);
-        var scriptCodeMap = CreateScripts(data, project.Scripts);
+        // var scriptCodeMap = CreateScripts(data, project.Scripts);
         CreateShaders(data, project.Shaders);
         CreateFonts(data, project.Fonts);
         var objectMap = CreateObjectShells(data, project.Objects);

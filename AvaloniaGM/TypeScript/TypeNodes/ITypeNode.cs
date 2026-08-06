@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using AvaloniaGM.TypeScript.Types;
 
 namespace AvaloniaGM.TypeScript.TypeNodes {
     internal interface ITypeNode {
+        IType GetSharkType(Generator generator);
     }
 }

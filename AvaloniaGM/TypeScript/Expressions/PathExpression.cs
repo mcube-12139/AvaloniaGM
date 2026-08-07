@@ -1,6 +1,6 @@
-﻿using AvaloniaGM.TypeScript.Exceptions;
-using AvaloniaGM.TypeScript.Symbols;
+﻿using AvaloniaGM.TypeScript.Symbols;
 using AvaloniaGM.TypeScript.Types;
+using UndertaleModLib.Models;
 
 namespace AvaloniaGM.TypeScript.Expressions {
     internal class PathExpression(TextPosition position, string[] segments) : IPlaceExpression {
@@ -137,6 +137,20 @@ namespace AvaloniaGM.TypeScript.Expressions {
             }
 
             return type;
+        }
+
+        void IExpression.GetIndex(IExpression index, Generator generator) {
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).LoadIndex(index, position, generator);
+        }
+
+        void IExpression.SetIndex(IExpression right, IExpression index, Generator generator) {
+            SetSymbol(generator);
+            symbol!.AsValue(position, generator).StoreIndex(right, index, position, generator);
+        }
+
+        UndertaleVariable IExpression.GetIndexDuplicate(IExpression index, Generator generator) {
+            throw new System.NotImplementedException();
         }
     }
 }

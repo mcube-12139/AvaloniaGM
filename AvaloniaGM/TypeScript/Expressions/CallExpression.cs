@@ -1,5 +1,6 @@
 ﻿using AvaloniaGM.TypeScript.Exceptions;
 using AvaloniaGM.TypeScript.Types;
+using UndertaleModLib.Models;
 
 namespace AvaloniaGM.TypeScript.Expressions {
     internal class CallExpression(TextPosition position, IExpression called, IExpression[] parameters): IExpression {
@@ -28,6 +29,18 @@ namespace AvaloniaGM.TypeScript.Expressions {
         IType IExpression.GetResultType(Generator generator) {
             type ??= called.GetResultType(generator).GetCallResultType(position, generator);
             return type;
+        }
+
+        void IExpression.GetIndex(IExpression index, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        UndertaleVariable IExpression.GetIndexDuplicate(IExpression index, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IExpression.SetIndex(IExpression right, IExpression index, Generator generator) {
+            throw new System.NotImplementedException();
         }
     }
 }

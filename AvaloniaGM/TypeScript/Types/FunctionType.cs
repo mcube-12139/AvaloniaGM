@@ -213,5 +213,21 @@ namespace AvaloniaGM.TypeScript.Types {
         IType IType.GetNotEqualResultType(IType rightType, TextPosition position, Generator generator) {
             return this;
         }
+
+        IType IType.GetIndexResultType(IType indexType, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        IType IType.GetSetIndexResultType(IType rightType, IType indexType, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.GetIndex(UndertaleVariable variable, IExpression index, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IType.SetIndex(UndertaleVariable variable, IExpression right, IExpression index, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
     }
 }

@@ -878,172 +878,6 @@ namespace AvaloniaGM.TypeScript.Types {
             // getNotEqualResultType
             return self;
         });
-        internal static PrimitiveType NEVER = new("never", (right, position, generator) => {
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string * ?"], position);
-        }, (right, position, generator) => {
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string / ?"], position);
-        }, (right, position, generator) => {
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string % ?"], position);
-        }, (right, position, generator) => {
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != STRING) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string + {rightType.GetAppearance()}"], position);
-            }
-            generator.Add();
-        }, (right, position, generator) => {
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string - ?"], position);
-        }, (right, position, generator) => {
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string << ?"], position);
-        }, (right, position, generator) => {
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string >> ?"], position);
-        }, (right, position, generator) => {
-            // BitAnd
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string & ?"], position);
-        }, (right, position, generator) => {
-            // BitXor
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string ^ ?"], position);
-        }, (right, position, generator) => {
-            // BitOr
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string | ?"], position);
-        }, (right, position, generator) => {
-            // Greater
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != STRING) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string > {rightType.GetAppearance()}"], position);
-            }
-            generator.Compare(UndertaleInstruction.ComparisonType.GT);
-        }, (right, position, generator) => {
-            // GreaterEqual
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != STRING) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string >= {rightType.GetAppearance()}"], position);
-            }
-            generator.Compare(UndertaleInstruction.ComparisonType.GTE);
-        }, (right, position, generator) => {
-            // Less
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != STRING) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string < {rightType.GetAppearance()}"], position);
-            }
-            generator.Compare(UndertaleInstruction.ComparisonType.LT);
-        }, (right, position, generator) => {
-            // LessEqual
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != STRING) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string <= {rightType.GetAppearance()}"], position);
-            }
-            generator.Compare(UndertaleInstruction.ComparisonType.LTE);
-        }, (right, position, generator) => {
-            // Equal
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != STRING) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string == {rightType.GetAppearance()}"], position);
-            }
-            generator.Compare(UndertaleInstruction.ComparisonType.EQ);
-        }, (right, position, generator) => {
-            // NotEqual
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != STRING) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string != {rightType.GetAppearance()}"], position);
-            }
-            generator.Compare(UndertaleInstruction.ComparisonType.NEQ);
-        }, (right, position, generator) => {
-            // Assign
-            IType rightType = right.GetResultType(generator);
-            if (rightType != STRING) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string = {rightType.GetAppearance()}"], position);
-            }
-        }, (right, position, generator) => {
-            // AddAssign
-            right.Evaluate(generator);
-            IType rightType = right.GetResultType(generator);
-            if (rightType != STRING) {
-                throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string += {rightType.GetAppearance()}"], position);
-            }
-            generator.Add();
-        }, (right, position, generator) => {
-            // SubtractAssign
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string -= ?"], position);
-        }, (right, position, generator) => {
-            // MultiplyAssign
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string *= ?"], position);
-        }, (right, position, generator) => {
-            // DivideAssign
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string /= ?"], position);
-        }, (right, position, generator) => {
-            // ModuloAssign
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string %= ?"], position);
-        }, (right, position, generator) => {
-            // BitAndAssign
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string &= ?"], position);
-        }, (right, position, generator) => {
-            // BitOrAssign
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string |= ?"], position);
-        }, (right, position, generator) => {
-            // BitXorAssign
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string ^= ?"], position);
-        }, (right, position, generator) => {
-            // LeftShiftAssign
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string <<= ?"], position);
-        }, (right, position, generator) => {
-            // RightShiftAssign
-            throw generator.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"string >>= ?"], position);
-        }, (self, rightType, position, generator) => {
-            // getMultiplyResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getDivideResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getModuloResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getAddResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getSubtractResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getLeftShiftResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getRightShiftResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getBitAndResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getBitXorResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getBitOrResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getGreaterResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getGreaterEqualResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getLessResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getLessEqualResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getEqualResultType
-            return self;
-        }, (self, rightType, position, generator) => {
-            // getNotEqualResultType
-            return self;
-        });
 
         public string GetAppearance() {
             return name;
@@ -1227,6 +1061,22 @@ namespace AvaloniaGM.TypeScript.Types {
 
         IType IType.GetCallResultType(TextPosition position, Generator generator) {
             throw generator.SemanticError(SemanticErrorType.NOT_CALLABLE, [GetAppearance()], position);
+        }
+
+        IType IType.GetIndexResultType(IType indexType, TextPosition position, Generator generator) {
+            throw new NotImplementedException();
+        }
+
+        IType IType.GetSetIndexResultType(IType rightType, IType indexType, TextPosition position, Generator generator) {
+            throw new NotImplementedException();
+        }
+
+        void IType.GetIndex(UndertaleVariable variable, IExpression index, TextPosition position, Generator generator) {
+            throw new NotImplementedException();
+        }
+
+        void IType.SetIndex(UndertaleVariable variable, IExpression right, IExpression index, TextPosition position, Generator generator) {
+            throw new NotImplementedException();
         }
     }
 }

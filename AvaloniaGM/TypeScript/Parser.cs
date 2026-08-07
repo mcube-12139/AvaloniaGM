@@ -370,25 +370,30 @@ namespace AvaloniaGM.TypeScript {
                 NextToken();
 
                 List<IExpression> elements = [];
-                for (; ; ) {
-                    if (token == FixedToken.RIGHT_BRACKET) {
-                        NextToken();
-                        break;
-                    }
+                ITypeNode? type;
+                if (token == FixedToken.RIGHT_BRACKET) {
+                    NextToken();
+                    AssertAndNextToken(FixedToken.DOUBLE_COLON);
+                    AssertAndNextToken(FixedToken.LESS);
+                    type = ParseType();
+                    AssertAndNextToken(FixedToken.GREATER);
+                } else {
+                    type = null;
+                    for (; ; ) {
+                        elements.Add(ParseExpression(0));
 
-                    elements.Add(ParseExpression(0));
-
-                    if (token == FixedToken.COMMA) {
-                        NextToken();
-                    } else if (token == FixedToken.RIGHT_BRACKET) {
-                        NextToken();
-                        break;
-                    } else {
-                        throw TokenCannotBeHere();
+                        if (token == FixedToken.COMMA) {
+                            NextToken();
+                        } else if (token == FixedToken.RIGHT_BRACKET) {
+                            NextToken();
+                            break;
+                        } else {
+                            throw TokenCannotBeHere();
+                        }
                     }
                 }
 
-                result = new ArrayExpression(position, [.. elements]);
+                result = new ArrayExpression(position, [.. elements], type);
             } else if (token is IdentifierToken idToken) {
                 result = new PathExpression(position, [idToken.name]);
                 NextToken();
@@ -406,10 +411,12 @@ namespace AvaloniaGM.TypeScript {
                 if (token is FixedToken fixedToken) {
                     var op = BinaryOperator.FromToken(priority, fixedToken);
                     if (op != null) {
+                        // 二元
                         NextToken();
                         IExpression right = ParseExpression(op.priority);
                         result = new BinaryExpression(position, result, right, op);
                     } else if (token == FixedToken.LEFT_PARENTHESIS) {
+                        // 调用
                         NextToken();
                         List<IExpression> parameters = [];
                         for (; ; ) {
@@ -431,6 +438,12 @@ namespace AvaloniaGM.TypeScript {
                         }
 
                         result = new CallExpression(position, result, [.. parameters]);
+                    } else if (token == FixedToken.LEFT_BRACKET) {
+                        // 索引
+                        NextToken();
+                        IExpression index = ParseExpression(0);
+                        AssertAndNextToken(FixedToken.RIGHT_BRACKET);
+                        result = new IndexExpression(position, result, index);
                     } else {
                         break;
                     }

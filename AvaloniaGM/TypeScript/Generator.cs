@@ -280,7 +280,7 @@ namespace AvaloniaGM.TypeScript {
                 Type1 = UndertaleInstruction.DataType.Variable,
                 Type2 = valueType,
                 ValueVariable = variable,
-                TypeInst = variable.InstanceType,
+                TypeInst = variableType == UndertaleInstruction.VariableType.Normal ? variable.InstanceType : UndertaleInstruction.InstanceType.Undefined,
                 ReferenceType = variableType
             });
             byteCount += 8;
@@ -294,16 +294,22 @@ namespace AvaloniaGM.TypeScript {
         internal void Load(UndertaleVariable variable, UndertaleInstruction.VariableType variableType) {
             UndertaleInstruction.Opcode opcode;
 
-            if (variable.InstanceType == UndertaleInstruction.InstanceType.Local) {
-                opcode = UndertaleInstruction.Opcode.PushLoc;
-            } else if (variable.InstanceType == UndertaleInstruction.InstanceType.Self) {
-                if (variable.VarID == (int)UndertaleInstruction.InstanceType.Builtin) {
-                    opcode = UndertaleInstruction.Opcode.PushBltn;
+            if (variableType == UndertaleInstruction.VariableType.Normal) {
+                // Normal 量的操作码可能不同
+                if (variable.InstanceType == UndertaleInstruction.InstanceType.Local) {
+                    opcode = UndertaleInstruction.Opcode.PushLoc;
+                } else if (variable.InstanceType == UndertaleInstruction.InstanceType.Self) {
+                    if (variable.VarID == (int)UndertaleInstruction.InstanceType.Builtin) {
+                        opcode = UndertaleInstruction.Opcode.PushBltn;
+                    } else {
+                        opcode = UndertaleInstruction.Opcode.Push;
+                    }
                 } else {
-                    opcode = UndertaleInstruction.Opcode.Push;
+                    throw new System.NotImplementedException();
                 }
             } else {
-                throw new System.NotImplementedException();
+                // Array 量的操作码必须是 Push
+                opcode = UndertaleInstruction.Opcode.Push;
             }
 
             instructions.Add(new() {
@@ -311,7 +317,7 @@ namespace AvaloniaGM.TypeScript {
                 Type1 = UndertaleInstruction.DataType.Variable,
                 ValueVariable = variable,
                 ReferenceType = variableType,
-                TypeInst = variable.InstanceType
+                TypeInst = variableType == UndertaleInstruction.VariableType.Normal ? variable.InstanceType : UndertaleInstruction.InstanceType.Undefined
             });
             byteCount += 8;
 

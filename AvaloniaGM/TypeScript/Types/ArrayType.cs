@@ -1,5 +1,7 @@
 ﻿using AvaloniaGM.TypeScript.Exceptions;
 using AvaloniaGM.TypeScript.Expressions;
+using System;
+using UndertaleModLib.Models;
 
 namespace AvaloniaGM.TypeScript.Types {
     internal class ArrayType(IType elementType): IType {
@@ -23,6 +25,70 @@ namespace AvaloniaGM.TypeScript.Types {
 
         IType IType.GetCallResultType(TextPosition position, Generator generator) {
             throw generator.SemanticError(SemanticErrorType.NOT_CALLABLE, [GetAppearance()], position);
+        }
+
+        IType IType.GetMultiplyResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetDivideResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetModuloResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetAddResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetSubtractResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetLeftShiftResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetRightShiftResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetBitAndResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetBitXorResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetBitOrResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetGreaterResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetGreaterEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetLessResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetLessEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
+        }
+
+        IType IType.GetNotEqualResultType(IType rightType, TextPosition position, Generator generator) {
+            return this;
         }
 
         void IType.Add(IExpression other, TextPosition position, Generator generator) {
@@ -133,68 +199,44 @@ namespace AvaloniaGM.TypeScript.Types {
             throw new System.NotImplementedException();
         }
 
-        IType IType.GetMultiplyResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
+        void IType.GetIndex(UndertaleVariable variable, IExpression index, TextPosition position, Generator generator) {
+            generator.PushInt16((short)variable.InstanceType);
+            index.Evaluate(generator);
+
+            IType indexType = index.GetResultType(generator);
+            if (indexType != PrimitiveType.INTEGER) {
+                throw generator.SemanticError(SemanticErrorType.WRONG_TYPE, [indexType.GetAppearance(), "int"], position);
+            }
+
+            generator.Convert(UndertaleInstruction.DataType.Int32);
+            generator.Load(variable, UndertaleInstruction.VariableType.Array);
         }
 
-        IType IType.GetDivideResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
+        IType IType.GetIndexResultType(IType indexType, TextPosition position, Generator generator) {
+            return elementType;
         }
 
-        IType IType.GetModuloResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
+        void IType.SetIndex(UndertaleVariable variable, IExpression right, IExpression index, TextPosition position, Generator generator) {
+            right.Evaluate(generator);
+            IType rightType = right.GetResultType(generator);
+            if (!rightType.IsType(elementType)) {
+                throw generator.SemanticError(SemanticErrorType.WRONG_TYPE, [rightType.GetAppearance(), elementType.GetAppearance()], position);
+            }
+
+            generator.PushInt16((short)variable.InstanceType);
+            index.Evaluate(generator);
+
+            IType indexType = index.GetResultType(generator);
+            if (indexType != PrimitiveType.INTEGER) {
+                throw generator.SemanticError(SemanticErrorType.WRONG_TYPE, [indexType.GetAppearance(), "int"], position);
+            }
+
+            generator.Convert(UndertaleInstruction.DataType.Int32);
+            generator.Store(variable, UndertaleInstruction.VariableType.Array);
         }
 
-        IType IType.GetAddResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetSubtractResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetLeftShiftResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetRightShiftResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetBitAndResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetBitXorResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetBitOrResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetGreaterResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetGreaterEqualResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetLessResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetLessEqualResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetEqualResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
-        }
-
-        IType IType.GetNotEqualResultType(IType rightType, TextPosition position, Generator generator) {
-            return this;
+        IType IType.GetSetIndexResultType(IType rightType, IType indexType, TextPosition position, Generator generator) {
+            return elementType;
         }
     }
 }

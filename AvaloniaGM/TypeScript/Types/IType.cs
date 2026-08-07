@@ -1,4 +1,5 @@
 ﻿using AvaloniaGM.TypeScript.Expressions;
+using UndertaleModLib.Models;
 
 namespace AvaloniaGM.TypeScript.Types {
     internal interface IType {
@@ -21,6 +22,8 @@ namespace AvaloniaGM.TypeScript.Types {
         IType GetEqualResultType(IType rightType, TextPosition position, Generator generator);
         IType GetNotEqualResultType(IType rightType, TextPosition position, Generator generator);
         IType GetCallResultType(TextPosition position, Generator generator);
+        IType GetIndexResultType(IType indexType, TextPosition position, Generator generator);
+        IType GetSetIndexResultType(IType rightType, IType indexType, TextPosition position, Generator generator);
         void Multiply(IExpression right, TextPosition position, Generator generator);
         void Divide(IExpression right, TextPosition position, Generator generator);
         void Modulo(IExpression right, TextPosition position, Generator generator);
@@ -48,5 +51,7 @@ namespace AvaloniaGM.TypeScript.Types {
         void BitXorAssign(IExpression right, TextPosition position, Generator generator);
         void LeftShiftAssign(IExpression right, TextPosition position, Generator generator);
         void RightShiftAssign(IExpression right, TextPosition position, Generator generator);
+        void GetIndex(UndertaleVariable variable, IExpression index, TextPosition position, Generator generator);
+        void SetIndex(UndertaleVariable variable, IExpression right, IExpression index, TextPosition position, Generator generator);
     }
 }

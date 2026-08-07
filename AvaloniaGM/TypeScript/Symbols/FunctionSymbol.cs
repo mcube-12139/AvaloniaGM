@@ -1,4 +1,5 @@
 ﻿using AvaloniaGM.TypeScript.Exceptions;
+using AvaloniaGM.TypeScript.Expressions;
 using AvaloniaGM.TypeScript.Items;
 using AvaloniaGM.TypeScript.Types;
 using UndertaleModLib.Models;
@@ -42,6 +43,14 @@ namespace AvaloniaGM.TypeScript.Symbols {
 
         void IValueSymbol.Store(TextPosition position, Generator generator) {
             throw generator.SemanticError(SemanticErrorType.NOT_WRITEABLE, [name], position);
+        }
+
+        void IValueSymbol.StoreIndex(IExpression right, IExpression index, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
+        }
+
+        void IValueSymbol.LoadIndex(IExpression index, TextPosition position, Generator generator) {
+            throw new System.NotImplementedException();
         }
     }
 }

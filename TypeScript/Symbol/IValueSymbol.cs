@@ -2,6 +2,6 @@
 
 namespace TypeScript.Symbol;
 
-internal interface IValueSymbol: ISymbol {
+public interface IValueSymbol: ISymbol {
     IType GetValueType(TextPosition position, Compiler compiler);
 }

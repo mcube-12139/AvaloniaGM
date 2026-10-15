@@ -3,10 +3,10 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-internal class CallExpression(TextPosition position, IExpression called, IExpression[] parameters): IExpression {
-    readonly TextPosition position = position;
-    readonly IExpression called = called;
-    readonly IExpression[] parameters = parameters;
+public class CallExpression(TextPosition position, IExpression called, IExpression[] parameters): IExpression {
+    public readonly TextPosition position = position;
+    public readonly IExpression called = called;
+    public readonly IExpression[] parameters = parameters;
 
     IType? type;
 

@@ -1,12 +1,9 @@
-﻿using TypeScript.ExceptionSpace;
-using TypeScript.Expression;
+﻿namespace TypeScript.Type;
 
-namespace TypeScript.Type;
+public class TupleType(IType[] elementTypes): IType {
+    public readonly static TupleType EMPTY = new([]);
 
-internal class TupleType(IType[] elementTypes): IType {
-    internal static TupleType EMPTY = new([]);
-
-    internal IType[] elementTypes = elementTypes;
+    public readonly IType[] elementTypes = elementTypes;
 
     public string GetAppearance() {
         return $"({string.Join(", ", elementTypes.Select(type => type.GetAppearance()))}{(elementTypes.Length == 1 ? ", " : "")})";

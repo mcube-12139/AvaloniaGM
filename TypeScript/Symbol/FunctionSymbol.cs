@@ -2,8 +2,10 @@
 
 namespace TypeScript.Symbol;
 
-public class FunctionSymbol(string name, FunctionType? type) : IValueSymbol {
+public class FunctionSymbol(string name, FunctionType? type, string? hostName) : IValueSymbol {
+    public readonly string name = name;
     internal FunctionType? type = type;
+    public readonly string? hostName = hostName;
 
     string ISymbol.GetName() => name;
 
@@ -15,11 +17,15 @@ public class FunctionSymbol(string name, FunctionType? type) : IValueSymbol {
         return type!;
     }
 
-    internal static FunctionSymbol NewResolved(string name, FunctionType type) =>
-        new(name, type);
+    public FunctionType GetSharkType() {
+        return type!;
+    }
 
-    internal static FunctionSymbol NewUnresolved(string name) =>
-        new(name, null);
+    internal static FunctionSymbol NewResolved(string name, FunctionType type, string? hostName) =>
+        new(name, type, hostName);
+
+    internal static FunctionSymbol NewUnresolved(string name, string? hostName) =>
+        new(name, null, hostName);
 
     /*
     void Resolve(Generator generator) {

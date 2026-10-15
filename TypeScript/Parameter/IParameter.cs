@@ -2,7 +2,7 @@
 
 namespace TypeScript.Parameter;
 
-internal interface IParameter {
+public interface IParameter {
     IType GetSharkType(Compiler compiler);
     void SetSemantic(Compiler compiler);
 }

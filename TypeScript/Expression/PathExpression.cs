@@ -3,9 +3,9 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-internal class PathExpression(TextPosition position, string[] segments) : IPlaceExpression {
-    readonly TextPosition position = position;
-    readonly string[] segments = segments;
+public class PathExpression(TextPosition position, string[] segments) : IPlaceExpression {
+    public readonly TextPosition position = position;
+    public readonly string[] segments = segments;
 
     IType? type;
     IValueSymbol? symbol;
@@ -23,6 +23,10 @@ internal class PathExpression(TextPosition position, string[] segments) : IPlace
 
     public IType GetResultType() {
         return type!;
+    }
+
+    public IValueSymbol GetSymbol() {
+        return symbol!;
     }
 
     /*

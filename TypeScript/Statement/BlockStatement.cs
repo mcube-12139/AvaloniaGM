@@ -1,6 +1,9 @@
 ﻿namespace TypeScript.Statement;
 
-internal class BlockStatement(TextPosition position, IStatement[] statements) : IStatement {
+public class BlockStatement(TextPosition position, IStatement[] statements) : IStatement {
+    public readonly TextPosition position = position;
+    public readonly IStatement[] statements = statements;
+
     internal void ExecuteWithStart(Compiler compiler, Action? start) {
         compiler.EnterNameSpace();
         start?.Invoke();
@@ -12,7 +15,9 @@ internal class BlockStatement(TextPosition position, IStatement[] statements) : 
         compiler.LeaveNameSpace();
     }
 
-    public void SetSemantic(Compiler compiler) {
+    internal void SetSemantic(Compiler compiler) {
         ExecuteWithStart(compiler, null);
     }
+
+    void IStatement.SetSemantic(Compiler compiler) => SetSemantic(compiler);
 }

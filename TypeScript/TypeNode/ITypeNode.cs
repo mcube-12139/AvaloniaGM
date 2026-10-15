@@ -2,7 +2,7 @@
 
 namespace TypeScript.TypeNode;
 
-internal interface ITypeNode {
+public interface ITypeNode {
     void SetSemantic(Compiler compiler);
     IType GetSharkType(Compiler compiler);
 }

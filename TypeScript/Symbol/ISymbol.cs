@@ -2,7 +2,7 @@
 
 namespace TypeScript.Symbol;
 
-internal interface ISymbol {
+public interface ISymbol {
     string GetName();
     IValueSymbol AsValue(TextPosition position, Compiler compiler) {
         throw compiler.SemanticError(SemanticErrorType.NOT_VALUE, [GetName()], position);

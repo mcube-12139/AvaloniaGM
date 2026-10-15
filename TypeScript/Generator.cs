@@ -217,18 +217,6 @@ namespace TypeScript {
             PushType(UndertaleInstruction.DataType.Int32);
         }
 
-        internal void PushInt32(int value) {
-            instructions.Add(new() {
-                Kind = UndertaleInstruction.Opcode.Push,
-                Type1 = UndertaleInstruction.DataType.Int32,
-                Type2 = UndertaleInstruction.DataType.Double,
-                ValueInt = value
-            });
-            byteCount += 8;
-
-            PushType(UndertaleInstruction.DataType.Int32);
-        }
-
         internal void PushInt64(long value) {
             instructions.Add(new() {
                 Kind = UndertaleInstruction.Opcode.Push,
@@ -608,10 +596,6 @@ namespace TypeScript {
 
         internal uint GetByteCount() {
             return byteCount;
-        }
-
-        internal void PushType(UndertaleInstruction.DataType type) {
-            types.Push(type);
         }
 
         internal void PopType() {

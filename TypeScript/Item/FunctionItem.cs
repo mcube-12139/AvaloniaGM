@@ -6,7 +6,13 @@ using TypeScript.Type;
 
 namespace TypeScript.Item;
 
-internal class FunctionItem(TextPosition position, string name, IParameter[] parameters, ITypeNode? resultNode, BlockStatement body) : IItem {
+public class FunctionItem(TextPosition position, string name, IParameter[] parameters, ITypeNode? resultNode, BlockStatement body) : IItem {
+    public readonly TextPosition position = position;
+    public readonly string name = name;
+    public readonly IParameter[] parameters = parameters;
+    public readonly ITypeNode? resultNode = resultNode;
+    public readonly BlockStatement body = body;
+
     FunctionSymbol? symbol;
     
     void IItem.AddSymbol(Compiler compiler) {
@@ -15,7 +21,7 @@ internal class FunctionItem(TextPosition position, string name, IParameter[] par
         symbol = FunctionSymbol.NewUnresolved(name, fun, this);
         generator.AddSymbol(name, symbol, position);
         */
-        symbol = FunctionSymbol.NewUnresolved(name);
+        symbol = FunctionSymbol.NewUnresolved(name, null);
         compiler.AddSymbol(name, symbol, position);
     }
 

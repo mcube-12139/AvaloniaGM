@@ -3,7 +3,7 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-internal interface IExpression {
+public interface IExpression {
     TextPosition GetPosition();
     IPlaceExpression AsPlace(Compiler compiler) {
         throw compiler.SemanticError(SemanticErrorType.NOT_PLACE, [], GetPosition());

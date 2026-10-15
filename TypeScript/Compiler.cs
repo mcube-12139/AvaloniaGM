@@ -788,11 +788,6 @@ public class Compiler {
         return new([.. items]);
     }
 
-    public void SetFiles(ICollection<(string name, string content)> files) {
-        this.files.Clear();
-        this.files.AddRange(files);
-    }
-
     internal SemanticException SemanticError(SemanticErrorType type, string[] parameters, TextPosition position) {
         return new SemanticException(type, parameters, source, position);
     }
@@ -840,8 +835,10 @@ public class Compiler {
         LeaveNameSpace();
     }
 
-    public FileNode[] Compile() {
-        space.TryAddSymbol("show_message", new FunctionSymbol("show_message", new FunctionType([PrimitiveType.INTEGER], TupleType.EMPTY)));
+    public FileNode[] Compile(ICollection<(string name, string content)> files) {
+        this.files.AddRange(files);
+
+        space.TryAddSymbol("show_message", FunctionSymbol.NewResolved("show_message", new FunctionType([PrimitiveType.INTEGER], PrimitiveType.INTEGER), "show_message"));
 
         List<FileNode> nodes = [];
         foreach ((string name, string content) in files) {
@@ -859,6 +856,7 @@ public class Compiler {
             node.SetSemantic(this);
         }
 
+        this.files.Clear();
         return [.. nodes];
     }
 }

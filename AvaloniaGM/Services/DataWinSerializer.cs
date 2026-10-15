@@ -118,23 +118,27 @@ public class DataWinSerializer
         CreateRooms(data, project.Rooms, backgroundMap, objectMap);
 
         List<(string name, string content)> files = [];
+        Dictionary<string, UndertaleCode> funCodes = [];
         foreach (var gameObject in project.Objects) {
             var objectEntry = objectMap[gameObject];
             foreach (var gameObjectEvent in gameObject.Events) {
                 var eventType = MapEventType(gameObjectEvent.EventType);
                 var eventSubtype = GetEventSubtype(data, gameObjectEvent, objectMap);
                 var code = objectEntry.EventHandlerFor(eventType, eventSubtype, data);
-                files.Add(($"{code.Name.Content}.ts", $$"""
-                    function {{code.Name.Content}}() {
+
+                string funName = code.Name.Content;
+                files.Add(($"{funName}.ts", $$"""
+                    function {{funName}}() {
                     {{BuildEventCodeSegment(gameObjectEvent.Actions[0])}}
                     }
                     """));
+                funCodes.Add(funName, code);
             }
         }
         Compiler compiler = new();
-        compiler.SetFiles(files);
-        FileNode[] nodes = compiler.Compile();
-        Console.WriteLine(nodes);
+        FileNode[] nodes = compiler.Compile(files);
+
+        new CodeGenerator().Generate(data, nodes, funCodes);
 
         UpdateGeneralInfoCounters(data);
         return data;

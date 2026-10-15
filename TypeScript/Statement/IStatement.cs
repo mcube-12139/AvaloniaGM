@@ -1,5 +1,5 @@
 ﻿namespace TypeScript.Statement;
 
-internal interface IStatement {
-    void SetSemantic(Compiler compiler);
+public interface IStatement {
+    internal void SetSemantic(Compiler compiler);
 }

@@ -1,8 +1,9 @@
 <Solution>
-  <Project Path="AvaloniaGM/AvaloniaGM.csproj" />
   <Folder Name="/Lib/">
     <Project Path="UndertaleModTool/Underanalyzer/Underanalyzer/Underanalyzer.csproj" />
     <Project Path="UndertaleModTool/UndertaleModLib/UndertaleModLib.csproj" />
   </Folder>
   <Project Path="AvaloniaGM.Verifier/AvaloniaGM.Verifier.csproj" />
+  <Project Path="AvaloniaGM/AvaloniaGM.csproj" />
+  <Project Path="TypeScript/TypeScript.csproj" Id="8fa10a1c-9ce3-4df9-be02-9721c70508b1" />
 </Solution>

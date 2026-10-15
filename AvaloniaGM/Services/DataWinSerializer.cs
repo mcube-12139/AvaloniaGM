@@ -14,7 +14,7 @@ using UndertaleModLib.Compiler;
 using UndertaleModLib.Models;
 using UndertaleModLib.Util;
 using AvaloniaGM.Models;
-using AvaloniaGM.TypeScript;
+using TypeScript;
 
 namespace AvaloniaGM.Services;
 
@@ -117,9 +117,24 @@ public class DataWinSerializer
         CreateTimelines(data, project.Timelines);
         CreateRooms(data, project.Rooms, backgroundMap, objectMap);
 
-        Importer importer = new(data);
-        AddReplaceObject(data, importer, project.Objects, objectMap);
-        importer.Import();
+        List<(string name, string content)> files = [];
+        foreach (var gameObject in project.Objects) {
+            var objectEntry = objectMap[gameObject];
+            foreach (var gameObjectEvent in gameObject.Events) {
+                var eventType = MapEventType(gameObjectEvent.EventType);
+                var eventSubtype = GetEventSubtype(data, gameObjectEvent, objectMap);
+                var code = objectEntry.EventHandlerFor(eventType, eventSubtype, data);
+                files.Add(($"{code.Name.Content}.ts", $$"""
+                    function {{code.Name.Content}}() {
+                    {{BuildEventCodeSegment(gameObjectEvent.Actions[0])}}
+                    }
+                    """));
+            }
+        }
+        Compiler compiler = new();
+        compiler.SetFiles(files);
+        FileNode[] nodes = compiler.Compile();
+        Console.WriteLine(nodes);
 
         UpdateGeneralInfoCounters(data);
         return data;
@@ -874,26 +889,6 @@ public class DataWinSerializer
                 }
 
                 importer.QueueReplace(code, NormalizeCode(sourceRoom.Instances[instanceIndex].Code));
-            }
-        }
-    }
-
-    static void AddReplaceExtensionScript(Importer importer, IEnumerable<(UndertaleCode Code, string Source)> extensionScripts) {
-        throw new Exception("todo");
-    }
-
-    static void AddReplaceObject(
-        UndertaleData data,
-        Importer importer,
-        IEnumerable<GM.GameObject> objects,
-        Dictionary<GM.GameObject, UndertaleGameObject> objectMap) {
-        foreach (var gameObject in objects) {
-            var objectEntry = objectMap[gameObject];
-            foreach (var gameObjectEvent in gameObject.Events) {
-                var eventType = MapEventType(gameObjectEvent.EventType);
-                var eventSubtype = GetEventSubtype(data, gameObjectEvent, objectMap);
-                var code = objectEntry.EventHandlerFor(eventType, eventSubtype, data);
-                importer.AddReplacement(code, BuildEventCodeSegment(gameObjectEvent.Actions[0]));
             }
         }
     }

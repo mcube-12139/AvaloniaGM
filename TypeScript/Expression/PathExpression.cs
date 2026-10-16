@@ -21,13 +21,9 @@ public class PathExpression(TextPosition position, string[] segments) : IPlaceEx
         type = symbol.GetValueType(position, compiler);
     }
 
-    public IType GetResultType() {
-        return type!;
-    }
+    IType IExpression.GetResultType() => type!;
 
-    public IValueSymbol GetSymbol() {
-        return symbol!;
-    }
+    public IValueSymbol GetSymbol() => symbol!;
 
     /*
     void IPlaceExpression.Assign(IExpression right, Generator generator) {

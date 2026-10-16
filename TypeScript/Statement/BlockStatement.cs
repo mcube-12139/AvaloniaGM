@@ -4,7 +4,7 @@ public class BlockStatement(TextPosition position, IStatement[] statements) : IS
     public readonly TextPosition position = position;
     public readonly IStatement[] statements = statements;
 
-    internal void ExecuteWithStart(Compiler compiler, Action? start) {
+    internal void SetSemanticWithStart(Compiler compiler, Action? start) {
         compiler.EnterNameSpace();
         start?.Invoke();
 
@@ -16,7 +16,7 @@ public class BlockStatement(TextPosition position, IStatement[] statements) : IS
     }
 
     internal void SetSemantic(Compiler compiler) {
-        ExecuteWithStart(compiler, null);
+        SetSemanticWithStart(compiler, null);
     }
 
     void IStatement.SetSemantic(Compiler compiler) => SetSemantic(compiler);

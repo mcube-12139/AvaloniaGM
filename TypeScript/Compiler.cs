@@ -3,7 +3,7 @@ using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
 using TypeScript.Item;
 using TypeScript.Parameter;
-//using TypeScript.Pattern;
+using TypeScript.Pattern;
 using TypeScript.Statement;
 using TypeScript.Symbol;
 using TypeScript.Token;
@@ -26,6 +26,7 @@ public class Compiler {
 
     readonly List<NameSpace> spaces;
     NameSpace space;
+    readonly List<ILoopStatement> loops = [];
     readonly Stack<FunctionContext> functionContexts = [];
     IType resultType = TupleType.EMPTY;
 
@@ -373,14 +374,13 @@ public class Compiler {
         TextPosition position = tokenPosition;
         IExpression result;
 
-        /*
         if (token == FixedToken.TRUE) {
             result = new BooleanExpression(position, true);
             NextToken();
         } else if (token == FixedToken.FALSE) {
             result = new BooleanExpression(position, false);
             NextToken();
-        } else if (token == FixedToken.LEFT_BRACKET) {
+        } else /*if (token == FixedToken.LEFT_BRACKET) {
             // 数组
             NextToken();
 
@@ -412,10 +412,10 @@ public class Compiler {
         } else */if (token is IdentifierToken idToken) {
             result = new PathExpression(position, [idToken.name]);
             NextToken();
-        } else /*if (token is StringToken strToken) {
+        } else if (token is StringToken strToken) {
             result = new StringExpression(position, strToken.value);
             NextToken();
-        } else */if (token is IntegerToken intToken) {
+        } else if (token is IntegerToken intToken) {
             result = new IntegerExpression(position, intToken.valueStr);
             NextToken();
         } else {
@@ -423,15 +423,124 @@ public class Compiler {
         }
 
         for (; ; ) {
-            if (token is FixedToken fixedToken) {
-                /*var op = BinaryOperator.FromToken(priority, fixedToken);
-                if (op != null) {
-                    // 二元
+            if (token is FixedToken) {
+                if (priority < 12 && token == FixedToken.STAR) {
                     NextToken();
-                    IExpression right = ParseExpression(op.priority);
-                    result = new BinaryExpression(position, result, right, op);
-                } else */
-                if (token == FixedToken.LEFT_PARENTHESIS) {
+                    IExpression right = ParseExpression(12);
+                    result = new MultiplyExpression(position, result, right);
+                } else if (priority < 12 && token == FixedToken.SLASH) {
+                    NextToken();
+                    IExpression right = ParseExpression(12);
+                    result = new DivideExpression(position, result, right);
+                } else if (priority < 12 && token == FixedToken.PERCENT) {
+                    NextToken();
+                    IExpression right = ParseExpression(12);
+                    result = new ModuloExpression(position, result, right);
+                } else if (priority < 11 && token == FixedToken.PLUS) {
+                    NextToken();
+                    IExpression right = ParseExpression(12);
+                    result = new AddExpression(position, result, right);
+                } else if (priority < 11 && token == FixedToken.MINUS) {
+                    NextToken();
+                    IExpression right = ParseExpression(11);
+                    result = new SubtractExpression(position, result, right);
+                } else if (priority < 10 && token == FixedToken.DOUBLE_LESS) {
+                    NextToken();
+                    IExpression right = ParseExpression(10);
+                    result = new LeftShiftExpression(position, result, right);
+                } else if (priority < 10 && token == FixedToken.DOUBLE_GREATER) {
+                    NextToken();
+                    IExpression right = ParseExpression(10);
+                    result = new RightShiftExpression(position, result, right);
+                } else if (priority < 9 && token == FixedToken.AND) {
+                    NextToken();
+                    IExpression right = ParseExpression(9);
+                    result = new BitAndExpression(position, result, right);
+                } else if (priority < 8 && token == FixedToken.CARET) {
+                    NextToken();
+                    IExpression right = ParseExpression(8);
+                    result = new BitXorExpression(position, result, right);
+                } else if (priority < 7 && token == FixedToken.VERTICAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(7);
+                    result = new BitOrExpression(position, result, right);
+                } else if (priority < 6 && token == FixedToken.GREATER) {
+                    NextToken();
+                    IExpression right = ParseExpression(6);
+                    result = new GreaterExpression(position, result, right);
+                } else if (priority < 6 && token == FixedToken.GREATER_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(6);
+                    result = new GreaterEqualExpression(position, result, right);
+                } else if (priority < 6 && token == FixedToken.LESS) {
+                    NextToken();
+                    IExpression right = ParseExpression(6);
+                    result = new LessExpression(position, result, right);
+                } else if (priority < 6 && token == FixedToken.LESS_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(6);
+                    result = new LessEqualExpression(position, result, right);
+                } else if (priority < 6 && token == FixedToken.DOUBLE_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(6);
+                    result = new EqualExpression(position, result, right);
+                } else if (priority < 6 && token == FixedToken.EXCLAMATION_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(6);
+                    result = new NotEqualExpression(position, result, right);
+                } else if (priority < 5 && token == FixedToken.DOUBLE_AND) {
+                    NextToken();
+                    IExpression right = ParseExpression(5);
+                    result = new AndExpression(position, result, right);
+                } else if (priority < 4 && token == FixedToken.DOUBLE_VERTICAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(4);
+                    result = new OrExpression(position, result, right);
+                } else if (priority <= 2 && token == FixedToken.EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(2);
+                    result = new AssignExpression(position, result.AsPlace(this), right);
+                } else if (priority <= 2 && token == FixedToken.PLUS_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(2);
+                    result = new AddAssignExpression(position, result.AsPlace(this), right);
+                } else if (priority <= 2 && token == FixedToken.MINUS_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(2);
+                    result = new SubtractAssignExpression(position, result.AsPlace(this), right);
+                } else if (priority <= 2 && token == FixedToken.STAR_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(2);
+                    result = new MultiplyAssignExpression(position, result.AsPlace(this), right);
+                } else if (priority <= 2 && token == FixedToken.SLASH_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(2);
+                    result = new DivideAssignExpression(position, result.AsPlace(this), right);
+                } else if (priority <= 2 && token == FixedToken.PERCENT_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(2);
+                    result = new ModuloAssignExpression(position, result.AsPlace(this), right);
+                } else if (priority <= 2 && token == FixedToken.AND_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(2);
+                    result = new BitAndAssignExpression(position, result.AsPlace(this), right);
+                } else if (priority <= 2 && token == FixedToken.VERTICAL_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(2);
+                    result = new BitOrAssignExpression(position, result.AsPlace(this), right);
+                } else if (priority <= 2 && token == FixedToken.CARET_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(2);
+                    result = new BitXorAssignExpression(position, result.AsPlace(this), right);
+                } else if (priority <= 2 && token == FixedToken.DOUBLE_LESS_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(2);
+                    result = new LeftShiftAssignExpression(position, result.AsPlace(this), right);
+                } else if (priority <= 2 && token == FixedToken.DOUBLE_GREATER_EQUAL) {
+                    NextToken();
+                    IExpression right = ParseExpression(2);
+                    result = new RightShiftAssignExpression(position, result.AsPlace(this), right);
+                } else if (token == FixedToken.LEFT_PARENTHESIS) {
                     // 调用
                     NextToken();
                     List<IExpression> parameters = [];
@@ -475,7 +584,6 @@ public class Compiler {
         return token is IdentifierToken;
     }
 
-    /*
     IPattern ParsePattern() {
         TextPosition position = tokenPosition;
         IPattern result;
@@ -489,9 +597,7 @@ public class Compiler {
 
         return result;
     }
-    */
 
-    /*
     IfStatement ParseIfStatement() {
         TextPosition position = tokenPosition;
 
@@ -518,7 +624,6 @@ public class Compiler {
         return new IfStatement(position, condition, body, elseBody);
     }
     
-    */
     BlockStatement ParseBlockStatement() {
         TextPosition position = tokenPosition;
 
@@ -553,7 +658,7 @@ public class Compiler {
         TextPosition position = tokenPosition;
         IStatement result;
 
-        /*if (token == FixedToken.LET) {
+        if (token == FixedToken.LET) {
             // let
             NextToken();
             IPattern pattern = ParsePattern();
@@ -604,7 +709,7 @@ public class Compiler {
             BlockStatement body = ParseBlockStatement();
 
             result = new WhileStatement(position, label, condition, body);
-        } else if (token == FixedToken.CONTINUE) {
+        } else /*if (token == FixedToken.CONTINUE) {
             // continue
             NextToken();
 
@@ -645,10 +750,10 @@ public class Compiler {
 
             AssertAndNextToken(FixedToken.SEMICOLON);
             result = new ReturnStatement(position, expression);
-        } else if (token == FixedToken.LEFT_BRACE) {
+        } else */if (token == FixedToken.LEFT_BRACE) {
             // 块
             result = ParseBlockStatement();
-        } else */if (IsExpressionStart()) {
+        } else if (IsExpressionStart()) {
             // 算式
             IExpression expression = ParseExpression(0);
             AssertAndNextToken(FixedToken.SEMICOLON);
@@ -819,6 +924,17 @@ public class Compiler {
         space = spaces[^1];
     }
 
+    internal void EnterLoop(string? label, ILoopStatement statement) {
+        loops.Add(statement);
+        if (label != null) {
+            space.TryAddLoop(label, statement);
+        }
+    }
+
+    internal void LeaveLoop() {
+        loops.RemoveAt(loops.Count - 1);
+    }
+
     internal void EnterFunction(IType resultType) {
         functionContexts.Push(new(resultType));
 
@@ -838,7 +954,8 @@ public class Compiler {
     public FileNode[] Compile(ICollection<(string name, string content)> files) {
         this.files.AddRange(files);
 
-        space.TryAddSymbol("show_message", FunctionSymbol.NewResolved("show_message", new FunctionType([PrimitiveType.INTEGER], PrimitiveType.INTEGER), "show_message"));
+        space.TryAddSymbol("printInt", FunctionSymbol.NewResolved("printInt", new FunctionType([PrimitiveType.INTEGER], PrimitiveType.INTEGER), "show_message"));
+        space.TryAddSymbol("printString", FunctionSymbol.NewResolved("printString", new FunctionType([PrimitiveType.STRING], PrimitiveType.INTEGER), "show_message"));
 
         List<FileNode> nodes = [];
         foreach ((string name, string content) in files) {

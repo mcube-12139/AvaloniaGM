@@ -22,7 +22,6 @@ namespace TypeScript {
 
         NameSpace space = new();
         readonly List<NameSpace> spaces = [];
-        readonly List<ILoopStatement> loops = [];
         uint nextFunctionId = 0;
         readonly Stack<UndertaleInstruction.DataType> types = [];
         readonly Dictionary<string, int> stringIds = new(data.Strings.Count);
@@ -67,17 +66,6 @@ namespace TypeScript {
         internal void LeaveNameSpace() {
             spaces.RemoveAt(spaces.Count - 1);
             space = spaces[^1];
-        }
-
-        internal void EnterLoop(string? label, ILoopStatement statement) {
-            loops.Add(statement);
-            if (label != null) {
-                space.TryAddLoop(label, statement);
-            }
-        }
-
-        internal void LeaveLoop() {
-            loops.RemoveAt(loops.Count - 1);
         }
 
         internal void EnterFunction(UndertaleCode code, IType resultType) {
@@ -193,18 +181,6 @@ namespace TypeScript {
             PushType(UndertaleInstruction.DataType.String);
         }
 
-        internal void PushBoolean(bool value) {
-            instructions.Add(new() {
-                Kind = UndertaleInstruction.Opcode.PushI,
-                Type1 = UndertaleInstruction.DataType.Int16,
-                Type2 = UndertaleInstruction.DataType.Double,
-                ValueShort = value ? (short)1 : (short)0
-            });
-            byteCount += 4;
-
-            PushType(UndertaleInstruction.DataType.Boolean);
-        }
-
         internal void PushInt16(short value) {
             instructions.Add(new() {
                 Kind = UndertaleInstruction.Opcode.PushI,
@@ -269,44 +245,6 @@ namespace TypeScript {
                 PopType();
                 PopType();
             }
-        }
-
-        internal void Load(UndertaleVariable variable, UndertaleInstruction.VariableType variableType) {
-            UndertaleInstruction.Opcode opcode;
-
-            if (variableType == UndertaleInstruction.VariableType.Normal) {
-                // Normal 量的操作码可能不同
-                if (variable.InstanceType == UndertaleInstruction.InstanceType.Local) {
-                    opcode = UndertaleInstruction.Opcode.PushLoc;
-                } else if (variable.InstanceType == UndertaleInstruction.InstanceType.Self) {
-                    if (variable.VarID == (int)UndertaleInstruction.InstanceType.Builtin) {
-                        opcode = UndertaleInstruction.Opcode.PushBltn;
-                    } else {
-                        opcode = UndertaleInstruction.Opcode.Push;
-                    }
-                } else {
-                    throw new System.NotImplementedException();
-                }
-            } else {
-                // Array 量的操作码必须是 Push
-                opcode = UndertaleInstruction.Opcode.Push;
-            }
-
-            instructions.Add(new() {
-                Kind = opcode,
-                Type1 = UndertaleInstruction.DataType.Variable,
-                ValueVariable = variable,
-                ReferenceType = variableType,
-                TypeInst = variableType == UndertaleInstruction.VariableType.Normal ? variable.InstanceType : UndertaleInstruction.InstanceType.Undefined
-            });
-            byteCount += 8;
-
-            if (variableType == UndertaleInstruction.VariableType.Array) {
-                PopType();
-                PopType();
-            }
-
-            PushType(UndertaleInstruction.DataType.Variable);
         }
 
         internal void Call(UndertaleFunction fun, int parameterCount) {
@@ -536,43 +474,6 @@ namespace TypeScript {
             byteCount += 4;
 
             PushType(UndertaleInstruction.DataType.Boolean);
-        }
-
-        internal UndertaleInstruction Branch() {
-            UndertaleInstruction result = new() {
-                Kind = UndertaleInstruction.Opcode.B
-            };
-
-            instructions.Add(result);
-            byteCount += 4;
-
-            return result;
-        }
-
-        internal UndertaleInstruction BranchTrue() {
-            UndertaleInstruction result = new() {
-                Kind = UndertaleInstruction.Opcode.Bt
-            };
-
-            instructions.Add(result);
-            byteCount += 4;
-
-            PopType();
-
-            return result;
-        }
-
-        internal UndertaleInstruction BranchFalse() {
-            UndertaleInstruction result = new() {
-                Kind = UndertaleInstruction.Opcode.Bf
-            };
-
-            instructions.Add(result);
-            byteCount += 4;
-
-            PopType();
-
-            return result;
         }
 
         internal void Return() {

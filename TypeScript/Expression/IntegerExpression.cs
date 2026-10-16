@@ -1,5 +1,4 @@
-﻿using TypeScript.ExceptionSpace;
-using TypeScript.Type;
+﻿using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
@@ -28,7 +27,5 @@ public class IntegerExpression(TextPosition position, string valueStr) : IExpres
         type = PrimitiveType.INTEGER;
     }
 
-    IType IExpression.GetResultType() {
-        return type!;
-    }
+    IType IExpression.GetResultType() => type!;
 }

@@ -3,12 +3,18 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-public class CallExpression(TextPosition position, IExpression called, IExpression[] parameters): IExpression {
-    public readonly TextPosition position = position;
-    public readonly IExpression called = called;
-    public readonly IExpression[] parameters = parameters;
+public class CallExpression: IExpression {
+    public readonly TextPosition position;
+    public readonly IExpression called;
+    public readonly IExpression[] parameters;
 
     IType? type;
+
+    internal CallExpression(TextPosition position, IExpression called, IExpression[] parameters) {
+        this.position = position;
+        this.called = called;
+        this.parameters = parameters;
+    }
 
     TextPosition IExpression.GetPosition() => position;
 
@@ -20,15 +26,20 @@ public class CallExpression(TextPosition position, IExpression called, IExpressi
             throw compiler.SemanticError(SemanticErrorType.WRONG_PARAMETER_COUNT, [parameters.Length.ToString(), funType.parameterTypes.Length.ToString()], position);
         }
         for (int i = 0; i != parameters.Length; ++i) {
-            parameters[i].SetSemantic(funType.parameterTypes[i], compiler);
+            IExpression parameter = parameters[i];
+            IType definedType = funType.parameterTypes[i];
+            parameter.SetSemantic(definedType, compiler);
+
+            IType parameterType = parameter.GetResultType();
+            if (!parameterType.IsType(definedType)) {
+                throw compiler.SemanticError(SemanticErrorType.WRONG_TYPE, [parameterType.GetAppearance(), definedType.GetAppearance()], position);
+            }
         }
 
         type = funType.resultType;
     }
 
-    IType IExpression.GetResultType() {
-        return type!;
-    }
+    IType IExpression.GetResultType() => type!;
 
     /*
     void IExpression.Call(Generator generator) {

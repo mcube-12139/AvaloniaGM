@@ -26,14 +26,15 @@ public class FunctionItem(TextPosition position, string name, IParameter[] param
     }
 
     void IItem.SetSemantic(Compiler compiler) {
-        IType resultType = resultNode?.GetSharkType(compiler) ?? TupleType.EMPTY;
-
-        compiler.EnterFunction(resultType);
-
         foreach (IParameter parameter in parameters) {
             parameter.SetSemantic(compiler);
         }
         resultNode?.SetSemantic(compiler);
+
+        IType resultType = resultNode?.GetSharkType() ?? TupleType.EMPTY;
+
+        compiler.EnterFunction(resultType);
+
         body.SetSemantic(compiler);
 
         compiler.LeaveFunction();

@@ -20,7 +20,9 @@ throw generator.SemanticError(SemanticErrorType.NOT_TYPE, [name], position);
         return this;
     }
 
-    IType IValueSymbol.GetValueType(TextPosition position, Compiler compiler) => type;
+    IType IValueSymbol.LazyGetValueType(TextPosition position, Compiler compiler) => type;
+
+    IType IValueSymbol.GetValueType() => type;
 
     /*
     void IValueSymbol.Call(TextPosition position, Generator generator) {

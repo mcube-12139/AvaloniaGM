@@ -10,6 +10,14 @@ public class IntegerType : IType {
         return other == this;
     }
 
+    IType IType.GetNegativeResultType(TextPosition position, Compiler compiler) {
+        return this;
+    }
+
+    IType IType.GetNotResultType(TextPosition position, Compiler compiler) {
+        return this;
+    }
+
     IType IType.GetMultiplyResultType(IExpression right, TextPosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();

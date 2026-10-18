@@ -19,7 +19,7 @@ public class TupleType(IType[] elementTypes): IType {
         }
 
         for (int i = 0; i != elementTypes.Length; ++i) {
-            if (!elementTypes[i].IsType(otherTuple.elementTypes[i])) {
+            if (!TypeHelp.IsType(elementTypes[i], otherTuple.elementTypes[i])) {
                 return false;
             }
         }

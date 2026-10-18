@@ -1,5 +1,4 @@
-﻿using TypeScript.Expression;
-using TypeScript.Symbol;
+﻿using TypeScript.Symbol;
 using TypeScript.Type;
 
 namespace TypeScript.Pattern;
@@ -7,12 +6,17 @@ namespace TypeScript.Pattern;
 public class IdentifierPattern(TextPosition position, string name) : IPattern {
     public readonly TextPosition position = position;
     public readonly string name = name;
-    VariableSymbol? symbol;
+    ISymbol? symbol;
 
-    public VariableSymbol GetSymbol() => symbol!;
+    public ISymbol GetSymbol() => symbol!;
 
-    void IPattern.AddSymbol(IType type, Compiler compiler) {
+    void IPattern.AddVariable(IType type, Compiler compiler) {
         symbol = new VariableSymbol(name, type);
+        compiler.AddSymbol(name, symbol, position);
+    }
+
+    void IPattern.AddParameter(IType type, Compiler compiler) {
+        symbol = new ParameterSymbol(name, type);
         compiler.AddSymbol(name, symbol, position);
     }
 

@@ -12,13 +12,9 @@ public class PathExpression(TextPosition position, string[] segments) : IPlaceEx
 
     TextPosition IExpression.GetPosition() => position;
 
-    IPlaceExpression IExpression.AsPlace(Compiler compiler) {
-        return this;
-    }
-
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         symbol = compiler.GetSymbol(segments[0], position).AsValue(position, compiler);
-        type = symbol.GetValueType(position, compiler);
+        type = symbol.LazyGetValueType(position, compiler);
     }
 
     IType IExpression.GetResultType() => type!;

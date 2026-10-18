@@ -14,39 +14,34 @@ public class FunctionItem(TextPosition position, string name, IParameter[] param
     public readonly BlockStatement body = body;
 
     FunctionSymbol? symbol;
+
+    public FunctionSymbol GetSymbol() => symbol!;
     
     void IItem.AddSymbol(Compiler compiler) {
-        /*
-        (UndertaleFunction fun, code) = generator.CreateFunction(name);
-        symbol = FunctionSymbol.NewUnresolved(name, fun, this);
-        generator.AddSymbol(name, symbol, position);
-        */
-        symbol = FunctionSymbol.NewUnresolved(name, null);
+        symbol = FunctionSymbol.NewUnresolved(name, this, null);
         compiler.AddSymbol(name, symbol, position);
     }
 
     void IItem.SetSemantic(Compiler compiler) {
-        foreach (IParameter parameter in parameters) {
-            parameter.SetSemantic(compiler);
-        }
         resultNode?.SetSemantic(compiler);
 
-        IType resultType = resultNode?.GetSharkType() ?? TupleType.EMPTY;
+        IType resultType = resultNode?.GetSelfType() ?? TupleType.EMPTY;
 
         compiler.EnterFunction(resultType);
 
+        foreach (IParameter parameter in parameters) {
+            parameter.SetSemantic(compiler);
+        }
         body.SetSemantic(compiler);
 
         compiler.LeaveFunction();
 
-        symbol!.type = new FunctionType([.. parameters.Select(parameter => parameter.GetSharkType(compiler))], resultType);
+        symbol!.type = new FunctionType([.. parameters.Select(parameter => parameter.GetParameterType())], resultType);
     }
 
-    /*
-    internal FunctionType ResolveType(Generator generator) {
-        IType[] parameterTypes = [.. parameters.Select(parameter => parameter.GetSharkType(generator))];
-        GetResultType(generator);
-        return new(parameterTypes, resultType!);
+    internal FunctionType ResolveType(Compiler compiler) {
+        IType[] parameterTypes = [.. parameters.Select(parameter => parameter.LazyGetParameterType(compiler))];
+        IType resultType = resultNode?.LazyGetSelfType(compiler) ?? TupleType.EMPTY;
+        return new(parameterTypes, resultType);
     }
-    */
 }

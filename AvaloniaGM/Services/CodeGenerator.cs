@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection.Emit;
 using TypeScript;
 using TypeScript.Expression;
 using TypeScript.Item;
+using TypeScript.Parameter;
 using TypeScript.Pattern;
 using TypeScript.Statement;
 using TypeScript.Symbol;
@@ -17,16 +17,21 @@ namespace AvaloniaGM.Services;
 internal class CodeGenerator {
     readonly Dictionary<string, UndertaleCode> funCodes = [];
     UndertaleData? data;
-    UndertaleCode? nowCode;
-    UndertaleCodeLocals? codeLocals;
     readonly Dictionary<string, int> stringIds = [];
-    readonly Dictionary<VariableSymbol, (UndertaleVariable variable, VariableType variableType)> variables = [];
-    readonly Dictionary<ILoopStatement, LoopContext> breakPromises = [];
+    readonly Dictionary<string, UndertaleVariable> selfVariables = [];
+    readonly Dictionary<IValueSymbol, UndertaleVariable> variables = [];
+    readonly Dictionary<FunctionSymbol, UserFunction> userFunctions = [];
+    uint nextFunctionIndex = 0;
+
+    readonly Stack<FunctionGenerationState> functionGenerationStates = [];
     uint byteCount;
+    List<UndertaleInstruction> instructions = [];
+    Stack<DataType> types = [];
     // 这个 1 是 arguments
     uint nextLocalIndex = 1;
-    readonly Stack<DataType> types = [];
-    List<UndertaleInstruction> instructions = [];
+    uint nextParameterIndex = 0;
+    UndertaleCodeLocals? codeLocals;
+    readonly Dictionary<ILoopStatement, LoopContext> loopContexts = [];
 
     (UndertaleString gameString, int id) GetString(string value) {
         UndertaleString gameString;
@@ -43,12 +48,33 @@ internal class CodeGenerator {
         return (gameString, id);
     }
 
-    void PushType(DataType type) {
-        types.Push(type);
+    UndertaleVariable AddLocalVariable(string name) {
+        (UndertaleString gameString, int id) = GetString(name);
+        uint variableId = nextLocalIndex;
+        ++nextLocalIndex;
+
+        UndertaleVariable variable = data!.Variables.DefineLocal(data, (int)variableId, gameString, id);
+        codeLocals!.Locals.Add(new() {
+            Index = (uint)id,
+            Name = gameString,
+        });
+
+        if (nextLocalIndex > data.MaxLocalVarCount) {
+            data.MaxLocalVarCount = nextLocalIndex;
+        }
+
+        return variable;
     }
 
-    void PopType() {
-        types.Pop();
+    UndertaleVariable GetSelfVariable(string name, bool builtin) {
+        (UndertaleString gameString, int id) = GetString(name);
+
+        if (!selfVariables.TryGetValue(name, out UndertaleVariable? result)) {
+            result = data!.Variables.Define(gameString, id, InstanceType.Self, builtin, data);
+            selfVariables.Add(name, result);
+        }
+
+        return result;
     }
 
     void Convert(DataType target) {
@@ -63,7 +89,7 @@ internal class CodeGenerator {
             byteCount += 4;
         }
 
-        PushType(target);
+        types.Push(target);
     }
 
     void PopUnused() {
@@ -87,7 +113,7 @@ internal class CodeGenerator {
         });
         byteCount += 4;
 
-        PushType(DataType.Boolean);
+        types.Push(DataType.Boolean);
     }
 
     UndertaleInstruction Branch() {
@@ -109,7 +135,7 @@ internal class CodeGenerator {
         instructions.Add(result);
         byteCount += 4;
 
-        PopType();
+        types.Pop();
 
         return result;
     }
@@ -122,9 +148,28 @@ internal class CodeGenerator {
         instructions.Add(result);
         byteCount += 4;
 
-        PopType();
+        types.Pop();
 
         return result;
+    }
+
+    void Return() {
+        Convert(DataType.Variable);
+        types.Pop();
+
+        instructions.Add(new() {
+            Kind = Opcode.Ret,
+            Type1 = DataType.Variable
+        });
+        byteCount += 4;
+    }
+
+    void Exit() {
+        instructions.Add(new() {
+            Kind = Opcode.Exit,
+            Type1 = DataType.Int32
+        });
+        byteCount += 4;
     }
 
     void PushBoolean(bool value) {
@@ -136,7 +181,65 @@ internal class CodeGenerator {
         });
         byteCount += 4;
 
-        PushType(DataType.Boolean);
+        types.Push(DataType.Boolean);
+    }
+
+    void PushInt16(short value) {
+        instructions.Add(new() {
+            Kind = Opcode.PushI,
+            Type1 = DataType.Int16,
+            Type2 = DataType.Double,
+            ValueShort = value
+        });
+        byteCount += 4;
+
+        // int16 常量被按照 int32 类型处理
+        types.Push(DataType.Int32);
+    }
+
+    void Negate() {
+        DataType type = types.Pop();
+
+        instructions.Add(new() {
+            Kind = Opcode.Neg,
+            Type1 = type
+        });
+        byteCount += 4;
+
+        types.Push(type);
+    }
+
+    void Not() {
+        Convert(DataType.Boolean);
+        types.Pop();
+
+        instructions.Add(new() {
+            Kind = Opcode.Not,
+            Type1 = DataType.Boolean
+        });
+        byteCount += 4;
+
+        types.Push(DataType.Boolean);
+    }
+
+    void BitNot() {
+        DataType type = types.Peek();
+        DataType targetType;
+        if (type == DataType.Variable) {
+            Convert(DataType.Int64);
+            targetType = DataType.Int64;
+        } else {
+            targetType = type;
+        }
+        types.Pop();
+
+        instructions.Add(new() {
+            Kind = Opcode.Not,
+            Type1 = type
+        });
+        byteCount += 4;
+
+        types.Push(targetType);
     }
 
     void Multiply() {
@@ -151,13 +254,13 @@ internal class CodeGenerator {
         byteCount += 4;
 
         if (leftType == DataType.Int32 && rightType == DataType.Int32) {
-            PushType(DataType.Int32);
+            types.Push(DataType.Int32);
         } else if (leftType == DataType.Int64 && rightType == DataType.Int64) {
-            PushType(DataType.Int64);
+            types.Push(DataType.Int64);
         } else if (leftType == DataType.Double && rightType == DataType.Double) {
-            PushType(DataType.Double);
+            types.Push(DataType.Double);
         } else {
-            PushType(DataType.Variable);
+            types.Push(DataType.Variable);
         }
     }
 
@@ -173,13 +276,13 @@ internal class CodeGenerator {
         byteCount += 4;
 
         if (leftType == DataType.Int32 && rightType == DataType.Int32) {
-            PushType(DataType.Int32);
+            types.Push(DataType.Int32);
         } else if (leftType == DataType.Int64 && rightType == DataType.Int64) {
-            PushType(DataType.Int64);
+            types.Push(DataType.Int64);
         } else if (leftType == DataType.Double && rightType == DataType.Double) {
-            PushType(DataType.Double);
+            types.Push(DataType.Double);
         } else {
-            PushType(DataType.Variable);
+            types.Push(DataType.Variable);
         }
     }
 
@@ -195,13 +298,13 @@ internal class CodeGenerator {
         byteCount += 4;
 
         if (leftType == DataType.Int32 && rightType == DataType.Int32) {
-            PushType(DataType.Int32);
+            types.Push(DataType.Int32);
         } else if (leftType == DataType.Int64 && rightType == DataType.Int64) {
-            PushType(DataType.Int64);
+            types.Push(DataType.Int64);
         } else if (leftType == DataType.Double && rightType == DataType.Double) {
-            PushType(DataType.Double);
+            types.Push(DataType.Double);
         } else {
-            PushType(DataType.Variable);
+            types.Push(DataType.Variable);
         }
     }
 
@@ -217,15 +320,15 @@ internal class CodeGenerator {
         byteCount += 4;
 
         if (leftType == DataType.Int32 && rightType == DataType.Int32) {
-            PushType(DataType.Int32);
+            types.Push(DataType.Int32);
         } else if (leftType == DataType.Int64 && rightType == DataType.Int64) {
-            PushType(DataType.Int64);
+            types.Push(DataType.Int64);
         } else if (leftType == DataType.String && rightType == DataType.String) {
-            PushType(DataType.String);
+            types.Push(DataType.String);
         } else if (leftType == DataType.Double && rightType == DataType.Double) {
-            PushType(DataType.Double);
+            types.Push(DataType.Double);
         } else {
-            PushType(DataType.Variable);
+            types.Push(DataType.Variable);
         }
     }
 
@@ -241,13 +344,13 @@ internal class CodeGenerator {
         byteCount += 4;
 
         if (leftType == DataType.Int32 && rightType == DataType.Int32) {
-            PushType(DataType.Int32);
+            types.Push(DataType.Int32);
         } else if (leftType == DataType.Int64 && rightType == DataType.Int64) {
-            PushType(DataType.Int64);
+            types.Push(DataType.Int64);
         } else if (leftType == DataType.Double && rightType == DataType.Double) {
-            PushType(DataType.Double);
+            types.Push(DataType.Double);
         } else {
-            PushType(DataType.Variable);
+            types.Push(DataType.Variable);
         }
     }
 
@@ -269,9 +372,9 @@ internal class CodeGenerator {
         byteCount += 4;
 
         if (leftType == DataType.Int32 && rightType == DataType.Int32) {
-            PushType(DataType.Int32);
+            types.Push(DataType.Int32);
         } else if (leftType == DataType.Int64 && rightType == DataType.Int64) {
-            PushType(DataType.Int64);
+            types.Push(DataType.Int64);
         } else {
             throw new Exception("wtf");
         }
@@ -289,9 +392,9 @@ internal class CodeGenerator {
         byteCount += 4;
 
         if (leftType == DataType.Int32 && rightType == DataType.Int32) {
-            PushType(DataType.Int32);
+            types.Push(DataType.Int32);
         } else if (leftType == DataType.Int64 && rightType == DataType.Int64) {
-            PushType(DataType.Int64);
+            types.Push(DataType.Int64);
         } else {
             throw new Exception("wtf");
         }
@@ -309,9 +412,9 @@ internal class CodeGenerator {
         byteCount += 4;
 
         if (leftType == DataType.Int32 && rightType == DataType.Int32) {
-            PushType(DataType.Int32);
+            types.Push(DataType.Int32);
         } else if (leftType == DataType.Int64 && rightType == DataType.Int64) {
-            PushType(DataType.Int64);
+            types.Push(DataType.Int64);
         } else {
             throw new Exception("wtf");
         }
@@ -331,8 +434,8 @@ internal class CodeGenerator {
         byteCount += 8;
 
         if (variableType == VariableType.Array) {
-            PopType();
-            PopType();
+            types.Pop();
+            types.Pop();
         }
     }
 
@@ -367,18 +470,23 @@ internal class CodeGenerator {
         byteCount += 8;
 
         if (variableType == VariableType.Array) {
-            PopType();
-            PopType();
+            types.Pop();
+            types.Pop();
         }
 
-        PushType(DataType.Variable);
+        types.Push(DataType.Variable);
     }
 
     void StoreSymbol(IValueSymbol symbol) {
         switch (symbol) {
             case VariableSymbol variableSymbol: {
-                (UndertaleVariable variable, VariableType variableType) = variables.GetValueOrDefault(variableSymbol);
-                Store(variable, variableType);
+                UndertaleVariable variable = variables.GetValueOrDefault(variableSymbol)!;
+                Store(variable, VariableType.Normal);
+                break;
+            }
+            case ParameterSymbol parameterSymbol: {
+                UndertaleVariable variable = variables.GetValueOrDefault(parameterSymbol)!;
+                Store(variable, VariableType.Normal);
                 break;
             }
             default:
@@ -389,8 +497,13 @@ internal class CodeGenerator {
     void LoadSymbol(IValueSymbol symbol) {
         switch (symbol) {
             case VariableSymbol variableSymbol: {
-                (UndertaleVariable variable, VariableType variableType) = variables.GetValueOrDefault(variableSymbol);
-                Load(variable, variableType);
+                UndertaleVariable variable = variables.GetValueOrDefault(variableSymbol)!;
+                Load(variable, VariableType.Normal);
+                break;
+            }
+            case ParameterSymbol parameterSymbol: {
+                UndertaleVariable variable = variables.GetValueOrDefault(parameterSymbol)!;
+                Load(variable, VariableType.Normal);
                 break;
             }
             default:
@@ -400,7 +513,7 @@ internal class CodeGenerator {
 
     void Call(UndertaleFunction fun, int parameterCount) {
         for (int i = parameterCount; i != 0; --i) {
-            PopType();
+            types.Pop();
         }
 
         instructions.Add(new() {
@@ -411,18 +524,19 @@ internal class CodeGenerator {
         });
         byteCount += 8;
 
-        PushType(DataType.Variable);
+        types.Push(DataType.Variable);
     }
 
     void CallSymbol(IValueSymbol valueSymbol) {
         switch (valueSymbol) {
             case FunctionSymbol functionSymbol: {
+                UndertaleFunction fun;
                 if (functionSymbol.hostName != null) {
-                    UndertaleFunction fun = data!.Functions.EnsureDefined(functionSymbol.hostName, data.Strings);
-                    Call(fun, functionSymbol.GetSharkType().parameterTypes.Length);
+                    fun = data!.Functions.EnsureDefined(functionSymbol.hostName, data.Strings);
                 } else {
-                    throw new NotImplementedException();
+                    fun = GetUserFunction(functionSymbol).fun;
                 }
+                Call(fun, functionSymbol.GetFunctionType().parameterTypes.Length);
                 break;
             }
             default:
@@ -430,23 +544,11 @@ internal class CodeGenerator {
         }
     }
 
-    void PatternAddVariable(IPattern pattern, IExpression? initializer) {
+    void PatternAddLocal(IPattern pattern, IExpression? initializer) {
         switch (pattern) {
             case IdentifierPattern identifierPattern: {
-                (UndertaleString gameString, int id) = GetString(identifierPattern.name);
-                uint variableId = nextLocalIndex;
-                ++nextLocalIndex;
-
-                UndertaleVariable variable = data!.Variables.DefineLocal(data, (int)variableId, gameString, id);
-                codeLocals!.Locals.Add(new() {
-                    Index = (uint)id,
-                    Name = gameString,
-                });
-                variables.Add(identifierPattern.GetSymbol(), (variable, VariableType.Normal));
-
-                if (nextLocalIndex > data.MaxLocalVarCount) {
-                    data.MaxLocalVarCount = nextLocalIndex;
-                }
+                UndertaleVariable variable = AddLocalVariable(identifierPattern.name);
+                variables.Add((VariableSymbol)identifierPattern.GetSymbol(), variable);
 
                 if (initializer != null) {
                     EvaluateExpression(initializer);
@@ -459,10 +561,67 @@ internal class CodeGenerator {
         }
     }
 
+    void PatternAddParameter(IPattern pattern) {
+        switch (pattern) {
+            case IdentifierPattern identifierPattern: {
+                uint index = nextParameterIndex;
+                ++nextParameterIndex;
+
+                UndertaleVariable variable = GetSelfVariable($"argument{index}", true);
+
+                variables.Add((ParameterSymbol)identifierPattern.GetSymbol(), variable);
+                break;
+            }
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
     void ExpressionCall(IExpression called) {
         switch (called) {
             case PathExpression pathExpression: {
                 CallSymbol(pathExpression.GetSymbol());
+                break;
+            }
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
+    void NegateByType(IType type) {
+        switch (type) {
+            case IntegerType: {
+                Negate();
+                break;
+            }
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
+    void NotByType(IType type) {
+        switch (type) {
+            case BooleanType: {
+                Not();
+                break;
+            }
+            case IntegerType: {
+                throw new NotImplementedException();
+            }
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
+    void GetIndexByType(IType type, IExpression indexed, IExpression index) {
+        switch (type) {
+            case ArrayType: {
+                UndertaleVariable variable = EvaluateExpressionToVariable(indexed, "indexed");
+                PushInt16((short)variable.InstanceType);
+                EvaluateExpression(index);
+
+                Convert(DataType.Int32);
+                Load(variable, VariableType.Array);
                 break;
             }
             default:
@@ -673,6 +832,17 @@ internal class CodeGenerator {
 
     void AssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
+            case IndexExpression indexExpression: {
+                UndertaleVariable variable = EvaluateExpressionToVariable(indexExpression.indexed, "indexed");
+                EvaluateExpression(expression);
+
+                PushInt16((short)variable.InstanceType);
+                EvaluateExpression(indexExpression.index);
+
+                Convert(DataType.Int32);
+                Store(variable, VariableType.Array);
+                break;
+            }
             case PathExpression pathExpression: {
                 EvaluateExpression(expression);
                 StoreSymbol(pathExpression.GetSymbol());
@@ -914,6 +1084,34 @@ internal class CodeGenerator {
         }
     }
 
+    UndertaleVariable EvaluateExpressionToVariable(IExpression expression, string name) {
+        switch (expression) {
+            case PathExpression pathExpression: {
+                IValueSymbol symbol = pathExpression.GetSymbol();
+                LoadSymbol(symbol);
+                return variables.GetValueOrDefault(symbol)!;
+            }
+            case ArrayExpression arrayExpression: {
+                UndertaleVariable variable = AddLocalVariable(name);
+
+                short elementIndex = 0;
+                foreach (IExpression element in arrayExpression.elements) {
+                    EvaluateExpression(element);
+
+                    PushInt16((short)InstanceType.Local);
+                    PushInt16(elementIndex);
+                    ++elementIndex;
+
+                    Store(variable, VariableType.Array);
+                }
+
+                return variable;
+            }
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
     void EvaluateExpression(IExpression expression) {
         switch (expression) {
             case IntegerExpression integerExpression: {
@@ -927,7 +1125,19 @@ internal class CodeGenerator {
                 });
                 byteCount += 8;
 
-                PushType(DataType.Int32);
+                types.Push(DataType.Int32);
+                break;
+            }
+            case BooleanExpression booleanExpression: {
+                instructions.Add(new() {
+                    Kind = Opcode.PushI,
+                    Type1 = DataType.Int16,
+                    Type2 = DataType.Double,
+                    ValueShort = booleanExpression.value ? (short)1 : (short)0
+                });
+                byteCount += 4;
+
+                types.Push(DataType.Boolean);
                 break;
             }
             case StringExpression stringExpression: {
@@ -940,11 +1150,20 @@ internal class CodeGenerator {
                 });
                 byteCount += 8;
 
-                PushType(DataType.String);
+                types.Push(DataType.String);
                 break;
             }
             case PathExpression pathExpression: {
                 LoadSymbol(pathExpression.GetSymbol());
+                break;
+            }
+            case ArrayExpression arrayExpression: {
+                UndertaleVariable variable = EvaluateExpressionToVariable(arrayExpression, "arr");
+                Load(variable, VariableType.Normal);
+                break;
+            }
+            case IndexExpression indexExpression: {
+                GetIndexByType(indexExpression.indexed.GetResultType(), indexExpression.indexed, indexExpression.index);
                 break;
             }
             case CallExpression callExpression: {
@@ -955,6 +1174,16 @@ internal class CodeGenerator {
                     Convert(DataType.Variable);
                 }
                 ExpressionCall(callExpression.called);
+                break;
+            }
+            case NegateExpression negateExpression: {
+                EvaluateExpression(negateExpression.expression);
+                NegateByType(negateExpression.expression.GetResultType());
+                break;
+            }
+            case NotExpression notExpression: {
+                EvaluateExpression(notExpression.expression);
+                NotByType(notExpression.expression.GetResultType());
                 break;
             }
             case MultiplyExpression multiplyExpression: {
@@ -1128,13 +1357,14 @@ internal class CodeGenerator {
         switch (statement) {
             case ExpressionStatement expressionStatement: {
                 EvaluateExpression(expressionStatement.expression);
-                if (expressionStatement.expression.GetResultType() != TupleType.EMPTY) {
+                // 调用必定返回 Variable
+                if (expressionStatement.expression is CallExpression || expressionStatement.expression.GetResultType() != TupleType.EMPTY) {
                     PopUnused();
                 }
                 break;
             }
             case LetStatement letStatement: {
-                PatternAddVariable(letStatement.pattern, letStatement.initializer);
+                PatternAddLocal(letStatement.pattern, letStatement.initializer);
                 break;
             }
             case IfStatement ifStatement: {
@@ -1166,7 +1396,7 @@ internal class CodeGenerator {
                 uint bfStart = byteCount;
                 UndertaleInstruction bfInstruction = BranchFalse();
 
-                breakPromises.Add(whileStatement, context);
+                loopContexts.Add(whileStatement, context);
                 ExecuteBlockStatement(whileStatement.body);
 
                 uint branchStart = byteCount;
@@ -1175,11 +1405,37 @@ internal class CodeGenerator {
 
                 uint endOffset = byteCount;
                 bfInstruction.JumpOffset = (int)(endOffset - bfStart) / 4;
-                foreach ((uint instructionStart, UndertaleInstruction instruction) in context.promises) {
+                foreach ((uint instructionStart, UndertaleInstruction instruction) in context.IteratePromise()) {
                     instruction.JumpOffset = (int)(endOffset - instructionStart) / 4;
                 }
 
-                breakPromises.Remove(whileStatement);
+                loopContexts.Remove(whileStatement);
+                break;
+            }
+            case ContinueStatement continueStatement: {
+                uint loopStart = loopContexts[continueStatement.GetLoop()].start;
+                uint branchStart = byteCount;
+                UndertaleInstruction branch = Branch();
+                branch.JumpOffset = (int)(loopStart - branchStart) / 4;
+                break;
+            }
+            case BreakStatement breakStatement: {
+                uint branchStart = byteCount;
+                UndertaleInstruction branch = Branch();
+                loopContexts[breakStatement.GetLoop()].AddPromise(branchStart, branch);
+                break;
+            }
+            case ReturnStatement returnStatement: {
+                if (returnStatement.value != null) {
+                    EvaluateExpression(returnStatement.value);
+                    if (returnStatement.value.GetResultType() != TupleType.EMPTY) {
+                        Return();
+                    } else {
+                        Exit();
+                    }
+                } else {
+                    Exit();
+                }
                 break;
             }
             case BlockStatement blockStatement: {
@@ -1192,21 +1448,72 @@ internal class CodeGenerator {
     }
 
     void ExecuteBlockStatement(BlockStatement blockStatement) {
+        foreach (IItem item in blockStatement.items) {
+            GenerateItem(item);
+        }
         foreach (IStatement statement in blockStatement.statements) {
             ExecuteStatement(statement);
         }
     }
 
+    void ParameterAddVariable(IParameter parameter) {
+        switch (parameter) {
+            case PatternParameter patternParameter: {
+                PatternAddParameter(patternParameter.pattern);
+                break;
+            }
+            case ThisParameter: {
+                throw new NotImplementedException();
+            }
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
+    UserFunction GetUserFunction(FunctionSymbol symbol) {
+        if (!userFunctions.TryGetValue(symbol, out UserFunction? result)) {
+            string funName = $"{symbol.name}_{nextFunctionIndex}";
+            ++nextFunctionIndex;
+
+            var code = UndertaleCode.CreateEmptyEntry(data, $"gml_Script_{funName}");
+            UndertaleString nameStr = data!.Strings.MakeString(funName);
+            UndertaleScript script = new() {
+                Name = nameStr,
+                Code = code
+            };
+
+            data.Scripts.Add(script);
+
+            UndertaleFunction fun = data.Functions.EnsureDefined(funName, data.Strings);
+
+            result = new(script, fun, code);
+            userFunctions.Add(symbol, result);
+        }
+
+        return result;
+    }
+
     void GenerateItem(IItem item) {
         switch (item) {
             case FunctionItem funItem: {
+                functionGenerationStates.Push(new(byteCount, instructions, types, nextLocalIndex, nextParameterIndex, codeLocals!, loopContexts));
+                byteCount = 0;
+                instructions = [];
+                types = [];
+                nextLocalIndex = 1;
+                nextParameterIndex = 0;
+
                 UndertaleCode? code = funCodes.GetValueOrDefault(funItem.name);
-                if (code != null) {
-                    nowCode = code;
-                    codeLocals = data!.CodeLocals.For(code);
-                } else {
-                    throw new NotImplementedException();
+                if (code == null) {
+                    UserFunction userFun = GetUserFunction(funItem.GetSymbol());
+                    code = userFun.code;
                 }
+                codeLocals = data!.CodeLocals.For(code);
+
+                foreach (IParameter parameter in funItem.parameters) {
+                    ParameterAddVariable(parameter);
+                }
+
                 ExecuteBlockStatement(funItem.body);
 
                 code.Replace(instructions);
@@ -1214,6 +1521,13 @@ internal class CodeGenerator {
                 code.Offset = 0;
                 code.ArgumentsCount = 0;
                 code.LocalsCount = nextLocalIndex;
+
+                FunctionGenerationState state = functionGenerationStates.Pop();
+                byteCount = state.byteCount;
+                instructions = state.instructions;
+                types = state.types;
+                nextLocalIndex = state.nextLocalIndex;
+                nextParameterIndex = state.nextParameterIndex;
                 break;
             }
             default:
@@ -1233,9 +1547,13 @@ internal class CodeGenerator {
             }
         }
 
+        nextLocalIndex = 1;
+        nextFunctionIndex = 0;
         this.funCodes.Clear();
         this.data = null;
         stringIds.Clear();
+        selfVariables.Clear();
         variables.Clear();
+        userFunctions.Clear();
     }
 }

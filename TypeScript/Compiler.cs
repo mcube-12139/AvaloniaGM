@@ -364,6 +364,8 @@ public class Compiler {
     bool IsExpressionStart() {
         return token == FixedToken.TRUE
             || token == FixedToken.FALSE
+            || token == FixedToken.MINUS
+            || token == FixedToken.EXCLAMATION
             || token == FixedToken.LEFT_BRACKET
             || token is IdentifierToken
             || token is StringToken
@@ -380,36 +382,39 @@ public class Compiler {
         } else if (token == FixedToken.FALSE) {
             result = new BooleanExpression(position, false);
             NextToken();
-        } else /*if (token == FixedToken.LEFT_BRACKET) {
+        } else if (token == FixedToken.MINUS) {
+            NextToken();
+            IExpression expression = ParseExpression(14);
+            result = new NegateExpression(position, expression);
+        } else if (token == FixedToken.EXCLAMATION) {
+            NextToken();
+            IExpression expression = ParseExpression(14);
+            result = new NotExpression(position, expression);
+        } else if (token == FixedToken.LEFT_BRACKET) {
             // 数组
             NextToken();
 
             List<IExpression> elements = [];
-            ITypeNode? type;
-            if (token == FixedToken.RIGHT_BRACKET) {
-                NextToken();
-                AssertAndNextToken(FixedToken.DOUBLE_COLON);
-                AssertAndNextToken(FixedToken.LESS);
-                type = ParseType();
-                AssertAndNextToken(FixedToken.GREATER);
-            } else {
-                type = null;
-                for (; ; ) {
-                    elements.Add(ParseExpression(0));
+            for (; ; ) {
+                if (token == FixedToken.RIGHT_BRACKET) {
+                    NextToken();
+                    break;
+                }
 
-                    if (token == FixedToken.COMMA) {
-                        NextToken();
-                    } else if (token == FixedToken.RIGHT_BRACKET) {
-                        NextToken();
-                        break;
-                    } else {
-                        throw TokenCannotBeHere();
-                    }
+                elements.Add(ParseExpression(0));
+
+                if (token == FixedToken.COMMA) {
+                    NextToken();
+                } else if (token == FixedToken.RIGHT_BRACKET) {
+                    NextToken();
+                    break;
+                } else {
+                    throw TokenCannotBeHere();
                 }
             }
 
-            result = new ArrayExpression(position, [.. elements], type);
-        } else */if (token is IdentifierToken idToken) {
+            result = new ArrayExpression(position, [.. elements]);
+        } else if (token is IdentifierToken idToken) {
             result = new PathExpression(position, [idToken.name]);
             NextToken();
         } else if (token is StringToken strToken) {
@@ -563,13 +568,13 @@ public class Compiler {
                     }
 
                     result = new CallExpression(position, result, [.. parameters]);
-                } else /*if (token == FixedToken.LEFT_BRACKET) {
+                } else if (token == FixedToken.LEFT_BRACKET) {
                     // 索引
                     NextToken();
                     IExpression index = ParseExpression(0);
                     AssertAndNextToken(FixedToken.RIGHT_BRACKET);
                     result = new IndexExpression(position, result, index);
-                } else */{
+                } else {
                     break;
                 }
             } else {
@@ -629,17 +634,22 @@ public class Compiler {
 
         AssertAndNextToken(FixedToken.LEFT_BRACE);
 
+        List<IItem> items = [];
         List<IStatement> statements = [];
         for (; ; ) {
-            if (token == FixedToken.RIGHT_BRACE) {
+            if (IsStatementStart()) {
+                statements.Add(ParseStatement());
+            } else if (IsItemStart()) {
+                items.Add(ParseItem());
+            } else if (token == FixedToken.RIGHT_BRACE) {
                 NextToken();
                 break;
+            } else {
+                throw TokenCannotBeHere();
             }
-
-            statements.Add(ParseStatement());
         }
 
-        return new BlockStatement(position, [.. statements]);
+        return new BlockStatement(position, [.. items], [.. statements]);
     }
 
     bool IsStatementStart() {
@@ -709,7 +719,7 @@ public class Compiler {
             BlockStatement body = ParseBlockStatement();
 
             result = new WhileStatement(position, label, condition, body);
-        } else /*if (token == FixedToken.CONTINUE) {
+        } else if (token == FixedToken.CONTINUE) {
             // continue
             NextToken();
 
@@ -750,7 +760,7 @@ public class Compiler {
 
             AssertAndNextToken(FixedToken.SEMICOLON);
             result = new ReturnStatement(position, expression);
-        } else */if (token == FixedToken.LEFT_BRACE) {
+        } else if (token == FixedToken.LEFT_BRACE) {
             // 块
             result = ParseBlockStatement();
         } else if (IsExpressionStart()) {
@@ -766,7 +776,6 @@ public class Compiler {
     }
 
     IParameter ParseParameter() {
-        /*
         TextPosition position = tokenPosition;
         IParameter result;
 
@@ -784,12 +793,9 @@ public class Compiler {
         }
 
         return result;
-        */
-        throw new NotImplementedException();
     }
 
     ITypeNode ParseType() {
-        /*
         TextPosition position = tokenPosition;
         ITypeNode result;
 
@@ -819,8 +825,6 @@ public class Compiler {
 
         result = new PathType(position, fromGlobal, [.. segments]);
         return result;
-        */
-        throw new NotImplementedException();
     }
 
     bool IsItemStart() {
@@ -914,6 +918,25 @@ public class Compiler {
         throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [name], source, position);
     }
 
+    internal ILoopStatement GetLoop(string? label, TextPosition position) {
+        if (label == null) {
+            if (loops.Count != 0) {
+                return loops[^1];
+            } else {
+                throw new SemanticException(SemanticErrorType.NOT_IN_LOOP, [], source, position);
+            }
+        } else {
+            for (int i = spaces.Count - 1; i != -1; --i) {
+                ILoopStatement? statement = spaces[i].GetLoop(label);
+                if (statement != null) {
+                    return statement;
+                }
+            }
+
+            throw new SemanticException(SemanticErrorType.LABEL_NOT_EXIST, [label], source, position);
+        }
+    }
+
     internal void EnterNameSpace() {
         space = new();
         spaces.Add(space);
@@ -951,11 +974,15 @@ public class Compiler {
         LeaveNameSpace();
     }
 
+    internal IType GetResultType() => resultType;
+
     public FileNode[] Compile(ICollection<(string name, string content)> files) {
         this.files.AddRange(files);
 
-        space.TryAddSymbol("printInt", FunctionSymbol.NewResolved("printInt", new FunctionType([PrimitiveType.INTEGER], PrimitiveType.INTEGER), "show_message"));
-        space.TryAddSymbol("printString", FunctionSymbol.NewResolved("printString", new FunctionType([PrimitiveType.STRING], PrimitiveType.INTEGER), "show_message"));
+        space.TryAddSymbol("print", FunctionSymbol.NewResolved("print", new FunctionType([PrimitiveType.UNKNOWN], PrimitiveType.INTEGER), "show_message"));
+        space.TryAddSymbol("int", new PrimitiveTypeSymbol("int", PrimitiveType.INTEGER));
+        space.TryAddSymbol("boolean", new PrimitiveTypeSymbol("boolean", PrimitiveType.BOOLEAN));
+        space.TryAddSymbol("string", new PrimitiveTypeSymbol("string", PrimitiveType.STRING));
 
         List<FileNode> nodes = [];
         foreach ((string name, string content) in files) {

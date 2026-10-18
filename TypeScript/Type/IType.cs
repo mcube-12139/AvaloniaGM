@@ -10,6 +10,18 @@ public interface IType {
         throw compiler.SemanticError(SemanticErrorType.NOT_CALLABLE, [GetAppearance()], position);
     }
 
+    IType GetNegativeResultType(TextPosition position, Compiler compiler) {
+        throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"-{GetAppearance()}"], position);
+    }
+
+    IType GetNotResultType(TextPosition position, Compiler compiler) {
+        throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"!{GetAppearance()}"], position);
+    }
+
+    IType GetIndexResultType(IExpression index, TextPosition position, Compiler compiler) {
+        throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"{GetAppearance()}[{index.GetResultType().GetAppearance()}]"], position);
+    }
+
     IType GetMultiplyResultType(IExpression right, TextPosition position, Compiler compiler) {
         throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"{GetAppearance()} * {right.GetResultType().GetAppearance()}"], position);
     }

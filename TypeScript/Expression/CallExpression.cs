@@ -31,7 +31,7 @@ public class CallExpression: IExpression {
             parameter.SetSemantic(definedType, compiler);
 
             IType parameterType = parameter.GetResultType();
-            if (!parameterType.IsType(definedType)) {
+            if (!TypeHelp.IsType(parameterType, definedType)) {
                 throw compiler.SemanticError(SemanticErrorType.WRONG_TYPE, [parameterType.GetAppearance(), definedType.GetAppearance()], position);
             }
         }

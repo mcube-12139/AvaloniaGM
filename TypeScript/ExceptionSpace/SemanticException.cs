@@ -17,6 +17,7 @@ public enum SemanticErrorType {
     NOT_IN_LOOP,
     WRONG_PARAMETER_COUNT,
     WRONG_TYPE,
+    UNKNOWN_TYPE,
 }
 
 public class SemanticException(SemanticErrorType type, string[] parameters, string source, TextPosition position) : Exception($"{source}:{position.line}:{position.column}: {formatter[type](parameters)}") {
@@ -34,5 +35,6 @@ public class SemanticException(SemanticErrorType type, string[] parameters, stri
         { SemanticErrorType.NOT_IN_LOOP, parameters => "不在循环中" },
         { SemanticErrorType.WRONG_PARAMETER_COUNT, parameters => $"参数数量 {parameters[0]} 不是所需的 {parameters[1]}" },
         { SemanticErrorType.WRONG_TYPE, parameters => $"类型 {parameters[0]} 不是所需的 {parameters[1]}" },
+        { SemanticErrorType.UNKNOWN_TYPE, parameters => $"未知类型" },
     };
 }

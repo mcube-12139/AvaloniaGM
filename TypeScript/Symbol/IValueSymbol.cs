@@ -3,5 +3,6 @@
 namespace TypeScript.Symbol;
 
 public interface IValueSymbol: ISymbol {
-    IType GetValueType(TextPosition position, Compiler compiler);
+    IType GetValueType();
+    internal IType LazyGetValueType(TextPosition position, Compiler compiler);
 }

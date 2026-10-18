@@ -21,17 +21,17 @@ public class LetStatement(TextPosition position, IPattern pattern, ITypeNode? ty
             definedType = initializer.GetResultType();
         } else {
             type.SetSemantic(compiler);
-            definedType = type.GetSharkType();
+            definedType = type.GetSelfType();
 
             if (initializer != null) {
                 initializer.SetSemantic(definedType, compiler);
                 IType initializerType = initializer.GetResultType();
-                if (!initializerType.IsType(definedType)) {
+                if (!TypeHelp.IsType(initializerType, definedType)) {
                     throw compiler.SemanticError(SemanticErrorType.WRONG_TYPE, [initializerType.GetAppearance(), definedType.GetAppearance()], position);
                 }
             }
         }
 
-        pattern.AddSymbol(definedType, compiler);
+        pattern.AddVariable(definedType, compiler);
     }
 }

@@ -3,7 +3,7 @@
 namespace TypeScript.Parameter;
 
 public interface IParameter {
-    internal void SetSemantic(Compiler compiler);
-    internal IType LazyGetParameterType(Compiler compiler);
+    internal void SetTypeSemantic(Compiler compiler);
+    internal void AddSymbol(Compiler compiler);
     IType GetParameterType();
 }

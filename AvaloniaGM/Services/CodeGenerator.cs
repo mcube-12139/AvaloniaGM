@@ -1543,9 +1543,7 @@ internal class CodeGenerator {
                 break;
             }
             case ClassItem classItem: {
-                foreach (FunctionItem funItem in classItem.functions) {
-                    GenerateItem(funItem);
-                }
+                /// 无事发生
                 break;
             }
             default:

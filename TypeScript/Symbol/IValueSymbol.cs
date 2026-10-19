@@ -3,7 +3,7 @@
 namespace TypeScript.Symbol;
 
 public interface IValueSymbol: ISymbol {
-    IValueSymbol ISymbol.AsValue(SourcePosition position, Compiler compiler) {
+    IValueSymbol ISymbol.AsValue(SourcePosition position) {
         return this;
     }
     IType GetValueType();

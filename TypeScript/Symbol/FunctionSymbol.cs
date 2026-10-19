@@ -11,14 +11,12 @@ public class FunctionSymbol(string name, FunctionType? type, FunctionItem? item,
 
     string ISymbol.GetName() => name;
 
-    IValueSymbol ISymbol.AsValue(SourcePosition position, Compiler compiler) {
-        return this;
-    }
-
     IType IValueSymbol.LazyGetValueType(SourcePosition position, Compiler compiler) {
         // 不能调用 SetSemantic，会无限递归
-        type ??= item!.ResolveType(compiler);
-        return type;
+        if (type == null) {
+            item!.ResolveType(compiler);
+        }
+        return type!;
     }
 
     IType IValueSymbol.GetValueType() => type!;

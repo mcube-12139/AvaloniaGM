@@ -860,7 +860,7 @@ public class Compiler {
         return token is IdentifierToken;
     }
 
-    ClassField ParseClassField() {
+    ClassFieldNode ParseClassField() {
         SourcePosition position = tokenPosition;
 
         if (token is not IdentifierToken idToken) {
@@ -946,24 +946,17 @@ public class Compiler {
             NextToken();
 
             AssertAndNextToken(FixedToken.LEFT_BRACE);
-            List<ClassField> fields = [];
-            List<FunctionItem> functions = [];
+            List<ClassFieldNode> fields = [];
             for (; ; ) {
                 if (token == FixedToken.RIGHT_BRACE) {
                     NextToken();
                     break;
                 }
 
-                if (IsClassFieldStart()) {
-                    fields.Add(ParseClassField());
-                } else if (IsFunctionStart()) {
-                    functions.Add(ParseFunction());
-                } else {
-                    throw TokenCannotBeHere();
-                }
+                fields.Add(ParseClassField());
             }
 
-            result = new ClassItem(position, name, [.. fields], [.. functions]);
+            result = new ClassItem(position, name, [.. fields]);
         } else {
             throw TokenCannotBeHere();
         }

@@ -8,11 +8,15 @@ public class ClassSymbol(string name, ClassItem item) : ITypeSymbol {
     internal ClassItem item = item;
     internal NameSpace space = new();
 
+    ClassType? type;
+
     string ISymbol.GetName() => name;
 
-    NameSpace ISymbol.GetNameSpace(SourcePosition position, Compiler compiler) => space;
+    NameSpace ISymbol.GetNameSpace(SourcePosition position) => space;
 
-    IType ITypeSymbol.GetSelfType() {
+    IType ITypeSymbol.GetSelfType() => type!;
+
+    IType ITypeSymbol.LazyGetSelfType(SourcePosition position, Compiler compiler) {
         throw new NotImplementedException();
     }
 }

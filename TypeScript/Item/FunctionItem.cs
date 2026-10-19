@@ -15,6 +15,7 @@ public class FunctionItem(SourcePosition position, string name, IParameter[] par
     public readonly BlockStatement body = body;
 
     FunctionSymbol? symbol;
+    FunctionType? functionType;
 
     public FunctionSymbol GetSymbol() => symbol!;
     
@@ -24,14 +25,14 @@ public class FunctionItem(SourcePosition position, string name, IParameter[] par
     }
 
     void IItem.SetSemantic(Compiler compiler) {
-        resultNode?.SetSemantic(compiler);
+        ResolveType(compiler);
 
-        IType resultType = resultNode?.GetSelfType() ?? TupleType.EMPTY;
+        IType resultType = functionType!.resultType;
 
         compiler.EnterFunction(resultType);
 
         foreach (IParameter parameter in parameters) {
-            parameter.SetSemantic(compiler);
+            parameter.AddSymbol(compiler);
         }
         body.SetSemantic(compiler);
 
@@ -41,13 +42,20 @@ public class FunctionItem(SourcePosition position, string name, IParameter[] par
         }
 
         compiler.LeaveFunction();
-
-        symbol!.type = new FunctionType([.. parameters.Select(parameter => parameter.GetParameterType())], resultType);
     }
 
-    internal FunctionType ResolveType(Compiler compiler) {
-        IType[] parameterTypes = [.. parameters.Select(parameter => parameter.LazyGetParameterType(compiler))];
-        IType resultType = resultNode?.LazyGetSelfType(compiler) ?? TupleType.EMPTY;
-        return new(parameterTypes, resultType);
+    internal void ResolveType(Compiler compiler) {
+        if (functionType == null) {
+            foreach (IParameter parameter in parameters) {
+                parameter.SetTypeSemantic(compiler);
+            }
+            resultNode?.SetSemantic(compiler);
+
+            IType[] parameterTypes = [.. parameters.Select(parameter => parameter.GetParameterType())];
+            IType resultType = resultNode?.GetSelfType() ?? TupleType.EMPTY;
+
+            functionType = new(parameterTypes, resultType);
+            symbol!.type = functionType;
+        }
     }
 }

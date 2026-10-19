@@ -11,10 +11,6 @@ public class ParameterSymbol(
 
     string ISymbol.GetName() => name;
 
-    IValueSymbol ISymbol.AsValue(SourcePosition position, Compiler compiler) {
-        return this;
-    }
-
     IType IValueSymbol.LazyGetValueType(SourcePosition position, Compiler compiler) => type;
 
     IType IValueSymbol.GetValueType() => type;

@@ -5,15 +5,15 @@ namespace TypeScript.Parameter;
 public class ThisParameter(SourcePosition position) : IParameter {
     public readonly SourcePosition position = position;
 
+    void IParameter.AddSymbol(Compiler compiler) {
+        throw new NotImplementedException();
+    }
+
     IType IParameter.GetParameterType() {
         throw new NotImplementedException();
     }
 
-    IType IParameter.LazyGetParameterType(Compiler compiler) {
-        throw new NotImplementedException();
-    }
-
-    void IParameter.SetSemantic(Compiler compiler) {
+    void IParameter.SetTypeSemantic(Compiler compiler) {
         throw new NotImplementedException();
     }
 }

@@ -3,8 +3,9 @@
 namespace TypeScript.Symbol;
 
 public interface ITypeSymbol: ISymbol {
+    internal IType LazyGetSelfType(SourcePosition position, Compiler compiler);
     IType GetSelfType();
-    ITypeSymbol ISymbol.AsType(SourcePosition position, Compiler compiler) {
+    ITypeSymbol ISymbol.AsType(SourcePosition position) {
         return this;
     }
 }

@@ -13,22 +13,12 @@ public class PatternParameter(SourcePosition position, IPattern pattern, ITypeNo
 
     IType IParameter.GetParameterType() => type!;
 
-    IType IParameter.LazyGetParameterType(Compiler compiler) {
-        if (type == null) {
-            typeNode.SetSemantic(compiler);
-            type = typeNode.GetSelfType();
-        }
-        return type!;
+    void IParameter.SetTypeSemantic(Compiler compiler) {
+        typeNode.SetSemantic(compiler);
+        type = typeNode.GetSelfType();
     }
 
-    void SetSemantic(Compiler compiler) {
-        if (type == null) {
-            typeNode.SetSemantic(compiler);
-            type = typeNode.GetSelfType();
-        }
-
-        pattern.AddParameter(type, compiler);
+    void IParameter.AddSymbol(Compiler compiler) {
+        pattern.AddParameter(type!, compiler);
     }
-
-    void IParameter.SetSemantic(Compiler compiler) => SetSemantic(compiler);
 }

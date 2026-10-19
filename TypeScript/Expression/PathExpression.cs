@@ -23,9 +23,9 @@ public class PathExpression(SourcePosition position, string[] segments, bool fro
         }
 
         for (int i = 1; i != segments.Length; ++i) {
-            nowSymbol = nowSymbol.GetNameSpace(position, compiler).GetSymbol(segments[i]) ?? throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [segments[i]], position);
+            nowSymbol = nowSymbol.GetNameSpace(position).GetSymbol(segments[i]) ?? throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [segments[i]], position);
         }
-        symbol = nowSymbol.AsValue(position, compiler);
+        symbol = nowSymbol.AsValue(position);
         type = symbol.LazyGetValueType(position, compiler);
     }
 

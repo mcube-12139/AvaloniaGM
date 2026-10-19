@@ -17,4 +17,8 @@ public class IndexExpression(TextPosition position, IExpression indexed, IExpres
         indexed.SetSemantic(null, compiler);
         type = indexed.GetResultType().GetIndexResultType(index, position, compiler);
     }
+
+    void IPlaceExpression.SetAssignSemantic(Compiler compiler) {
+        // 无事发生
+    }
 }

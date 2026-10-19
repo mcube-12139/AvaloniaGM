@@ -10,7 +10,15 @@ public class IfStatement(TextPosition position, IExpression condition, BlockStat
 
     void IStatement.SetSemantic(Compiler compiler) {
         condition.SetSemantic(null, compiler);
+
+        compiler.EnterIfFlowContext();
         body.SetSemantic(compiler);
-        elseBody?.SetSemantic(compiler);
+
+        if (elseBody != null) {
+            compiler.StartElse();
+            elseBody.SetSemantic(compiler);
+        }
+
+        compiler.LeaveIfFlowContext();
     }
 }

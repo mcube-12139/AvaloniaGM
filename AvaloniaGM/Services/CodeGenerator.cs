@@ -613,14 +613,33 @@ internal class CodeGenerator {
         }
     }
 
+    void SetIndexByType(IType type, IExpression indexed, IExpression index, IExpression value) {
+        switch (type) {
+            case ArrayType: {
+                UndertaleVariable variable = EvaluateExpressionToVariable(indexed, "indexed");
+                EvaluateExpression(value);
+
+                PushInt16((short)variable.InstanceType);
+                EvaluateExpression(index);
+                Convert(DataType.Int32);
+
+                Store(variable, VariableType.Array);
+                break;
+            }
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
     void GetIndexByType(IType type, IExpression indexed, IExpression index) {
         switch (type) {
             case ArrayType: {
                 UndertaleVariable variable = EvaluateExpressionToVariable(indexed, "indexed");
+
                 PushInt16((short)variable.InstanceType);
                 EvaluateExpression(index);
-
                 Convert(DataType.Int32);
+
                 Load(variable, VariableType.Array);
                 break;
             }
@@ -833,14 +852,7 @@ internal class CodeGenerator {
     void AssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case IndexExpression indexExpression: {
-                UndertaleVariable variable = EvaluateExpressionToVariable(indexExpression.indexed, "indexed");
-                EvaluateExpression(expression);
-
-                PushInt16((short)variable.InstanceType);
-                EvaluateExpression(indexExpression.index);
-
-                Convert(DataType.Int32);
-                Store(variable, VariableType.Array);
+                SetIndexByType(indexExpression.indexed.GetResultType(), indexExpression.indexed, indexExpression.index, expression);
                 break;
             }
             case PathExpression pathExpression: {

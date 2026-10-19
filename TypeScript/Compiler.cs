@@ -27,8 +27,10 @@ public class Compiler {
     readonly List<NameSpace> spaces;
     NameSpace space;
     readonly List<ILoopStatement> loops = [];
+    readonly Stack<IfFlowContext> ifFlowContexts = [];
     readonly Stack<FunctionContext> functionContexts = [];
     IType resultType = TupleType.EMPTY;
+    bool returned;
 
     public Compiler() {
         NameSpace space = new();
@@ -882,15 +884,14 @@ public class Compiler {
     }
 
     FileNode ParseRoot() {
-        List<IStatement> statements = [];
         List<IItem> items = [];
 
         for (; ; ) {
-            if (IsItemStart()) {
-                items.Add(ParseItem());
-            } else {
+            if (!IsItemStart()) {
                 break;
             }
+
+            items.Add(ParseItem());
         }
         AssertToken(FixedToken.END);
 
@@ -909,7 +910,9 @@ public class Compiler {
 
     internal ISymbol GetSymbol(string name, TextPosition position) {
         for (int i = spaces.Count - 1; i != -1; --i) {
-            ISymbol? symbol = spaces[i].GetSymbol(name);
+            NameSpace space = spaces[i];
+
+            ISymbol? symbol = space.GetSymbol(name);
             if (symbol != null) {
                 return symbol;
             }
@@ -919,12 +922,12 @@ public class Compiler {
     }
 
     internal ILoopStatement GetLoop(string? label, TextPosition position) {
+        if (loops.Count == 0) {
+            throw new SemanticException(SemanticErrorType.NOT_IN_LOOP, [], source, position);
+        }
+
         if (label == null) {
-            if (loops.Count != 0) {
-                return loops[^1];
-            } else {
-                throw new SemanticException(SemanticErrorType.NOT_IN_LOOP, [], source, position);
-            }
+            return loops[^1];
         } else {
             for (int i = spaces.Count - 1; i != -1; --i) {
                 ILoopStatement? statement = spaces[i].GetLoop(label);
@@ -958,10 +961,65 @@ public class Compiler {
         loops.RemoveAt(loops.Count - 1);
     }
 
+    internal void EnterIfFlowContext() {
+        ifFlowContexts.Push(new());
+    }
+
+    internal void StartElse() {
+        IfFlowContext context = ifFlowContexts.Peek();
+        context.nowContext = context.elseContext;
+    }
+
+    internal void SetReturned() {
+        if (ifFlowContexts.Count == 0) {
+            returned = true;
+        } else {
+            IfFlowContext lastContext = ifFlowContexts.Peek();
+            lastContext.nowContext.returned = true;
+        }
+    }
+
+    internal bool GetReturned() => returned;
+
+    internal void AddInitializedSymbol(VariableSymbol symbol) {
+        if (ifFlowContexts.Count != 0) {
+            IfFlowContext lastContext = ifFlowContexts.Peek();
+            lastContext.nowContext.initializedSymbols.Add(symbol);
+        }
+    }
+
+    internal void LeaveIfFlowContext() {
+        IfFlowContext context = ifFlowContexts.Pop();
+
+        if (context.ifContext.returned && context.elseContext.returned) {
+            SetReturned();
+        }
+
+        if (!context.ifContext.returned && !context.elseContext.returned) {
+            // 两边都不返回，把交集符号加入上一层，其他符号改回未初始化
+            HashSet<VariableSymbol> elseLeftSymbols = [];
+            foreach (VariableSymbol elseSymbol in context.elseContext.initializedSymbols) {
+                elseLeftSymbols.Add(elseSymbol);
+            }
+            foreach (VariableSymbol ifSymbol in context.ifContext.initializedSymbols) {
+                if (elseLeftSymbols.Contains(ifSymbol)) {
+                    AddInitializedSymbol(ifSymbol);
+                    elseLeftSymbols.Remove(ifSymbol);
+                } else {
+                    ifSymbol.initialized = false;
+                }
+            }
+            foreach (VariableSymbol symbol in elseLeftSymbols) {
+                symbol.initialized = false;
+            }
+        }
+    }
+
     internal void EnterFunction(IType resultType) {
-        functionContexts.Push(new(resultType));
+        functionContexts.Push(new(resultType, returned));
 
         this.resultType = resultType;
+        returned = false;
 
         EnterNameSpace();
     }
@@ -970,6 +1028,7 @@ public class Compiler {
         FunctionContext context = functionContexts.Pop();
 
         resultType = context.resultType;
+        returned = context.returned;
 
         LeaveNameSpace();
     }

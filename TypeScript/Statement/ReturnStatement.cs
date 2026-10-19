@@ -15,5 +15,7 @@ public class ReturnStatement(TextPosition position, IExpression? value) : IState
         if (!TypeHelp.IsType(type, resultType)) {
             throw compiler.SemanticError(ExceptionSpace.SemanticErrorType.WRONG_TYPE, [type.GetAppearance(), resultType.GetAppearance()], position);
         }
+
+        compiler.SetReturned();
     }
 }

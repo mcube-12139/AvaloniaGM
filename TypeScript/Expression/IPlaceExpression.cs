@@ -4,4 +4,5 @@ public interface IPlaceExpression : IExpression {
     IPlaceExpression IExpression.AsPlace(Compiler compiler) {
         return this;
     }
+    internal void SetAssignSemantic(Compiler compiler);
 }

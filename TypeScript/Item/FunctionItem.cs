@@ -34,6 +34,11 @@ public class FunctionItem(TextPosition position, string name, IParameter[] param
         }
         body.SetSemantic(compiler);
 
+        if (resultType != TupleType.EMPTY && !compiler.GetReturned()) {
+            // 返回类型非()必须显式返回
+            throw compiler.SemanticError(ExceptionSpace.SemanticErrorType.MAY_NOT_RETURN, [name], position);
+        }
+
         compiler.LeaveFunction();
 
         symbol!.type = new FunctionType([.. parameters.Select(parameter => parameter.GetParameterType())], resultType);

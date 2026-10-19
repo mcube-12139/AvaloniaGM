@@ -12,7 +12,7 @@ public class AssignExpression(TextPosition position, IPlaceExpression left, IExp
     public IType GetResultType() => TupleType.EMPTY;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
-        left.SetSemantic(null, compiler);
+        left.SetAssignSemantic(compiler);
         left.GetResultType().EnsureCanAssign(right, position, compiler);
     }
 }

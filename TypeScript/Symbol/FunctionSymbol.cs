@@ -30,35 +30,4 @@ public class FunctionSymbol(string name, FunctionType? type, FunctionItem? item,
 
     internal static FunctionSymbol NewUnresolved(string name, FunctionItem item, string? hostName) =>
         new(name, null, item, hostName);
-
-    /*
-    void Resolve(Generator generator) {
-        type ??= item!.ResolveType(generator);
-    }
-
-    ITypeSymbol ISymbol.AsType(TextPosition position, Generator generator) {
-        throw generator.SemanticError(SemanticErrorType.NOT_TYPE, [name], position);
-    }
-
-    void IValueSymbol.Call(TextPosition position, Generator generator) {
-        Resolve(generator);
-        type!.Call(fun, generator);
-    }
-
-    void IValueSymbol.Load(TextPosition position, Generator generator) {
-        throw new System.NotImplementedException();
-    }
-
-    void IValueSymbol.Store(TextPosition position, Generator generator) {
-        throw generator.SemanticError(SemanticErrorType.NOT_WRITEABLE, [name], position);
-    }
-
-    void IValueSymbol.StoreIndex(IExpression right, IExpression index, TextPosition position, Generator generator) {
-        throw new System.NotImplementedException();
-    }
-
-    void IValueSymbol.LoadIndex(IExpression index, TextPosition position, Generator generator) {
-        throw new System.NotImplementedException();
-    }
-    */
 }

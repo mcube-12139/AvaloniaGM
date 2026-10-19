@@ -10,8 +10,8 @@ public class IdentifierPattern(TextPosition position, string name) : IPattern {
 
     public ISymbol GetSymbol() => symbol!;
 
-    void IPattern.AddVariable(IType type, Compiler compiler) {
-        symbol = new VariableSymbol(name, type);
+    void IPattern.AddVariable(IType type, bool initialized, Compiler compiler) {
+        symbol = new VariableSymbol(name, type, initialized);
         compiler.AddSymbol(name, symbol, position);
     }
 

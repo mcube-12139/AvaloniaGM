@@ -8,12 +8,12 @@ public class FunctionType(IType[] parameterTypes, IType resultType) : IType {
         return $"({string.Join(", ", parameterTypes.Select(type => type.GetAppearance()))}) => {resultType.GetAppearance()}";
     }
 
-    bool IType.IsType(IType other) {
+    bool IType.EqualType(IType other) {
         if (other is not FunctionType otherFun) {
             return false;
         }
 
-        if (!TypeHelp.IsType(resultType, otherFun.resultType)) {
+        if (!resultType.EqualType(otherFun.resultType)) {
             return false;
         }
 
@@ -22,7 +22,7 @@ public class FunctionType(IType[] parameterTypes, IType resultType) : IType {
         }
 
         for (int i = 0; i != parameterTypes.Length; ++i) {
-            if (!TypeHelp.IsType(parameterTypes[i], otherFun.parameterTypes[i])) {
+            if (!parameterTypes[i].EqualType(otherFun.parameterTypes[i])) {
                 return false;
             }
         }
@@ -30,7 +30,7 @@ public class FunctionType(IType[] parameterTypes, IType resultType) : IType {
         return true;
     }
 
-    FunctionType IType.AsFunctionType(TextPosition position, Compiler compiler) {
+    FunctionType IType.AsFunctionType(SourcePosition position, Compiler compiler) {
         return this;
     }
 }

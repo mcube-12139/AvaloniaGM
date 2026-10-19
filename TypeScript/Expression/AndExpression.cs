@@ -3,12 +3,12 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-public class AndExpression(TextPosition position, IExpression left, IExpression right) : IExpression {
-    public readonly TextPosition position = position;
+public class AndExpression(SourcePosition position, IExpression left, IExpression right) : IExpression {
+    public readonly SourcePosition position = position;
     public readonly IExpression left = left;
     public readonly IExpression right = right;
 
-    TextPosition IExpression.GetPosition() => position;
+    SourcePosition IExpression.GetPosition() => position;
 
     public IType GetResultType() => PrimitiveType.BOOLEAN;
 
@@ -18,7 +18,7 @@ public class AndExpression(TextPosition position, IExpression left, IExpression 
         IType leftType = left.GetResultType();
         IType rightType = right.GetResultType();
         if (leftType != PrimitiveType.BOOLEAN || rightType != PrimitiveType.BOOLEAN) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"{leftType.GetAppearance()} && {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"{leftType.GetAppearance()} && {rightType.GetAppearance()}"], position);
         }
     }
 }

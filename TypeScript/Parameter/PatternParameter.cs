@@ -4,8 +4,8 @@ using TypeScript.TypeNode;
 
 namespace TypeScript.Parameter;
 
-public class PatternParameter(TextPosition position, IPattern pattern, ITypeNode typeNode) : IParameter {
-    public readonly TextPosition position = position;
+public class PatternParameter(SourcePosition position, IPattern pattern, ITypeNode typeNode) : IParameter {
+    public readonly SourcePosition position = position;
     public readonly IPattern pattern = pattern;
     public readonly ITypeNode typeNode = typeNode;
 

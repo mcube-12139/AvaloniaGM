@@ -14,7 +14,7 @@ public class LocalSymbol(
 
     string ISymbol.GetName() => name;
 
-    IType IValueSymbol.LazyGetValueType(TextPosition position, Compiler compiler) => type;
+    IType IValueSymbol.LazyGetValueType(SourcePosition position, Compiler compiler) => type;
 
     IType IValueSymbol.GetValueType() => type;
 }

@@ -8,5 +8,5 @@ public class PrimitiveTypeSymbol(string name, IType type) : ITypeSymbol {
 
     string ISymbol.GetName() => name;
 
-    IType ITypeSymbol.GetSharkType() => type;
+    IType ITypeSymbol.GetSelfType() => type;
 }

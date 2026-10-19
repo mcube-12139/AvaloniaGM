@@ -3,8 +3,8 @@ using TypeScript.FlowContext;
 
 namespace TypeScript.Statement;
 
-public class WhileStatement(TextPosition position, string? label, IExpression condition, BlockStatement body) : ILoopStatement {
-    public readonly TextPosition position = position;
+public class WhileStatement(SourcePosition position, string? label, IExpression condition, BlockStatement body) : ILoopStatement {
+    public readonly SourcePosition position = position;
     public readonly string? label = label;
     public readonly IExpression condition = condition;
     public readonly BlockStatement body = body;

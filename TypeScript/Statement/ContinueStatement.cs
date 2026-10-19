@@ -1,7 +1,7 @@
 ﻿namespace TypeScript.Statement;
 
-public class ContinueStatement(TextPosition position, string? label) : IStatement {
-    public readonly TextPosition position = position;
+public class ContinueStatement(SourcePosition position, string? label) : IStatement {
+    public readonly SourcePosition position = position;
     public readonly string? label = label;
 
     ILoopStatement? loop;

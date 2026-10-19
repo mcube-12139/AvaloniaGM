@@ -3,7 +3,7 @@
 public class UnknownType : IType {
     string IType.GetAppearance() => "unknown";
 
-    bool IType.IsType(IType other) {
+    bool IType.EqualType(IType other) {
         return true;
     }
 }

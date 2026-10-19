@@ -3,13 +3,13 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-public class ArrayExpression(TextPosition position, IExpression[] elements) : IExpression {
-    public readonly TextPosition position = position;
+public class ArrayExpression(SourcePosition position, IExpression[] elements) : IExpression {
+    public readonly SourcePosition position = position;
     public readonly IExpression[] elements = elements;
 
     IType? type;
 
-    TextPosition IExpression.GetPosition() => position;
+    SourcePosition IExpression.GetPosition() => position;
 
     public IType GetResultType() => type!;
 
@@ -22,17 +22,17 @@ public class ArrayExpression(TextPosition position, IExpression[] elements) : IE
                 expression.SetSemantic(null, compiler);
                 IType elementType = expression.GetResultType();
                 if (!TypeHelp.IsType(elementType, firstType)) {
-                    throw compiler.SemanticError(SemanticErrorType.WRONG_TYPE, [elementType.GetAppearance(), firstType.GetAppearance()], expression.GetPosition());
+                    throw new SemanticException(SemanticErrorType.WRONG_TYPE, [elementType.GetAppearance(), firstType.GetAppearance()], expression.GetPosition());
                 }
             }
 
             type = new ArrayType(firstType);
         } else {
             if (target == null) {
-                throw compiler.SemanticError(SemanticErrorType.UNKNOWN_TYPE, [], position);
+                throw new SemanticException(SemanticErrorType.UNKNOWN_TYPE, [], position);
             }
             if (target is not ArrayType) {
-                throw compiler.SemanticError(SemanticErrorType.WRONG_TYPE, ["[]", target.GetAppearance()], position);
+                throw new SemanticException(SemanticErrorType.WRONG_TYPE, ["[]", target.GetAppearance()], position);
             }
             type = target;
         }

@@ -2,14 +2,14 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-public class IndexExpression(TextPosition position, IExpression indexed, IExpression index) : IPlaceExpression {
-    public readonly TextPosition position = position;
+public class IndexExpression(SourcePosition position, IExpression indexed, IExpression index) : IPlaceExpression {
+    public readonly SourcePosition position = position;
     public readonly IExpression indexed = indexed;
     public readonly IExpression index = index;
 
     IType? type;
 
-    TextPosition IExpression.GetPosition() => position;
+    SourcePosition IExpression.GetPosition() => position;
 
     public IType GetResultType() => type!;
 

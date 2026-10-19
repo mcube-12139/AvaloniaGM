@@ -2,13 +2,13 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-public class NegateExpression(TextPosition position, IExpression expression) : IExpression {
-    public readonly TextPosition position = position;
+public class NegateExpression(SourcePosition position, IExpression expression) : IExpression {
+    public readonly SourcePosition position = position;
     public readonly IExpression expression = expression;
 
     IType? type;
 
-    TextPosition IExpression.GetPosition() => position;
+    SourcePosition IExpression.GetPosition() => position;
 
     public IType GetResultType() => type!;
 

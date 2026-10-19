@@ -2,12 +2,12 @@
 
 namespace TypeScript.Expression;
 
-public class IntegerExpression(TextPosition position, string valueStr) : IExpression {
-    public readonly TextPosition position = position;
+public class IntegerExpression(SourcePosition position, string valueStr) : IExpression {
+    public readonly SourcePosition position = position;
     public readonly string valueStr = valueStr;
     IType? type;
 
-    TextPosition IExpression.GetPosition() => position;
+    SourcePosition IExpression.GetPosition() => position;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         /*
@@ -19,7 +19,7 @@ public class IntegerExpression(TextPosition position, string valueStr) : IExpres
             } else if (valueStr.Length < 19 || (valueStr.Length == 19 && string.Compare(valueStr, "9223372036854775808") < 0)) {
                 type = PrimitiveType.LONG;
             } else {
-                throw compiler.SemanticError(SemanticErrorType.TOO_LARGE_INTEGER, [valueStr], position);
+                throw new SemanticException(SemanticErrorType.TOO_LARGE_INTEGER, [valueStr], position);
             }
         } else {
         }

@@ -1,7 +1,7 @@
 ﻿namespace TypeScript.Statement;
 
-public class BreakStatement(TextPosition position, string? label) : IStatement {
-    public readonly TextPosition position = position;
+public class BreakStatement(SourcePosition position, string? label) : IStatement {
+    public readonly SourcePosition position = position;
     public readonly string? label = label;
 
     ILoopStatement? loop;

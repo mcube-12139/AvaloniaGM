@@ -2,12 +2,12 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-public class RightShiftAssignExpression(TextPosition position, IPlaceExpression left, IExpression right) : IExpression {
-    public readonly TextPosition position = position;
+public class RightShiftAssignExpression(SourcePosition position, IPlaceExpression left, IExpression right) : IExpression {
+    public readonly SourcePosition position = position;
     public readonly IPlaceExpression left = left;
     public readonly IExpression right = right;
 
-    TextPosition IExpression.GetPosition() => position;
+    SourcePosition IExpression.GetPosition() => position;
 
     public IType GetResultType() => TupleType.EMPTY;
 

@@ -1,4 +1,5 @@
-﻿using TypeScript.Parameter;
+﻿using TypeScript.ExceptionSpace;
+using TypeScript.Parameter;
 using TypeScript.Statement;
 using TypeScript.Symbol;
 using TypeScript.TypeNode;
@@ -6,8 +7,8 @@ using TypeScript.Type;
 
 namespace TypeScript.Item;
 
-public class FunctionItem(TextPosition position, string name, IParameter[] parameters, ITypeNode? resultNode, BlockStatement body) : IItem {
-    public readonly TextPosition position = position;
+public class FunctionItem(SourcePosition position, string name, IParameter[] parameters, ITypeNode? resultNode, BlockStatement body) : IItem {
+    public readonly SourcePosition position = position;
     public readonly string name = name;
     public readonly IParameter[] parameters = parameters;
     public readonly ITypeNode? resultNode = resultNode;
@@ -36,7 +37,7 @@ public class FunctionItem(TextPosition position, string name, IParameter[] param
 
         if (resultType != TupleType.EMPTY && !compiler.GetReturned()) {
             // 返回类型非()必须显式返回
-            throw compiler.SemanticError(ExceptionSpace.SemanticErrorType.MAY_NOT_RETURN, [name], position);
+            throw new SemanticException(SemanticErrorType.MAY_NOT_RETURN, [name], position);
         }
 
         compiler.LeaveFunction();

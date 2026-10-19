@@ -2,13 +2,13 @@
 
 namespace TypeScript.Statement;
 
-public class BlockStatement(TextPosition position, IItem[] items, IStatement[] statements) : IStatement {
-    public readonly TextPosition position = position;
+public class BlockStatement(SourcePosition position, IItem[] items, IStatement[] statements) : IStatement {
+    public readonly SourcePosition position = position;
     public readonly IItem[] items = items;
     public readonly IStatement[] statements = statements;
 
     internal void SetSemanticWithStart(Compiler compiler, Action? start) {
-        compiler.EnterNameSpace();
+        compiler.EnterNewNameSpace();
         start?.Invoke();
 
         foreach (IItem item in items) {

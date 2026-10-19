@@ -2,14 +2,14 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-public class SubtractExpression(TextPosition position, IExpression left, IExpression right) : IExpression {
-    public readonly TextPosition position = position;
+public class SubtractExpression(SourcePosition position, IExpression left, IExpression right) : IExpression {
+    public readonly SourcePosition position = position;
     public readonly IExpression left = left;
     public readonly IExpression right = right;
 
     IType? type;
 
-    TextPosition IExpression.GetPosition() => position;
+    SourcePosition IExpression.GetPosition() => position;
 
     public IType GetResultType() => type!;
 

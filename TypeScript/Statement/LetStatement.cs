@@ -6,8 +6,8 @@ using TypeScript.Type;
 
 namespace TypeScript.Statement;
 
-public class LetStatement(TextPosition position, IPattern pattern, ITypeNode? type, IExpression? initializer) : IStatement {
-    public readonly TextPosition position = position;
+public class LetStatement(SourcePosition position, IPattern pattern, ITypeNode? type, IExpression? initializer) : IStatement {
+    public readonly SourcePosition position = position;
     public readonly IPattern pattern = pattern;
     public readonly ITypeNode? type = type;
     public readonly IExpression? initializer = initializer;
@@ -27,7 +27,7 @@ public class LetStatement(TextPosition position, IPattern pattern, ITypeNode? ty
                 initializer.SetSemantic(definedType, compiler);
                 IType initializerType = initializer.GetResultType();
                 if (!TypeHelp.IsType(initializerType, definedType)) {
-                    throw compiler.SemanticError(SemanticErrorType.WRONG_TYPE, [initializerType.GetAppearance(), definedType.GetAppearance()], position);
+                    throw new SemanticException(SemanticErrorType.WRONG_TYPE, [initializerType.GetAppearance(), definedType.GetAppearance()], position);
                 }
             }
         }

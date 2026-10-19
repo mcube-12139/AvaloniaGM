@@ -1542,6 +1542,12 @@ internal class CodeGenerator {
                 nextParameterIndex = state.nextParameterIndex;
                 break;
             }
+            case ClassItem classItem: {
+                foreach (FunctionItem funItem in classItem.functions) {
+                    GenerateItem(funItem);
+                }
+                break;
+            }
             default:
                 throw new NotImplementedException();
         }

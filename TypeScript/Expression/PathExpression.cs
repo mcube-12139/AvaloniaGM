@@ -4,17 +4,28 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-public class PathExpression(TextPosition position, string[] segments) : IPlaceExpression {
-    public readonly TextPosition position = position;
+public class PathExpression(SourcePosition position, string[] segments, bool fromTop) : IPlaceExpression {
+    public readonly SourcePosition position = position;
     public readonly string[] segments = segments;
+    public readonly bool fromTop = fromTop;
 
     IType? type;
     IValueSymbol? symbol;
 
-    TextPosition IExpression.GetPosition() => position;
+    SourcePosition IExpression.GetPosition() => position;
 
     void SetSymbolAndType(Compiler compiler) {
-        symbol = compiler.GetSymbol(segments[0], position).AsValue(position, compiler);
+        ISymbol nowSymbol;
+        if (!fromTop) {
+            nowSymbol = compiler.GetSymbol(segments[0], position);
+        } else {
+            nowSymbol = compiler.GetTopSymbol(segments[0], position);
+        }
+
+        for (int i = 1; i != segments.Length; ++i) {
+            nowSymbol = nowSymbol.GetNameSpace(position, compiler).GetSymbol(segments[i]) ?? throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [segments[i]], position);
+        }
+        symbol = nowSymbol.AsValue(position, compiler);
         type = symbol.LazyGetValueType(position, compiler);
     }
 
@@ -23,7 +34,7 @@ public class PathExpression(TextPosition position, string[] segments) : IPlaceEx
 
         if (symbol is LocalSymbol localSymbol) {
             if (!localSymbol.initialized) {
-                throw compiler.SemanticError(SemanticErrorType.MAY_NOT_INITIALIZED, [symbol.GetName()], position);
+                throw new SemanticException(SemanticErrorType.MAY_NOT_INITIALIZED, [symbol.GetName()], position);
             }
         }
     }

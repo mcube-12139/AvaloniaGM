@@ -3,8 +3,8 @@ using TypeScript.Type;
 
 namespace TypeScript.Pattern;
 
-public class IdentifierPattern(TextPosition position, string name) : IPattern {
-    public readonly TextPosition position = position;
+public class IdentifierPattern(SourcePosition position, string name) : IPattern {
+    public readonly SourcePosition position = position;
     public readonly string name = name;
     ISymbol? symbol;
 

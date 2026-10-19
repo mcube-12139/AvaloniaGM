@@ -3,8 +3,8 @@ using TypeScript.FlowContext;
 
 namespace TypeScript.Statement;
 
-public class IfStatement(TextPosition position, IExpression condition, BlockStatement body, IStatement? elseBody) : IStatement {
-    public readonly TextPosition position = position;
+public class IfStatement(SourcePosition position, IExpression condition, BlockStatement body, IStatement? elseBody) : IStatement {
+    public readonly SourcePosition position = position;
     public readonly IExpression condition = condition;
     public readonly BlockStatement body = body;
     public readonly IStatement? elseBody = elseBody;

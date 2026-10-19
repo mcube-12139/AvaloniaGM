@@ -3,8 +3,8 @@
 namespace TypeScript.Symbol;
 
 public interface ITypeSymbol: ISymbol {
-    IType GetSharkType();
-    ITypeSymbol ISymbol.AsType(TextPosition position, Compiler compiler) {
+    IType GetSelfType();
+    ITypeSymbol ISymbol.AsType(SourcePosition position, Compiler compiler) {
         return this;
     }
 }

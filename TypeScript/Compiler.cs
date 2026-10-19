@@ -21,7 +21,7 @@ public class Compiler {
     char c;
     TextPosition indexPosition;
     TextPosition charPosition;
-    TextPosition tokenPosition;
+    SourcePosition tokenPosition;
     IToken token = FixedToken.END;
     readonly StringBuilder builder = new();
 
@@ -58,10 +58,10 @@ public class Compiler {
 
     SyntaxException CharCannotBeHere() {
         if (c != '\0') {
-            return new SyntaxException(SyntaxErrorType.CANNOT_BE_HERE, [c.ToString()], source, charPosition);
+            return new SyntaxException(SyntaxErrorType.CANNOT_BE_HERE, [c.ToString()], source, new(source, charPosition.line, charPosition.column));
         }
 
-        return new SyntaxException(SyntaxErrorType.CANNOT_END_HERE, [], source, charPosition);
+        return new SyntaxException(SyntaxErrorType.CANNOT_END_HERE, [], source, new(source, charPosition.line, charPosition.column));
     }
 
     SyntaxException TokenCannotBeHere() {
@@ -78,7 +78,8 @@ public class Compiler {
             if (c == ' ' || c == '\r' || c == '\n' || c == '\t') {
                 NextChar();
             } else if (c == '/') {
-                tokenPosition = charPosition;
+                tokenPosition.line = charPosition.line;
+                tokenPosition.column = charPosition.column;
                 NextChar();
                 if (c == '/') {
                     // 行注释
@@ -125,7 +126,8 @@ public class Compiler {
             }
         }
 
-        tokenPosition = charPosition;
+        tokenPosition.line = charPosition.line;
+        tokenPosition.column = charPosition.column;
         if (char.IsAsciiLetter(c) || c == '_') {
             // 标识符 | 标签
             builder.Clear().Append(c);
@@ -370,13 +372,14 @@ public class Compiler {
             || token == FixedToken.MINUS
             || token == FixedToken.EXCLAMATION
             || token == FixedToken.LEFT_BRACKET
+            || token == FixedToken.DOUBLE_COLON
             || token is IdentifierToken
             || token is StringToken
             || token is IntegerToken;
     }
 
     IExpression ParseExpression(int priority) {
-        TextPosition position = tokenPosition;
+        SourcePosition position = tokenPosition;
         IExpression result;
 
         if (token == FixedToken.TRUE) {
@@ -417,9 +420,32 @@ public class Compiler {
             }
 
             result = new ArrayExpression(position, [.. elements]);
-        } else if (token is IdentifierToken idToken) {
-            result = new PathExpression(position, [idToken.name]);
-            NextToken();
+        } else if (token is IdentifierToken || token == FixedToken.DOUBLE_COLON) {
+            // 路径
+            bool fromTop;
+            if (token == FixedToken.DOUBLE_COLON) {
+                fromTop = true;
+                NextToken();
+            } else {
+                fromTop = false;
+            }
+
+            List<string> segments = [];
+            for (; ; ) {
+                if (token is not IdentifierToken idToken) {
+                    throw TokenCannotBeHere();
+                }
+                segments.Add(idToken.name);
+                NextToken();
+
+                if (token == FixedToken.DOUBLE_COLON) {
+                    NextToken();
+                } else {
+                    break;
+                }
+            }
+
+            result = new PathExpression(position, [.. segments], fromTop);
         } else if (token is StringToken strToken) {
             result = new StringExpression(position, strToken.value);
             NextToken();
@@ -593,7 +619,7 @@ public class Compiler {
     }
 
     IPattern ParsePattern() {
-        TextPosition position = tokenPosition;
+        SourcePosition position = tokenPosition;
         IPattern result;
 
         if (token is IdentifierToken idToken) {
@@ -607,7 +633,7 @@ public class Compiler {
     }
 
     IfStatement ParseIfStatement() {
-        TextPosition position = tokenPosition;
+        SourcePosition position = tokenPosition;
 
         AssertAndNextToken(FixedToken.IF);
 
@@ -633,7 +659,7 @@ public class Compiler {
     }
     
     BlockStatement ParseBlockStatement() {
-        TextPosition position = tokenPosition;
+        SourcePosition position = tokenPosition;
 
         AssertAndNextToken(FixedToken.LEFT_BRACE);
 
@@ -668,7 +694,7 @@ public class Compiler {
     }
 
     IStatement ParseStatement() {
-        TextPosition position = tokenPosition;
+        SourcePosition position = tokenPosition;
         IStatement result;
 
         if (token == FixedToken.LET) {
@@ -779,7 +805,7 @@ public class Compiler {
     }
 
     IParameter ParseParameter() {
-        TextPosition position = tokenPosition;
+        SourcePosition position = tokenPosition;
         IParameter result;
 
         if (token == FixedToken.THIS) {
@@ -799,7 +825,7 @@ public class Compiler {
     }
 
     ITypeNode ParseType() {
-        TextPosition position = tokenPosition;
+        SourcePosition position = tokenPosition;
         ITypeNode result;
 
         bool fromGlobal;
@@ -830,15 +856,87 @@ public class Compiler {
         return result;
     }
 
-    bool IsItemStart() {
+    bool IsClassFieldStart() {
+        return token is IdentifierToken;
+    }
+
+    ClassField ParseClassField() {
+        SourcePosition position = tokenPosition;
+
+        if (token is not IdentifierToken idToken) {
+            throw TokenCannotBeHere();
+        }
+        string name = idToken.name;
+        NextToken();
+
+        AssertAndNextToken(FixedToken.COLON);
+
+        ITypeNode type = ParseType();
+
+        AssertAndNextToken(FixedToken.SEMICOLON);
+
+        return new(position, name, type);
+    }
+
+    bool IsFunctionStart() {
         return token == FixedToken.FUNCTION;
     }
 
+    FunctionItem ParseFunction() {
+        SourcePosition position = tokenPosition;
+
+        AssertAndNextToken(FixedToken.FUNCTION);
+
+        if (token is not IdentifierToken idToken) {
+            throw TokenCannotBeHere();
+        }
+        string name = idToken.name;
+        NextToken();
+
+        AssertAndNextToken(FixedToken.LEFT_PARENTHESIS);
+        List<IParameter> parameters = [];
+        for (; ; ) {
+            if (token == FixedToken.RIGHT_PARENTHESIS) {
+                NextToken();
+                break;
+            }
+
+            parameters.Add(ParseParameter());
+
+            if (token == FixedToken.COMMA) {
+                NextToken();
+            } else if (token == FixedToken.RIGHT_PARENTHESIS) {
+                NextToken();
+                break;
+            } else {
+                throw TokenCannotBeHere();
+            }
+        }
+
+        ITypeNode? type;
+        if (token == FixedToken.COLON) {
+            NextToken();
+            type = ParseType();
+        } else {
+            type = null;
+        }
+
+        BlockStatement body = ParseBlockStatement();
+        return new(position, name, [.. parameters], type, body);
+    }
+
+    bool IsItemStart() {
+        return IsFunctionStart()
+            || token == FixedToken.CLASS;
+    }
+
     IItem ParseItem() {
-        TextPosition position = tokenPosition;
+        SourcePosition position = tokenPosition;
         IItem result;
 
-        if (token == FixedToken.FUNCTION) {
+        if (IsFunctionStart()) {
+            result = ParseFunction();
+        } else if (token == FixedToken.CLASS) {
             NextToken();
 
             if (token is not IdentifierToken idToken) {
@@ -847,36 +945,25 @@ public class Compiler {
             string name = idToken.name;
             NextToken();
 
-            AssertAndNextToken(FixedToken.LEFT_PARENTHESIS);
-            List<IParameter> parameters = [];
+            AssertAndNextToken(FixedToken.LEFT_BRACE);
+            List<ClassField> fields = [];
+            List<FunctionItem> functions = [];
             for (; ; ) {
-                if (token == FixedToken.RIGHT_PARENTHESIS) {
+                if (token == FixedToken.RIGHT_BRACE) {
                     NextToken();
                     break;
                 }
 
-                parameters.Add(ParseParameter());
-
-                if (token == FixedToken.COMMA) {
-                    NextToken();
-                } else if (token == FixedToken.RIGHT_PARENTHESIS) {
-                    NextToken();
-                    break;
+                if (IsClassFieldStart()) {
+                    fields.Add(ParseClassField());
+                } else if (IsFunctionStart()) {
+                    functions.Add(ParseFunction());
                 } else {
                     throw TokenCannotBeHere();
                 }
             }
 
-            ITypeNode? type;
-            if (token == FixedToken.COLON) {
-                NextToken();
-                type = ParseType();
-            } else {
-                type = null;
-            }
-
-            BlockStatement body = ParseBlockStatement();
-            result = new FunctionItem(position, name, [.. parameters], type, body);
+            result = new ClassItem(position, name, [.. fields], [.. functions]);
         } else {
             throw TokenCannotBeHere();
         }
@@ -899,17 +986,13 @@ public class Compiler {
         return new([.. items]);
     }
 
-    internal SemanticException SemanticError(SemanticErrorType type, string[] parameters, TextPosition position) {
-        return new SemanticException(type, parameters, source, position);
-    }
-
-    internal void AddSymbol(string name, ISymbol symbol, TextPosition position) {
+    internal void AddSymbol(string name, ISymbol symbol, SourcePosition position) {
         if (!space.TryAddSymbol(name, symbol)) {
-            throw new SemanticException(SemanticErrorType.SYMBOL_EXIST, [name], source, position);
+            throw new SemanticException(SemanticErrorType.SYMBOL_EXIST, [name], position);
         }
     }
 
-    internal ISymbol GetSymbol(string name, TextPosition position) {
+    internal ISymbol GetSymbol(string name, SourcePosition position) {
         for (int i = spaces.Count - 1; i != -1; --i) {
             NameSpace space = spaces[i];
 
@@ -919,12 +1002,21 @@ public class Compiler {
             }
         }
 
-        throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [name], source, position);
+        throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [name], position);
     }
 
-    internal ILoopStatement GetLoop(string? label, TextPosition position) {
+    internal ISymbol GetTopSymbol(string name, SourcePosition position) {
+        ISymbol? symbol = spaces[0].GetSymbol(name);
+        if (symbol != null) {
+            return symbol;
+        }
+
+        throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [name], position);
+    }
+
+    internal ILoopStatement GetLoop(string? label, SourcePosition position) {
         if (loops.Count == 0) {
-            throw new SemanticException(SemanticErrorType.NOT_IN_LOOP, [], source, position);
+            throw new SemanticException(SemanticErrorType.NOT_IN_LOOP, [], position);
         }
 
         if (label == null) {
@@ -937,11 +1029,16 @@ public class Compiler {
                 }
             }
 
-            throw new SemanticException(SemanticErrorType.LABEL_NOT_EXIST, [label], source, position);
+            throw new SemanticException(SemanticErrorType.LABEL_NOT_EXIST, [label], position);
         }
     }
 
-    internal void EnterNameSpace() {
+    internal void EnterNameSpace(NameSpace space) {
+        this.space = space;
+        spaces.Add(space);
+    }
+
+    internal void EnterNewNameSpace() {
         space = new();
         spaces.Add(space);
     }
@@ -1010,7 +1107,7 @@ public class Compiler {
         this.resultType = resultType;
         returned = false;
 
-        EnterNameSpace();
+        EnterNewNameSpace();
     }
 
     internal void LeaveFunction() {
@@ -1037,6 +1134,7 @@ public class Compiler {
             source = name;
             code = content;
 
+            tokenPosition.source = source;
             index = 0;
             indexPosition = new(1, 1);
             NextChar();

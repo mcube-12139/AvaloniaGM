@@ -6,241 +6,241 @@ namespace TypeScript.Type;
 public class IntegerType : IType {
     string IType.GetAppearance() => "int";
 
-    bool IType.IsType(IType other) {
+    bool IType.EqualType(IType other) {
         return other == this;
     }
 
-    IType IType.GetNegativeResultType(TextPosition position, Compiler compiler) {
+    IType IType.GetNegativeResultType(SourcePosition position, Compiler compiler) {
         return this;
     }
 
-    IType IType.GetNotResultType(TextPosition position, Compiler compiler) {
+    IType IType.GetNotResultType(SourcePosition position, Compiler compiler) {
         return this;
     }
 
-    IType IType.GetMultiplyResultType(IExpression right, TextPosition position, Compiler compiler) {
+    IType IType.GetMultiplyResultType(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int * {rightType.GetAppearance()}"], position);
-        }
-        return this;
-    }
-
-    IType IType.GetDivideResultType(IExpression right, TextPosition position, Compiler compiler) {
-        right.SetSemantic(this, compiler);
-        IType rightType = right.GetResultType();
-        if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int / {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int * {rightType.GetAppearance()}"], position);
         }
         return this;
     }
 
-    IType IType.GetModuloResultType(IExpression right, TextPosition position, Compiler compiler) {
+    IType IType.GetDivideResultType(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int % {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int / {rightType.GetAppearance()}"], position);
         }
         return this;
     }
 
-    IType IType.GetAddResultType(IExpression right, TextPosition position, Compiler compiler) {
+    IType IType.GetModuloResultType(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int + {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int % {rightType.GetAppearance()}"], position);
         }
         return this;
     }
 
-    IType IType.GetSubtractResultType(IExpression right, TextPosition position, Compiler compiler) {
+    IType IType.GetAddResultType(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int - {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int + {rightType.GetAppearance()}"], position);
         }
         return this;
     }
 
-    IType IType.GetLeftShiftResultType(IExpression right, TextPosition position, Compiler compiler) {
+    IType IType.GetSubtractResultType(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int << {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int - {rightType.GetAppearance()}"], position);
         }
         return this;
     }
 
-    IType IType.GetRightShiftResultType(IExpression right, TextPosition position, Compiler compiler) {
+    IType IType.GetLeftShiftResultType(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int >> {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int << {rightType.GetAppearance()}"], position);
         }
         return this;
     }
 
-    IType IType.GetBitAndResultType(IExpression right, TextPosition position, Compiler compiler) {
+    IType IType.GetRightShiftResultType(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int & {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int >> {rightType.GetAppearance()}"], position);
         }
         return this;
     }
 
-    IType IType.GetBitXorResultType(IExpression right, TextPosition position, Compiler compiler) {
+    IType IType.GetBitAndResultType(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int ^ {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int & {rightType.GetAppearance()}"], position);
         }
         return this;
     }
 
-    IType IType.GetBitOrResultType(IExpression right, TextPosition position, Compiler compiler) {
+    IType IType.GetBitXorResultType(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int | {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int ^ {rightType.GetAppearance()}"], position);
         }
         return this;
     }
 
-    void IType.EnsureCanGreater(IExpression right, TextPosition position, Compiler compiler) {
+    IType IType.GetBitOrResultType(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int > {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int | {rightType.GetAppearance()}"], position);
+        }
+        return this;
+    }
+
+    void IType.EnsureCanGreater(IExpression right, SourcePosition position, Compiler compiler) {
+        right.SetSemantic(this, compiler);
+        IType rightType = right.GetResultType();
+        if (rightType != this) {
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int > {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanGreaterEqual(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanGreaterEqual(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int >= {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int >= {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanLess(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanLess(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int < {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int < {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanLessEqual(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanLessEqual(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int <= {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int <= {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanEqual(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanEqual(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int == {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int == {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanNotEqual(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanNotEqual(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int != {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int != {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanAssign(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int = {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int = {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanAddAssign(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanAddAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int += {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int += {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanSubtractAssign(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanSubtractAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int -= {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int -= {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanMultiplyAssign(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanMultiplyAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int *= {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int *= {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanDivideAssign(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanDivideAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int /= {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int /= {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanModuloAssign(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanModuloAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int %= {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int %= {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanBitAndAssign(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanBitAndAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int &= {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int &= {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanBitOrAssign(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanBitOrAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int |= {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int |= {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanBitXorAssign(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanBitXorAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int ^= {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int ^= {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanLeftShiftAssign(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanLeftShiftAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int <<= {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int <<= {rightType.GetAppearance()}"], position);
         }
     }
 
-    void IType.EnsureCanRightShiftAssign(IExpression right, TextPosition position, Compiler compiler) {
+    void IType.EnsureCanRightShiftAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
         IType rightType = right.GetResultType();
         if (rightType != this) {
-            throw compiler.SemanticError(SemanticErrorType.OPERATION_NOT_EXIST, [$"int >>= {rightType.GetAppearance()}"], position);
+            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"int >>= {rightType.GetAppearance()}"], position);
         }
     }
 }

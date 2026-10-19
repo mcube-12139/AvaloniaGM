@@ -2,12 +2,12 @@ using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-public class EqualExpression(TextPosition position, IExpression left, IExpression right) : IExpression {
-    public readonly TextPosition position = position;
+public class EqualExpression(SourcePosition position, IExpression left, IExpression right) : IExpression {
+    public readonly SourcePosition position = position;
     public readonly IExpression left = left;
     public readonly IExpression right = right;
 
-    TextPosition IExpression.GetPosition() => position;
+    SourcePosition IExpression.GetPosition() => position;
 
     public IType GetResultType() => PrimitiveType.BOOLEAN;
 

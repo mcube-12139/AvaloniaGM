@@ -2,12 +2,12 @@
 
 namespace TypeScript.Expression;
 
-public class StringExpression(TextPosition position, string value) : IExpression {
-    public readonly TextPosition position = position;
+public class StringExpression(SourcePosition position, string value) : IExpression {
+    public readonly SourcePosition position = position;
     public readonly string value = value;
 
 
-    TextPosition IExpression.GetPosition() => position;
+    SourcePosition IExpression.GetPosition() => position;
 
     IType IExpression.GetResultType() => PrimitiveType.STRING;
 

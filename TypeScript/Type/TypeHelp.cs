@@ -6,6 +6,6 @@ internal class TypeHelp {
             return true;
         }
 
-        return a.IsType(b);
+        return a.EqualType(b);
     }
 }

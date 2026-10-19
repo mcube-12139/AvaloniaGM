@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace TypeScript.ExceptionSpace;
+﻿namespace TypeScript.ExceptionSpace;
 
 public enum SemanticErrorType {
     SYMBOL_EXIST,
@@ -12,6 +9,7 @@ public enum SemanticErrorType {
     NOT_WRITEABLE,
     NOT_VALUE,
     NOT_TYPE,
+    NO_NAME_SPACE,
     NOT_PLACE,
     MAY_NOT_RETURN,
     MAY_NOT_INITIALIZED,
@@ -22,7 +20,7 @@ public enum SemanticErrorType {
     UNKNOWN_TYPE,
 }
 
-public class SemanticException(SemanticErrorType type, string[] parameters, string source, TextPosition position) : Exception($"{source}:{position.line}:{position.column}: {formatter[type](parameters)}") {
+public class SemanticException(SemanticErrorType type, string[] parameters, SourcePosition position) : Exception($"{position.source}:{position.line}:{position.column}: {formatter[type](parameters)}") {
     static readonly Dictionary<SemanticErrorType, Func<string[], string>> formatter = new() {
         { SemanticErrorType.SYMBOL_EXIST, parameters => $"符号 {parameters[0]} 已存在" },
         { SemanticErrorType.SYMBOL_NOT_EXIST, parameters => $"符号 {parameters[0]} 不存在" },
@@ -32,6 +30,7 @@ public class SemanticException(SemanticErrorType type, string[] parameters, stri
         { SemanticErrorType.NOT_WRITEABLE, parameters => $"{parameters[0]} 不是可写的" },
         { SemanticErrorType.NOT_VALUE, parameters => $"{parameters[0]} 不是值" },
         { SemanticErrorType.NOT_TYPE, parameters => $"{parameters[0]} 不是类型" },
+        { SemanticErrorType.NO_NAME_SPACE, parameters => $"{parameters[0]} 没有名字空间" },
         { SemanticErrorType.NOT_PLACE, parameters => "不是位置式" },
         { SemanticErrorType.MAY_NOT_RETURN, parameters => $"{parameters[0]} 可能不返回值" },
         { SemanticErrorType.MAY_NOT_INITIALIZED, parameters => $"{parameters[0]} 可能未初始化" },

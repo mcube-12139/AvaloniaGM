@@ -2,12 +2,12 @@
 
 namespace TypeScript.Expression;
 
-public class BooleanExpression(TextPosition position, bool value) : IExpression {
-    public readonly TextPosition position = position;
+public class BooleanExpression(SourcePosition position, bool value) : IExpression {
+    public readonly SourcePosition position = position;
     public readonly bool value = value;
 
 
-    TextPosition IExpression.GetPosition() => position;
+    SourcePosition IExpression.GetPosition() => position;
 
     IType IExpression.GetResultType() => PrimitiveType.BOOLEAN;
 

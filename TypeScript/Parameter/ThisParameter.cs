@@ -2,8 +2,8 @@
 
 namespace TypeScript.Parameter;
 
-public class ThisParameter(TextPosition position) : IParameter {
-    public readonly TextPosition position = position;
+public class ThisParameter(SourcePosition position) : IParameter {
+    public readonly SourcePosition position = position;
 
     IType IParameter.GetParameterType() {
         throw new NotImplementedException();

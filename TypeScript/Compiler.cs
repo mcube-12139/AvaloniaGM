@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.FlowContext;
 using TypeScript.Item;
 using TypeScript.Parameter;
 using TypeScript.Pattern;
@@ -27,7 +28,7 @@ public class Compiler {
     readonly List<NameSpace> spaces;
     NameSpace space;
     readonly List<ILoopStatement> loops = [];
-    readonly Stack<IfFlowContext> ifFlowContexts = [];
+    readonly Stack<IFlowContext> flowContexts = [];
     readonly Stack<FunctionContext> functionContexts = [];
     IType resultType = TupleType.EMPTY;
     bool returned;
@@ -961,68 +962,45 @@ public class Compiler {
         loops.RemoveAt(loops.Count - 1);
     }
 
-    internal void EnterIfFlowContext() {
-        ifFlowContexts.Push(new());
+    internal void EnterFlow(IFlowContext context) {
+        flowContexts.Push(context);
     }
 
     internal void StartElse() {
-        IfFlowContext context = ifFlowContexts.Peek();
-        context.nowContext = context.elseContext;
+        var context = (IfFlowContext)flowContexts.Peek();
+        context.StartElse();
     }
 
     internal void SetReturned() {
-        if (ifFlowContexts.Count == 0) {
+        if (flowContexts.Count == 0) {
             returned = true;
         } else {
-            IfFlowContext lastContext = ifFlowContexts.Peek();
-            lastContext.nowContext.returned = true;
+            IFlowContext lastContext = flowContexts.Peek();
+            lastContext.SetReturned();
         }
     }
 
     internal bool GetReturned() => returned;
 
-    internal void AddInitializedSymbol(VariableSymbol symbol) {
-        if (ifFlowContexts.Count != 0) {
-            IfFlowContext lastContext = ifFlowContexts.Peek();
-            lastContext.nowContext.initializedSymbols.Add(symbol);
+    internal void AddInitializedLocal(LocalSymbol symbol) {
+        if (flowContexts.Count != 0) {
+            flowContexts.Peek().AddInitializedLocal(symbol);
         }
     }
 
-    internal void LeaveIfFlowContext() {
-        IfFlowContext context = ifFlowContexts.Pop();
+    internal void LeaveFlow() {
+        IFlowContext context = flowContexts.Pop();
+        context.Leave();
 
-        if (context.ifContext.returned && context.elseContext.returned) {
+        if (context.GetReturned()) {
             SetReturned();
         }
 
-        if (!context.ifContext.returned && !context.elseContext.returned) {
-            // 两边都不返回，把交集符号加入上一层，其他符号改回未初始化
-            HashSet<VariableSymbol> elseLeftSymbols = [];
-            foreach (VariableSymbol elseSymbol in context.elseContext.initializedSymbols) {
-                elseLeftSymbols.Add(elseSymbol);
-            }
-            foreach (VariableSymbol ifSymbol in context.ifContext.initializedSymbols) {
-                if (elseLeftSymbols.Contains(ifSymbol)) {
-                    AddInitializedSymbol(ifSymbol);
-                    elseLeftSymbols.Remove(ifSymbol);
-                } else {
-                    ifSymbol.initialized = false;
-                }
-            }
-            foreach (VariableSymbol symbol in elseLeftSymbols) {
-                symbol.initialized = false;
-            }
-        } else {
-            // 有返回的，把没返回的那边的符号加入上一层
-            if (context.ifContext.returned) {
-                foreach (VariableSymbol elseSymbol in context.elseContext.initializedSymbols) {
-                    AddInitializedSymbol(elseSymbol);
-                }
-            } else if (context.elseContext.returned) {
-                foreach (VariableSymbol ifSymbol in context.ifContext.initializedSymbols) {
-                    AddInitializedSymbol(ifSymbol);
-                }
-            }
+        foreach (LocalSymbol symbol in context.IterateInitializedLocals()) {
+            AddInitializedLocal(symbol);
+        }
+        foreach (LocalSymbol symbol in context.IterateResetLocals()) {
+            symbol.initialized = false;
         }
     }
 

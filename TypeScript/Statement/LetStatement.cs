@@ -32,6 +32,6 @@ public class LetStatement(TextPosition position, IPattern pattern, ITypeNode? ty
             }
         }
 
-        pattern.AddVariable(definedType, initializer != null, compiler);
+        pattern.AddLocal(definedType, initializer != null, compiler);
     }
 }

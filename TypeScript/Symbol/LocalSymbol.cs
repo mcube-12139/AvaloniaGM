@@ -2,7 +2,7 @@
 
 namespace TypeScript.Symbol;
 
-public class VariableSymbol(
+public class LocalSymbol(
     string name,
     IType type,
     bool initialized

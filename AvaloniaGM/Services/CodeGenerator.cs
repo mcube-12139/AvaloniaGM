@@ -479,8 +479,8 @@ internal class CodeGenerator {
 
     void StoreSymbol(IValueSymbol symbol) {
         switch (symbol) {
-            case VariableSymbol variableSymbol: {
-                UndertaleVariable variable = variables.GetValueOrDefault(variableSymbol)!;
+            case LocalSymbol localSymbol: {
+                UndertaleVariable variable = variables.GetValueOrDefault(localSymbol)!;
                 Store(variable, VariableType.Normal);
                 break;
             }
@@ -496,8 +496,8 @@ internal class CodeGenerator {
 
     void LoadSymbol(IValueSymbol symbol) {
         switch (symbol) {
-            case VariableSymbol variableSymbol: {
-                UndertaleVariable variable = variables.GetValueOrDefault(variableSymbol)!;
+            case LocalSymbol localSymbol: {
+                UndertaleVariable variable = variables.GetValueOrDefault(localSymbol)!;
                 Load(variable, VariableType.Normal);
                 break;
             }
@@ -548,7 +548,7 @@ internal class CodeGenerator {
         switch (pattern) {
             case IdentifierPattern identifierPattern: {
                 UndertaleVariable variable = AddLocalVariable(identifierPattern.name);
-                variables.Add((VariableSymbol)identifierPattern.GetSymbol(), variable);
+                variables.Add((LocalSymbol)identifierPattern.GetSymbol(), variable);
 
                 if (initializer != null) {
                     EvaluateExpression(initializer);

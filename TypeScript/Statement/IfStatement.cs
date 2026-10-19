@@ -1,4 +1,5 @@
 ﻿using TypeScript.Expression;
+using TypeScript.FlowContext;
 
 namespace TypeScript.Statement;
 
@@ -11,7 +12,7 @@ public class IfStatement(TextPosition position, IExpression condition, BlockStat
     void IStatement.SetSemantic(Compiler compiler) {
         condition.SetSemantic(null, compiler);
 
-        compiler.EnterIfFlowContext();
+        compiler.EnterFlow(new IfFlowContext());
         body.SetSemantic(compiler);
 
         if (elseBody != null) {
@@ -19,6 +20,6 @@ public class IfStatement(TextPosition position, IExpression condition, BlockStat
             elseBody.SetSemantic(compiler);
         }
 
-        compiler.LeaveIfFlowContext();
+        compiler.LeaveFlow();
     }
 }

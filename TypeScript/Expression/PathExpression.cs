@@ -21,8 +21,8 @@ public class PathExpression(TextPosition position, string[] segments) : IPlaceEx
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         SetSymbolAndType(compiler);
 
-        if (symbol is VariableSymbol variableSymbol) {
-            if (!variableSymbol.initialized) {
+        if (symbol is LocalSymbol localSymbol) {
+            if (!localSymbol.initialized) {
                 throw compiler.SemanticError(SemanticErrorType.MAY_NOT_INITIALIZED, [symbol.GetName()], position);
             }
         }
@@ -35,10 +35,10 @@ public class PathExpression(TextPosition position, string[] segments) : IPlaceEx
     void IPlaceExpression.SetAssignSemantic(Compiler compiler) {
         SetSymbolAndType(compiler);
 
-        if (symbol is VariableSymbol variableSymbol) {
-            if (!variableSymbol.initialized) {
-                variableSymbol.initialized = true;
-                compiler.AddInitializedSymbol(variableSymbol);
+        if (symbol is LocalSymbol localSymbol) {
+            if (!localSymbol.initialized) {
+                localSymbol.initialized = true;
+                compiler.AddInitializedLocal(localSymbol);
             }
         }
     }

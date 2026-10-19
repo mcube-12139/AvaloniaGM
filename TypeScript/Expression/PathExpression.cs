@@ -13,9 +13,13 @@ public class PathExpression(TextPosition position, string[] segments) : IPlaceEx
 
     TextPosition IExpression.GetPosition() => position;
 
-    void IExpression.SetSemantic(IType? target, Compiler compiler) {
+    void SetSymbolAndType(Compiler compiler) {
         symbol = compiler.GetSymbol(segments[0], position).AsValue(position, compiler);
         type = symbol.LazyGetValueType(position, compiler);
+    }
+
+    void IExpression.SetSemantic(IType? target, Compiler compiler) {
+        SetSymbolAndType(compiler);
 
         if (symbol is VariableSymbol variableSymbol) {
             if (!variableSymbol.initialized) {
@@ -29,8 +33,7 @@ public class PathExpression(TextPosition position, string[] segments) : IPlaceEx
     public IValueSymbol GetSymbol() => symbol!;
 
     void IPlaceExpression.SetAssignSemantic(Compiler compiler) {
-        symbol = compiler.GetSymbol(segments[0], position).AsValue(position, compiler);
-        type = symbol.LazyGetValueType(position, compiler);
+        SetSymbolAndType(compiler);
 
         if (symbol is VariableSymbol variableSymbol) {
             if (!variableSymbol.initialized) {

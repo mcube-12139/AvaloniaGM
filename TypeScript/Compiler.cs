@@ -1012,6 +1012,17 @@ public class Compiler {
             foreach (VariableSymbol symbol in elseLeftSymbols) {
                 symbol.initialized = false;
             }
+        } else {
+            // 有返回的，把没返回的那边的符号加入上一层
+            if (context.ifContext.returned) {
+                foreach (VariableSymbol elseSymbol in context.elseContext.initializedSymbols) {
+                    AddInitializedSymbol(elseSymbol);
+                }
+            } else if (context.elseContext.returned) {
+                foreach (VariableSymbol ifSymbol in context.ifContext.initializedSymbols) {
+                    AddInitializedSymbol(ifSymbol);
+                }
+            }
         }
     }
 

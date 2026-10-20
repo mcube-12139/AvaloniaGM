@@ -30,6 +30,7 @@ internal class FixedToken(string appearance): IToken {
     internal static FixedToken THIS = new("this");
     internal static FixedToken TRUE = new("true");
     internal static FixedToken FALSE = new("false");
+    internal static FixedToken NEW = new("new");
 
 
     internal static FixedToken END = new("[End]");
@@ -40,6 +41,7 @@ internal class FixedToken(string appearance): IToken {
     internal static FixedToken SEMICOLON = new(";");
     internal static FixedToken COLON = new(":");
     internal static FixedToken COMMA = new(",");
+    internal static FixedToken FULL_STOP = new(".");
     internal static FixedToken LEFT_BRACKET = new("[");
     internal static FixedToken RIGHT_BRACKET = new("]");
     internal static FixedToken DOUBLE_COLON = new("::");
@@ -102,6 +104,7 @@ internal class FixedToken(string appearance): IToken {
         {"this", THIS},
         {"true", TRUE},
         {"false", FALSE},
+        {"new", NEW},
     };
 
     internal static FixedToken? GetKeyword(string name) {

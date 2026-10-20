@@ -1,4 +1,5 @@
 ﻿using TypeScript.ExceptionSpace;
+using TypeScript.Item;
 using TypeScript.Symbol;
 using TypeScript.Type;
 
@@ -16,7 +17,11 @@ public class PathType(SourcePosition position, bool fromTop, string[] segments) 
 
     IType ITypeNode.GetSelfType() => type!;
 
-    void ITypeNode.SetSemantic(Compiler compiler) {
+    void ITypeNode.SetSemantic(Compiler compiler) => SetSemantic(compiler);
+
+    internal IType GetSelfType() => type!;
+
+    internal void SetSemantic(Compiler compiler) {
         ISymbol nowSymbol;
         if (!fromTop) {
             nowSymbol = compiler.GetSymbol(segments[0], position);
@@ -28,6 +33,14 @@ public class PathType(SourcePosition position, bool fromTop, string[] segments) 
             nowSymbol = nowSymbol.GetNameSpace(position).GetSymbol(segments[i]) ?? throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [segments[i]], position);
         }
         symbol = nowSymbol.AsType(position);
-        type = symbol.GetSelfType();
+        type = symbol.LazyGetSelfType(position, compiler);
+    }
+
+    void ITypeNode.AddImplSymbol(IType? regardedType, FunctionItem[] functions, Compiler compiler) {
+        if (regardedType != null) {
+            throw new NotImplementedException();
+        }
+
+        symbol!.AddImplSymbol(regardedType, functions, position, compiler);
     }
 }

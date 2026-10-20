@@ -219,6 +219,9 @@ public class Compiler {
         } else if (c == ',') {
             token = FixedToken.COMMA;
             NextChar();
+        } else if (c == '.') {
+            token = FixedToken.FULL_STOP;
+            NextChar();
         } else if (c == ':') {
             NextChar();
             if (c == ':') {
@@ -366,6 +369,48 @@ public class Compiler {
         }
     }
 
+    string GetIdentifierNameAndNextToken() {
+        if (token is not IdentifierToken idToken) {
+            throw TokenCannotBeHere();
+        }
+        string name = idToken.name;
+        NextToken();
+
+        return name;
+    }
+
+    NewExpression.Field ParseNewExpressionField() {
+        SourcePosition position = tokenPosition;
+
+        string name = GetIdentifierNameAndNextToken();
+
+        AssertAndNextToken(FixedToken.COLON);
+
+        IExpression value = ParseExpression(0);
+
+        return new(position, name, value);
+    }
+
+    IExpression[] ParseCallParameters() {
+        List<IExpression> parameters = [];
+        if (IsExpressionStart()) {
+            for (; ; ) {
+                parameters.Add(ParseExpression(0));
+
+                if (token == FixedToken.COMMA) {
+                    NextToken();
+                    if (!IsExpressionStart()) {
+                        break;
+                    }
+                } else if (!IsExpressionStart()) {
+                    break;
+                }
+            }
+        }
+
+        return [.. parameters];
+    }
+
     bool IsExpressionStart() {
         return token == FixedToken.TRUE
             || token == FixedToken.FALSE
@@ -373,6 +418,7 @@ public class Compiler {
             || token == FixedToken.EXCLAMATION
             || token == FixedToken.LEFT_BRACKET
             || token == FixedToken.DOUBLE_COLON
+            || token == FixedToken.NEW
             || token is IdentifierToken
             || token is StringToken
             || token is IntegerToken;
@@ -446,6 +492,32 @@ public class Compiler {
             }
 
             result = new PathExpression(position, [.. segments], fromTop);
+        } else if (token == FixedToken.NEW) {
+            NextToken();
+
+            PathType pathType = ParsePathType();
+
+            AssertAndNextToken(FixedToken.LEFT_BRACE);
+            List<NewExpression.Field> fields = [];
+            for (; ; ) {
+                if (token == FixedToken.RIGHT_BRACE) {
+                    NextToken();
+                    break;
+                }
+
+                fields.Add(ParseNewExpressionField());
+
+                if (token == FixedToken.COMMA) {
+                    NextToken();
+                } else if (token == FixedToken.RIGHT_BRACE) {
+                    NextToken();
+                    break;
+                } else {
+                    throw TokenCannotBeHere();
+                }
+            }
+
+            result = new NewExpression(position, pathType, [.. fields]);
         } else if (token is StringToken strToken) {
             result = new StringExpression(position, strToken.value);
             NextToken();
@@ -577,24 +649,8 @@ public class Compiler {
                 } else if (token == FixedToken.LEFT_PARENTHESIS) {
                     // 调用
                     NextToken();
-                    List<IExpression> parameters = [];
-                    for (; ; ) {
-                        if (token == FixedToken.RIGHT_PARENTHESIS) {
-                            NextToken();
-                            break;
-                        }
-
-                        parameters.Add(ParseExpression(0));
-
-                        if (token == FixedToken.COMMA) {
-                            NextToken();
-                        } else if (token == FixedToken.RIGHT_PARENTHESIS) {
-                            NextToken();
-                            break;
-                        } else {
-                            throw TokenCannotBeHere();
-                        }
-                    }
+                    IExpression[] parameters = ParseCallParameters();
+                    AssertAndNextToken(FixedToken.RIGHT_PARENTHESIS);
 
                     result = new CallExpression(position, result, [.. parameters]);
                 } else if (token == FixedToken.LEFT_BRACKET) {
@@ -603,6 +659,21 @@ public class Compiler {
                     IExpression index = ParseExpression(0);
                     AssertAndNextToken(FixedToken.RIGHT_BRACKET);
                     result = new IndexExpression(position, result, index);
+                } else if (token == FixedToken.FULL_STOP) {
+                    NextToken();
+                    string name = GetIdentifierNameAndNextToken();
+
+                    if (token == FixedToken.LEFT_PARENTHESIS) {
+                        // 调用方法
+                        NextToken();
+                        IExpression[] parameters = ParseCallParameters();
+                        AssertAndNextToken(FixedToken.RIGHT_PARENTHESIS);
+
+                        result = new MethodCallExpression(position, result, name, parameters);
+                    } else {
+                        // 访问字段
+                        result = new FieldAccessExpression(position, result, name);
+                    }
                 } else {
                     break;
                 }
@@ -664,12 +735,15 @@ public class Compiler {
         AssertAndNextToken(FixedToken.LEFT_BRACE);
 
         List<IItem> items = [];
+        List<ImplNode> impls = [];
         List<IStatement> statements = [];
         for (; ; ) {
             if (IsStatementStart()) {
                 statements.Add(ParseStatement());
             } else if (IsItemStart()) {
                 items.Add(ParseItem());
+            } else if (IsImplStart()) {
+                impls.Add(ParseImpl());
             } else if (token == FixedToken.RIGHT_BRACE) {
                 NextToken();
                 break;
@@ -678,7 +752,7 @@ public class Compiler {
             }
         }
 
-        return new BlockStatement(position, [.. items], [.. statements]);
+        return new BlockStatement(position, [.. items], [.. impls], [.. statements]);
     }
 
     bool IsStatementStart() {
@@ -804,29 +878,8 @@ public class Compiler {
         return result;
     }
 
-    IParameter ParseParameter() {
+    PathType ParsePathType() {
         SourcePosition position = tokenPosition;
-        IParameter result;
-
-        if (token == FixedToken.THIS) {
-            result = new ThisParameter(position);
-        } else if (IsPatternStart()) {
-            IPattern pattern = ParsePattern();
-
-            AssertAndNextToken(FixedToken.COLON);
-            ITypeNode type = ParseType();
-
-            result = new PatternParameter(position, pattern, type);
-        } else {
-            throw TokenCannotBeHere();
-        }
-
-        return result;
-    }
-
-    ITypeNode ParseType() {
-        SourcePosition position = tokenPosition;
-        ITypeNode result;
 
         bool fromGlobal;
         if (token == FixedToken.DOUBLE_COLON) {
@@ -852,7 +905,12 @@ public class Compiler {
             }
         }
 
-        result = new PathType(position, fromGlobal, [.. segments]);
+        return new(position, fromGlobal, [.. segments]);
+    }
+
+    ITypeNode ParseType() {
+        SourcePosition position = tokenPosition;
+        ITypeNode result = ParsePathType();
         return result;
     }
 
@@ -860,7 +918,7 @@ public class Compiler {
         return token is IdentifierToken;
     }
 
-    ClassFieldNode ParseClassField() {
+    ClassItem.Field ParseClassField() {
         SourcePosition position = tokenPosition;
 
         if (token is not IdentifierToken idToken) {
@@ -876,6 +934,48 @@ public class Compiler {
         AssertAndNextToken(FixedToken.SEMICOLON);
 
         return new(position, name, type);
+    }
+
+    bool IsThisParameterStart() {
+        return token == FixedToken.THIS;
+    }
+
+    ThisParameter ParseThisParameter() {
+        SourcePosition position = tokenPosition;
+
+        AssertAndNextToken(FixedToken.THIS);
+
+        return new(position);
+    }
+
+    bool IsFunctionParameterStart() {
+        return IsPatternStart();
+    }
+
+    IParameter[] ParseFunctionParameters() {
+        List<IParameter> result = [];
+        if (IsPatternStart()) {
+            for (; ; ) {
+                SourcePosition parameterPosition = tokenPosition;
+                IPattern pattern = ParsePattern();
+
+                AssertAndNextToken(FixedToken.COLON);
+                ITypeNode parameterType = ParseType();
+
+                result.Add(new PatternParameter(parameterPosition, pattern, parameterType));
+
+                if (token == FixedToken.COMMA) {
+                    NextToken();
+                    if (!IsFunctionParameterStart()) {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        return [.. result];
     }
 
     bool IsFunctionStart() {
@@ -894,24 +994,29 @@ public class Compiler {
         NextToken();
 
         AssertAndNextToken(FixedToken.LEFT_PARENTHESIS);
-        List<IParameter> parameters = [];
-        for (; ; ) {
-            if (token == FixedToken.RIGHT_PARENTHESIS) {
-                NextToken();
-                break;
-            }
-
-            parameters.Add(ParseParameter());
+        ThisParameter? thisParameter;
+        IParameter[] parameters;
+        if (IsThisParameterStart()) {
+            thisParameter = ParseThisParameter();
 
             if (token == FixedToken.COMMA) {
                 NextToken();
-            } else if (token == FixedToken.RIGHT_PARENTHESIS) {
-                NextToken();
-                break;
+                if (IsFunctionParameterStart()) {
+                    parameters = ParseFunctionParameters();
+                } else {
+                    parameters = [];
+                }
             } else {
-                throw TokenCannotBeHere();
+                parameters = [];
             }
+        } else if (IsFunctionParameterStart()) {
+            thisParameter = null;
+            parameters = ParseFunctionParameters();
+        } else {
+            thisParameter = null;
+            parameters = [];
         }
+        AssertAndNextToken(FixedToken.RIGHT_PARENTHESIS);
 
         ITypeNode? type;
         if (token == FixedToken.COLON) {
@@ -922,7 +1027,40 @@ public class Compiler {
         }
 
         BlockStatement body = ParseBlockStatement();
-        return new(position, name, [.. parameters], type, body);
+        return new(position, name, thisParameter, parameters, type, body);
+    }
+
+    bool IsImplStart() {
+        return token == FixedToken.IMPLEMENT;
+    }
+
+    ImplNode ParseImpl() {
+        SourcePosition position = tokenPosition;
+
+        AssertAndNextToken(FixedToken.IMPLEMENT);
+
+        ITypeNode type = ParseType();
+
+        PathType? regardedType;
+        if (token == FixedToken.AS) {
+            NextToken();
+            regardedType = ParsePathType();
+        } else {
+            regardedType = null;
+        }
+
+        AssertAndNextToken(FixedToken.LEFT_BRACE);
+        List<FunctionItem> functions = [];
+        for (; ; ) {
+            if (token == FixedToken.RIGHT_BRACE) {
+                NextToken();
+                break;
+            }
+
+            functions.Add(ParseFunction());
+        }
+
+        return new ImplNode(position, type, regardedType, [.. functions]);
     }
 
     bool IsItemStart() {
@@ -946,7 +1084,7 @@ public class Compiler {
             NextToken();
 
             AssertAndNextToken(FixedToken.LEFT_BRACE);
-            List<ClassFieldNode> fields = [];
+            List<ClassItem.Field> fields = [];
             for (; ; ) {
                 if (token == FixedToken.RIGHT_BRACE) {
                     NextToken();
@@ -966,17 +1104,20 @@ public class Compiler {
 
     FileNode ParseRoot() {
         List<IItem> items = [];
+        List<ImplNode> impls = [];
 
         for (; ; ) {
-            if (!IsItemStart()) {
+            if (IsItemStart()) {
+                items.Add(ParseItem());
+            } else if(IsImplStart()) {
+                impls.Add(ParseImpl());
+            } else {
                 break;
             }
-
-            items.Add(ParseItem());
         }
         AssertToken(FixedToken.END);
 
-        return new([.. items]);
+        return new([.. items], [.. impls]);
     }
 
     internal void AddSymbol(string name, ISymbol symbol, SourcePosition position) {
@@ -1117,7 +1258,7 @@ public class Compiler {
     public FileNode[] Compile(ICollection<(string name, string content)> files) {
         this.files.AddRange(files);
 
-        space.TryAddSymbol("print", FunctionSymbol.NewResolved("print", new FunctionType([PrimitiveType.UNKNOWN], PrimitiveType.INTEGER), "show_message"));
+        space.TryAddSymbol("print", FunctionSymbol.NewResolved("print", FunctionType.Monomorphize([PrimitiveType.UNKNOWN], PrimitiveType.INTEGER), "show_message"));
         space.TryAddSymbol("int", new PrimitiveTypeSymbol("int", PrimitiveType.INTEGER));
         space.TryAddSymbol("boolean", new PrimitiveTypeSymbol("boolean", PrimitiveType.BOOLEAN));
         space.TryAddSymbol("string", new PrimitiveTypeSymbol("string", PrimitiveType.STRING));

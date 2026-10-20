@@ -7,9 +7,10 @@ using TypeScript.Type;
 
 namespace TypeScript.Item;
 
-public class FunctionItem(SourcePosition position, string name, IParameter[] parameters, ITypeNode? resultNode, BlockStatement body) : IItem {
+public class FunctionItem(SourcePosition position, string name, ThisParameter? thisParameter, IParameter[] parameters, ITypeNode? resultNode, BlockStatement body) : IItem {
     public readonly SourcePosition position = position;
     public readonly string name = name;
+    public readonly ThisParameter? thisParameter = thisParameter;
     public readonly IParameter[] parameters = parameters;
     public readonly ITypeNode? resultNode = resultNode;
     public readonly BlockStatement body = body;
@@ -24,7 +25,15 @@ public class FunctionItem(SourcePosition position, string name, IParameter[] par
         compiler.AddSymbol(name, symbol, position);
     }
 
-    void IItem.SetSemantic(Compiler compiler) {
+    internal void AddImplSymbol(Compiler compiler) {
+        // TODO
+        symbol = FunctionSymbol.NewUnresolved(name, this, null);
+        compiler.AddSymbol(name, symbol, position);
+    }
+
+    void IItem.SetSemantic(Compiler compiler) => SetSemantic(compiler);
+
+    internal void SetSemantic(Compiler compiler) {
         ResolveType(compiler);
 
         IType resultType = functionType!.resultType;
@@ -54,7 +63,7 @@ public class FunctionItem(SourcePosition position, string name, IParameter[] par
             IType[] parameterTypes = [.. parameters.Select(parameter => parameter.GetParameterType())];
             IType resultType = resultNode?.GetSelfType() ?? TupleType.EMPTY;
 
-            functionType = new(parameterTypes, resultType);
+            functionType = FunctionType.Monomorphize(parameterTypes, resultType);
             symbol!.type = functionType;
         }
     }

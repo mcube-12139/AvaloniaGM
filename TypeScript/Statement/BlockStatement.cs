@@ -2,9 +2,10 @@
 
 namespace TypeScript.Statement;
 
-public class BlockStatement(SourcePosition position, IItem[] items, IStatement[] statements) : IStatement {
+public class BlockStatement(SourcePosition position, IItem[] items, ImplNode[] impls, IStatement[] statements) : IStatement {
     public readonly SourcePosition position = position;
     public readonly IItem[] items = items;
+    public readonly ImplNode[] impls = impls;
     public readonly IStatement[] statements = statements;
 
     internal void SetSemanticWithStart(Compiler compiler, Action? start) {
@@ -14,8 +15,14 @@ public class BlockStatement(SourcePosition position, IItem[] items, IStatement[]
         foreach (IItem item in items) {
             item.AddSymbol(compiler);
         }
+        foreach (ImplNode impl in impls) {
+            impl.AddSymbol(compiler);
+        }
         foreach (IItem item in items) {
             item.SetSemantic(compiler);
+        }
+        foreach (ImplNode impl in impls) {
+            impl.SetSemantic(compiler);
         }
         foreach (IStatement statement in statements) {
             statement.SetSemantic(compiler);

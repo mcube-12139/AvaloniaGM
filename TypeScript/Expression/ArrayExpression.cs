@@ -26,7 +26,7 @@ public class ArrayExpression(SourcePosition position, IExpression[] elements) : 
                 }
             }
 
-            type = new ArrayType(firstType);
+            type = ArrayType.Monomorphize(firstType);
         } else {
             if (target == null) {
                 throw new SemanticException(SemanticErrorType.UNKNOWN_TYPE, [], position);

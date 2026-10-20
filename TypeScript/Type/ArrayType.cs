@@ -3,8 +3,23 @@ using TypeScript.Expression;
 
 namespace TypeScript.Type;
 
-public class ArrayType(IType elementType): IType {
-    public readonly IType elementType = elementType;
+public class ArrayType: IType {
+    static readonly Dictionary<IType, ArrayType> monomorphized = [];
+
+    public readonly IType elementType;
+
+    ArrayType(IType elementType) {
+        this.elementType = elementType;
+    }
+
+    internal static ArrayType Monomorphize(IType elementType) {
+        if (!monomorphized.TryGetValue(elementType, out ArrayType? result)) {
+            result = new(elementType);
+            monomorphized.Add(elementType, result);
+        }
+
+        return result;
+    }
 
     public string GetAppearance() {
         return $"{elementType.GetAppearance()}[]";

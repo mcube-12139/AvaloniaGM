@@ -10,6 +10,7 @@ public enum SemanticErrorType {
     NOT_VALUE,
     NOT_TYPE,
     NO_NAME_SPACE,
+    NOT_CLASS,
     NOT_PLACE,
     MAY_NOT_RETURN,
     MAY_NOT_INITIALIZED,
@@ -17,7 +18,11 @@ public enum SemanticErrorType {
     NOT_IN_LOOP,
     WRONG_PARAMETER_COUNT,
     WRONG_TYPE,
+    WRONG_FIELD_COUNT,
+    FIELD_NOT_EXIST,
+    METHOD_NOT_EXIST,
     UNKNOWN_TYPE,
+    EXTERNAL_TYPE_IMPLEMENTED,
 }
 
 public class SemanticException(SemanticErrorType type, string[] parameters, SourcePosition position) : Exception($"{position.source}:{position.line}:{position.column}: {formatter[type](parameters)}") {
@@ -31,6 +36,7 @@ public class SemanticException(SemanticErrorType type, string[] parameters, Sour
         { SemanticErrorType.NOT_VALUE, parameters => $"{parameters[0]} 不是值" },
         { SemanticErrorType.NOT_TYPE, parameters => $"{parameters[0]} 不是类型" },
         { SemanticErrorType.NO_NAME_SPACE, parameters => $"{parameters[0]} 没有名字空间" },
+        { SemanticErrorType.NOT_CLASS, parameters => $"{parameters[0]} 不是类" },
         { SemanticErrorType.NOT_PLACE, parameters => "不是位置式" },
         { SemanticErrorType.MAY_NOT_RETURN, parameters => $"{parameters[0]} 可能不返回值" },
         { SemanticErrorType.MAY_NOT_INITIALIZED, parameters => $"{parameters[0]} 可能未初始化" },
@@ -38,6 +44,10 @@ public class SemanticException(SemanticErrorType type, string[] parameters, Sour
         { SemanticErrorType.NOT_IN_LOOP, parameters => "不在循环中" },
         { SemanticErrorType.WRONG_PARAMETER_COUNT, parameters => $"参数数量 {parameters[0]} 不是所需的 {parameters[1]}" },
         { SemanticErrorType.WRONG_TYPE, parameters => $"类型 {parameters[0]} 不是所需的 {parameters[1]}" },
+        { SemanticErrorType.WRONG_FIELD_COUNT, parameters => $"字段数量 {parameters[0]} 不是所需的 {parameters[1]}" },
+        { SemanticErrorType.FIELD_NOT_EXIST, parameters => $"{parameters[0]} 没有字段 {parameters[1]}" },
+        { SemanticErrorType.METHOD_NOT_EXIST, parameters => $"{parameters[0]} 没有方法 {parameters[1]}" },
         { SemanticErrorType.UNKNOWN_TYPE, parameters => $"未知类型" },
+        { SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, parameters => $"实现了外部类型 {parameters[0]}" },
     };
 }

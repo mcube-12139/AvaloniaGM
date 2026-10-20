@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Xml.Linq;
 using TypeScript;
 using TypeScript.Expression;
 using TypeScript.Item;
@@ -20,6 +21,8 @@ internal class CodeGenerator {
     readonly Dictionary<string, int> stringIds = [];
     readonly Dictionary<string, UndertaleVariable> selfVariables = [];
     readonly Dictionary<IValueSymbol, UndertaleVariable> variables = [];
+    readonly HashSet<ClassType> classTypes = [];
+    readonly Dictionary<ClassType.Field, short> fieldIndices = [];
     readonly Dictionary<FunctionSymbol, UserFunction> userFunctions = [];
     uint nextFunctionIndex = 0;
 
@@ -75,6 +78,20 @@ internal class CodeGenerator {
         }
 
         return result;
+    }
+
+    void EnsureClassTypeDefined(ClassType type) {
+        if (classTypes.Add(type)) {
+            short index = 0;
+            foreach (ClassType.Field field in type.fields) {
+                fieldIndices.Add(field, index);
+                ++index;
+            }
+        }
+    }
+
+    short GetFieldIndex(ClassType.Field field) {
+        return fieldIndices[field];
     }
 
     void Convert(DataType target) {
@@ -421,6 +438,11 @@ internal class CodeGenerator {
     }
 
     void Store(UndertaleVariable variable, VariableType variableType) {
+        if (variableType == VariableType.Array) {
+            types.Pop();
+            types.Pop();
+        }
+
         DataType valueType = types.Pop();
 
         instructions.Add(new() {
@@ -432,14 +454,14 @@ internal class CodeGenerator {
             ReferenceType = variableType
         });
         byteCount += 8;
+    }
 
+    void Load(UndertaleVariable variable, VariableType variableType) {
         if (variableType == VariableType.Array) {
             types.Pop();
             types.Pop();
         }
-    }
 
-    void Load(UndertaleVariable variable, VariableType variableType) {
         Opcode opcode;
 
         if (variableType == VariableType.Normal) {
@@ -468,11 +490,6 @@ internal class CodeGenerator {
             TypeInst = variableType == VariableType.Normal ? variable.InstanceType : InstanceType.Undefined
         });
         byteCount += 8;
-
-        if (variableType == VariableType.Array) {
-            types.Pop();
-            types.Pop();
-        }
 
         types.Push(DataType.Variable);
     }
@@ -631,6 +648,25 @@ internal class CodeGenerator {
         }
     }
 
+    void SetFieldByType(IType type, IExpression accessed, string name, IExpression value) {
+        switch (type) {
+            case ClassType classType: {
+                UndertaleVariable variable = EvaluateExpressionToVariable(accessed, "accessed");
+                EvaluateExpression(value);
+
+                PushInt16((short)variable.InstanceType);
+                short index = GetFieldIndex(classType.GetField(name));
+                PushInt16(index);
+                Convert(DataType.Int32);
+
+                Store(variable, VariableType.Array);
+                break;
+            }
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
     void GetIndexByType(IType type, IExpression indexed, IExpression index) {
         switch (type) {
             case ArrayType: {
@@ -641,6 +677,36 @@ internal class CodeGenerator {
                 Convert(DataType.Int32);
 
                 Load(variable, VariableType.Array);
+                break;
+            }
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
+    void GetFieldByType(IType type, IExpression accessed, string name) {
+        switch (type) {
+            case ClassType classType: {
+                UndertaleVariable variable = EvaluateExpressionToVariable(accessed, "accessed");
+
+                PushInt16((short)variable.InstanceType);
+                short index = GetFieldIndex(classType.GetField(name));
+                PushInt16(index);
+                Convert(DataType.Int32);
+
+                Load(variable, VariableType.Array);
+                break;
+            }
+            default:
+                throw new NotImplementedException();
+        }
+    }
+
+    void CallMethodByType(IType type, IExpression callee, string name, IExpression[] parameters) {
+        switch (type) {
+            case ClassType classType: {
+                FunctionSymbol symbol = classType.GetMethod(name).symbol;
+                CallSymbol(symbol);
                 break;
             }
             default:
@@ -855,11 +921,17 @@ internal class CodeGenerator {
                 SetIndexByType(indexExpression.indexed.GetResultType(), indexExpression.indexed, indexExpression.index, expression);
                 break;
             }
+            case FieldAccessExpression accessExpr: {
+                SetFieldByType(accessExpr.accessed.GetResultType(), accessExpr.accessed, accessExpr.name, expression);
+                break;
+            }
             case PathExpression pathExpression: {
                 EvaluateExpression(expression);
                 StoreSymbol(pathExpression.GetSymbol());
                 break;
             }
+            default:
+                throw new NotImplementedException();
         }
     }
 
@@ -1119,6 +1191,23 @@ internal class CodeGenerator {
 
                 return variable;
             }
+            case NewExpression newExpression: {
+                EnsureClassTypeDefined(newExpression.GetClassType());
+                UndertaleVariable variable = AddLocalVariable(name);
+
+                foreach (NewExpression.Field field in newExpression.fields) {
+                    short fieldIndex = GetFieldIndex(field.GetField());
+
+                    EvaluateExpression(field.value);
+
+                    PushInt16((short)InstanceType.Local);
+                    PushInt16(fieldIndex);
+
+                    Store(variable, VariableType.Array);
+                }
+
+                return variable;
+            }
             default:
                 throw new NotImplementedException();
         }
@@ -1174,8 +1263,30 @@ internal class CodeGenerator {
                 Load(variable, VariableType.Normal);
                 break;
             }
+            case NewExpression newExpression: {
+                UndertaleVariable variable = EvaluateExpressionToVariable(newExpression, "obj");
+                Load(variable, VariableType.Normal);
+                break;
+            }
             case IndexExpression indexExpression: {
                 GetIndexByType(indexExpression.indexed.GetResultType(), indexExpression.indexed, indexExpression.index);
+                break;
+            }
+            case FieldAccessExpression fieldAccessExpression: {
+                GetFieldByType(fieldAccessExpression.accessed.GetResultType(), fieldAccessExpression.accessed, fieldAccessExpression.name);
+                break;
+            }
+            case MethodCallExpression methodCallExpression: {
+                IExpression[] parameters = methodCallExpression.parameters;
+
+                for (int i = parameters.Length - 1; i != -1; --i) {
+                    EvaluateExpression(parameters[i]);
+                    Convert(DataType.Variable);
+                }
+                EvaluateExpression(methodCallExpression.callee);
+                Convert(DataType.Variable);
+
+                CallMethodByType(methodCallExpression.callee.GetResultType(), methodCallExpression.callee, methodCallExpression.name, methodCallExpression.parameters);
                 break;
             }
             case CallExpression callExpression: {
@@ -1463,6 +1574,9 @@ internal class CodeGenerator {
         foreach (IItem item in blockStatement.items) {
             GenerateItem(item);
         }
+        foreach (ImplNode impl in blockStatement.impls) {
+            GenerateImpl(impl);
+        }
         foreach (IStatement statement in blockStatement.statements) {
             ExecuteStatement(statement);
         }
@@ -1503,6 +1617,12 @@ internal class CodeGenerator {
         }
 
         return result;
+    }
+
+    void GenerateImpl(ImplNode impl) {
+        foreach (FunctionItem funItem in impl.functions) {
+            GenerateItem(funItem);
+        }
     }
 
     void GenerateItem(IItem item) {
@@ -1561,6 +1681,9 @@ internal class CodeGenerator {
             foreach (IItem item in node.items) {
                 GenerateItem(item);
             }
+            foreach (ImplNode impl in node.impls) {
+                GenerateImpl(impl);
+            }
         }
 
         nextLocalIndex = 1;
@@ -1570,6 +1693,8 @@ internal class CodeGenerator {
         stringIds.Clear();
         selfVariables.Clear();
         variables.Clear();
+        classTypes.Clear();
+        fieldIndices.Clear();
         userFunctions.Clear();
     }
 }

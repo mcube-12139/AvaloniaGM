@@ -8,7 +8,7 @@ public class ClassSymbol(string name, ClassItem item) : ITypeSymbol {
     internal ClassItem item = item;
     internal NameSpace space = new();
 
-    ClassType? type;
+    internal ClassType? type;
 
     string ISymbol.GetName() => name;
 
@@ -17,6 +17,21 @@ public class ClassSymbol(string name, ClassItem item) : ITypeSymbol {
     IType ITypeSymbol.GetSelfType() => type!;
 
     IType ITypeSymbol.LazyGetSelfType(SourcePosition position, Compiler compiler) {
-        throw new NotImplementedException();
+        if (type == null) {
+            ClassType.Field[] fields = item.ResolveFields(compiler);
+
+            type = new(name, fields);
+        }
+
+        return type;
+    }
+
+    void ITypeSymbol.AddImplSymbol(IType? regardedType, FunctionItem[] functions, SourcePosition position, Compiler compiler) {
+        // 在类的名字空间里新增符号
+        compiler.EnterNameSpace(space);
+        foreach (FunctionItem funItem in functions) {
+            funItem.AddImplSymbol(compiler);
+        }
+        compiler.LeaveNameSpace();
     }
 }

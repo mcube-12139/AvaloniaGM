@@ -1,4 +1,5 @@
-﻿using TypeScript.Type;
+﻿using TypeScript.ExceptionSpace;
+using TypeScript.Type;
 
 namespace TypeScript.Symbol;
 
@@ -14,4 +15,12 @@ public class ParameterSymbol(
     IType IValueSymbol.LazyGetValueType(SourcePosition position, Compiler compiler) => type;
 
     IType IValueSymbol.GetValueType() => type;
+
+    void IValueSymbol.Store(SourcePosition position, Compiler compiler) {
+        // 无事发生
+    }
+
+    void IValueSymbol.EnsureCanLoad(SourcePosition position) {
+        // 无事发生
+    }
 }

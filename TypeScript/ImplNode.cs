@@ -1,4 +1,5 @@
 ﻿using TypeScript.Item;
+using TypeScript.Type;
 using TypeScript.TypeNode;
 
 namespace TypeScript;
@@ -12,9 +13,14 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
 
     internal void AddSymbol(Compiler compiler) {
         typeNode.SetSemantic(compiler);
-        regardedType?.SetSemantic(compiler);
+        IType type = typeNode.GetSelfType();
 
-        typeNode.GetSelfType().AddFunctions(functions, position, compiler);
+        if (regardedType == null) {
+            type.AddFunctions(functions, position, compiler);
+        } else {
+            regardedType.SetSemantic(compiler);
+            type.AddImpl(regardedType.GetSelfType(), functions, position, compiler);
+        }
     }
 
     internal void SetSemantic(Compiler compiler) {

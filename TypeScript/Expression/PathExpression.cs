@@ -32,12 +32,7 @@ public class PathExpression(SourcePosition position, IPathSegment[] segments, bo
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         SetSymbolAndType(compiler);
-
-        if (symbol is LocalSymbol localSymbol) {
-            if (!localSymbol.initialized) {
-                throw new SemanticException(SemanticErrorType.MAY_NOT_INITIALIZED, [symbol.GetName()], position);
-            }
-        }
+        symbol!.EnsureCanLoad(position);
     }
 
     IType IExpression.GetResultType() => type!;
@@ -46,12 +41,6 @@ public class PathExpression(SourcePosition position, IPathSegment[] segments, bo
 
     void IPlaceExpression.SetAssignSemantic(Compiler compiler) {
         SetSymbolAndType(compiler);
-
-        if (symbol is LocalSymbol localSymbol) {
-            if (!localSymbol.initialized) {
-                localSymbol.initialized = true;
-                compiler.AddInitializedLocal(localSymbol);
-            }
-        }
+        symbol!.Store(position, compiler);
     }
 }

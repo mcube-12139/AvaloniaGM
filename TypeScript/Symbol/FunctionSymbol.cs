@@ -49,4 +49,12 @@ public class FunctionSymbol : IValueSymbol {
         funType.EnsureCanCallMethod(parameterTypes, position, compiler);
         return funType.resultType;
     }
+
+    void IValueSymbol.Store(SourcePosition position, Compiler compiler) {
+        throw new SemanticException(SemanticErrorType.NOT_WRITEABLE, [name], position);
+    }
+
+    void IValueSymbol.EnsureCanLoad(SourcePosition position) {
+        // 无事发生
+    }
 }

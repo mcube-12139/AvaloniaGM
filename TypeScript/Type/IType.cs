@@ -9,6 +9,10 @@ public interface IType {
     string GetAppearance();
     bool EqualType(IType other);
 
+    void AddImpl(IType implType, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
+
+    }
+
     void AddFunctions(IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
         throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
     }

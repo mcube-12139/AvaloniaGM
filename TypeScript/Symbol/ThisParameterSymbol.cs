@@ -1,4 +1,5 @@
-﻿using TypeScript.Type;
+﻿using TypeScript.ExceptionSpace;
+using TypeScript.Type;
 
 namespace TypeScript.Symbol;
 
@@ -14,4 +15,12 @@ public class ThisParameterSymbol : IValueSymbol {
     IType IValueSymbol.GetValueType() => type;
 
     IType IValueSymbol.LazyGetValueType(SourcePosition position, Compiler compiler) => type;
+
+    void IValueSymbol.Store(SourcePosition position, Compiler compiler) {
+        throw new SemanticException(SemanticErrorType.NOT_WRITEABLE, ["this"], position);
+    }
+
+    void IValueSymbol.EnsureCanLoad(SourcePosition position) {
+        // 无事发生
+    }
 }

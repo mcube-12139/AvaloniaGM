@@ -4,6 +4,7 @@ using TypeScript.Expression;
 using TypeScript.FlowContext;
 using TypeScript.Item;
 using TypeScript.Parameter;
+using TypeScript.PathSegment;
 using TypeScript.Pattern;
 using TypeScript.Statement;
 using TypeScript.Symbol;
@@ -29,9 +30,13 @@ public class Compiler {
     NameSpace space;
     readonly List<ILoopStatement> loops = [];
     readonly Stack<IFlowContext> flowContexts = [];
+    readonly Stack<IType> thisTypes = [];
+    IType? thisType;
     readonly Stack<FunctionContext> functionContexts = [];
+    internal ThisParameterSymbol? thisParameterSymbol;
     IType resultType = TupleType.EMPTY;
     bool returned;
+    internal bool inInterface;
 
     public Compiler() {
         NameSpace space = new();
@@ -411,15 +416,35 @@ public class Compiler {
         return [.. parameters];
     }
 
+    bool IsPathExpressionStart() {
+        return token is IdentifierToken || token == FixedToken.THIS || token == FixedToken.DOUBLE_COLON;
+    }
+
+    IPathSegment ParsePathSegment() {
+        SourcePosition position = tokenPosition;
+        IPathSegment result;
+
+        if (token is IdentifierToken idToken) {
+            result = new IdentifierSegment(position, idToken.name);
+            NextToken();
+        } else if (token == FixedToken.THIS) {
+            result = new ThisSegment(position);
+            NextToken();
+        } else {
+            throw TokenCannotBeHere();
+        }
+
+        return result;
+    }
+
     bool IsExpressionStart() {
         return token == FixedToken.TRUE
             || token == FixedToken.FALSE
             || token == FixedToken.MINUS
             || token == FixedToken.EXCLAMATION
             || token == FixedToken.LEFT_BRACKET
-            || token == FixedToken.DOUBLE_COLON
             || token == FixedToken.NEW
-            || token is IdentifierToken
+            || IsPathExpressionStart()
             || token is StringToken
             || token is IntegerToken;
     }
@@ -466,7 +491,7 @@ public class Compiler {
             }
 
             result = new ArrayExpression(position, [.. elements]);
-        } else if (token is IdentifierToken || token == FixedToken.DOUBLE_COLON) {
+        } else if (IsPathExpressionStart()) {
             // 路径
             bool fromTop;
             if (token == FixedToken.DOUBLE_COLON) {
@@ -476,13 +501,9 @@ public class Compiler {
                 fromTop = false;
             }
 
-            List<string> segments = [];
+            List<IPathSegment> segments = [];
             for (; ; ) {
-                if (token is not IdentifierToken idToken) {
-                    throw TokenCannotBeHere();
-                }
-                segments.Add(idToken.name);
-                NextToken();
+                segments.Add(ParsePathSegment());
 
                 if (token == FixedToken.DOUBLE_COLON) {
                     NextToken();
@@ -727,6 +748,10 @@ public class Compiler {
         }
 
         return new IfStatement(position, condition, body, elseBody);
+    }
+
+    bool IsBlockStatementStart() {
+        return token == FixedToken.LEFT_BRACE;
     }
     
     BlockStatement ParseBlockStatement() {
@@ -1026,7 +1051,16 @@ public class Compiler {
             type = null;
         }
 
-        BlockStatement body = ParseBlockStatement();
+        BlockStatement? body;
+        if (IsBlockStatementStart()) {
+            body = ParseBlockStatement();
+        } else if (token == FixedToken.SEMICOLON) {
+            body = null;
+            NextToken();
+        } else {
+            throw TokenCannotBeHere();
+        }
+
         return new(position, name, thisParameter, parameters, type, body);
     }
 
@@ -1065,7 +1099,8 @@ public class Compiler {
 
     bool IsItemStart() {
         return IsFunctionStart()
-            || token == FixedToken.CLASS;
+            || token == FixedToken.CLASS
+            || token == FixedToken.INTERFACE;
     }
 
     IItem ParseItem() {
@@ -1095,6 +1130,23 @@ public class Compiler {
             }
 
             result = new ClassItem(position, name, [.. fields]);
+        } else if (token == FixedToken.INTERFACE) {
+            NextToken();
+
+            string name = GetIdentifierNameAndNextToken();
+
+            AssertAndNextToken(FixedToken.LEFT_BRACE);
+            List<FunctionItem> functions = [];
+            for (; ; ) {
+                if (token == FixedToken.RIGHT_BRACE) {
+                    NextToken();
+                    break;
+                }
+
+                functions.Add(ParseFunction());
+            }
+
+            return new InterfaceItem(position, name, [.. functions]);
         } else {
             throw TokenCannotBeHere();
         }
@@ -1121,16 +1173,14 @@ public class Compiler {
     }
 
     internal void AddSymbol(string name, ISymbol symbol, SourcePosition position) {
-        if (!space.TryAddSymbol(name, symbol)) {
-            throw new SemanticException(SemanticErrorType.SYMBOL_EXIST, [name], position);
-        }
+        space.AddSymbol(name, symbol, position);
     }
 
     internal ISymbol GetSymbol(string name, SourcePosition position) {
         for (int i = spaces.Count - 1; i != -1; --i) {
             NameSpace space = spaces[i];
 
-            ISymbol? symbol = space.GetSymbol(name);
+            ISymbol? symbol = space.TryGetSymbol(name);
             if (symbol != null) {
                 return symbol;
             }
@@ -1139,13 +1189,8 @@ public class Compiler {
         throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [name], position);
     }
 
-    internal ISymbol GetTopSymbol(string name, SourcePosition position) {
-        ISymbol? symbol = spaces[0].GetSymbol(name);
-        if (symbol != null) {
-            return symbol;
-        }
-
-        throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [name], position);
+    internal NameSpace GetTopNameSpace() {
+        return spaces[0];
     }
 
     internal ILoopStatement GetLoop(string? label, SourcePosition position) {
@@ -1157,7 +1202,7 @@ public class Compiler {
             return loops[^1];
         } else {
             for (int i = spaces.Count - 1; i != -1; --i) {
-                ILoopStatement? statement = spaces[i].GetLoop(label);
+                ILoopStatement? statement = spaces[i].TryGetLoop(label);
                 if (statement != null) {
                     return statement;
                 }
@@ -1185,7 +1230,7 @@ public class Compiler {
     internal void EnterLoop(string? label, ILoopStatement statement) {
         loops.Add(statement);
         if (label != null) {
-            space.TryAddLoop(label, statement);
+            space.AddLoop(label, statement);
         }
     }
 
@@ -1236,8 +1281,9 @@ public class Compiler {
     }
 
     internal void EnterFunction(IType resultType) {
-        functionContexts.Push(new(resultType, returned));
+        functionContexts.Push(new(thisParameterSymbol, resultType, returned));
 
+        thisParameterSymbol = null;
         this.resultType = resultType;
         returned = false;
 
@@ -1247,21 +1293,38 @@ public class Compiler {
     internal void LeaveFunction() {
         FunctionContext context = functionContexts.Pop();
 
+        thisParameterSymbol = context.thisParameterSymbol;
         resultType = context.resultType;
         returned = context.returned;
 
         LeaveNameSpace();
     }
 
+    internal void EnterThisType(IType thisType) {
+        if (thisType != null) {
+            thisTypes.Push(thisType);
+        }
+
+        this.thisType = thisType;
+    }
+
+    internal void LeaveThisType() {
+        if (!thisTypes.TryPop(out thisType)) {
+            thisType = null;
+        }
+    }
+
+    internal IType? GetThisType() => thisType;
+
     internal IType GetResultType() => resultType;
 
     public FileNode[] Compile(ICollection<(string name, string content)> files) {
         this.files.AddRange(files);
 
-        space.TryAddSymbol("print", FunctionSymbol.NewResolved("print", FunctionType.Monomorphize([PrimitiveType.UNKNOWN], PrimitiveType.INTEGER), "show_message"));
-        space.TryAddSymbol("int", new PrimitiveTypeSymbol("int", PrimitiveType.INTEGER));
-        space.TryAddSymbol("boolean", new PrimitiveTypeSymbol("boolean", PrimitiveType.BOOLEAN));
-        space.TryAddSymbol("string", new PrimitiveTypeSymbol("string", PrimitiveType.STRING));
+        space.AddSymbol("print", FunctionSymbol.NewResolved("print", false, FunctionType.Monomorphize([PrimitiveType.UNKNOWN], PrimitiveType.INTEGER), "show_message"), tokenPosition);
+        space.AddSymbol("int", new PrimitiveTypeSymbol("int", PrimitiveType.INTEGER), tokenPosition);
+        space.AddSymbol("boolean", new PrimitiveTypeSymbol("boolean", PrimitiveType.BOOLEAN), tokenPosition);
+        space.AddSymbol("string", new PrimitiveTypeSymbol("string", PrimitiveType.STRING), tokenPosition);
 
         List<FileNode> nodes = [];
         foreach ((string name, string content) in files) {

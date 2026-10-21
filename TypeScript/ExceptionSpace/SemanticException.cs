@@ -12,6 +12,7 @@ public enum SemanticErrorType {
     NO_NAME_SPACE,
     NOT_CLASS,
     NOT_PLACE,
+    NOT_METHOD,
     MAY_NOT_RETURN,
     MAY_NOT_INITIALIZED,
     OPERATION_NOT_EXIST,
@@ -19,10 +20,13 @@ public enum SemanticErrorType {
     WRONG_PARAMETER_COUNT,
     WRONG_TYPE,
     WRONG_FIELD_COUNT,
+    FIELD_EXIST,
     FIELD_NOT_EXIST,
     METHOD_NOT_EXIST,
     UNKNOWN_TYPE,
     EXTERNAL_TYPE_IMPLEMENTED,
+    INVALID_THIS,
+    MISSING_FUNCTION_BODY,
 }
 
 public class SemanticException(SemanticErrorType type, string[] parameters, SourcePosition position) : Exception($"{position.source}:{position.line}:{position.column}: {formatter[type](parameters)}") {
@@ -38,6 +42,7 @@ public class SemanticException(SemanticErrorType type, string[] parameters, Sour
         { SemanticErrorType.NO_NAME_SPACE, parameters => $"{parameters[0]} 没有名字空间" },
         { SemanticErrorType.NOT_CLASS, parameters => $"{parameters[0]} 不是类" },
         { SemanticErrorType.NOT_PLACE, parameters => "不是位置式" },
+        { SemanticErrorType.NOT_METHOD, parameters => $"{parameters[0]} 不是方法" },
         { SemanticErrorType.MAY_NOT_RETURN, parameters => $"{parameters[0]} 可能不返回值" },
         { SemanticErrorType.MAY_NOT_INITIALIZED, parameters => $"{parameters[0]} 可能未初始化" },
         { SemanticErrorType.OPERATION_NOT_EXIST, parameters => $"{parameters[0]} 运算不存在" },
@@ -45,9 +50,12 @@ public class SemanticException(SemanticErrorType type, string[] parameters, Sour
         { SemanticErrorType.WRONG_PARAMETER_COUNT, parameters => $"参数数量 {parameters[0]} 不是所需的 {parameters[1]}" },
         { SemanticErrorType.WRONG_TYPE, parameters => $"类型 {parameters[0]} 不是所需的 {parameters[1]}" },
         { SemanticErrorType.WRONG_FIELD_COUNT, parameters => $"字段数量 {parameters[0]} 不是所需的 {parameters[1]}" },
+        { SemanticErrorType.FIELD_EXIST, parameters => $"字段 {parameters[0]} 已存在" },
         { SemanticErrorType.FIELD_NOT_EXIST, parameters => $"{parameters[0]} 没有字段 {parameters[1]}" },
         { SemanticErrorType.METHOD_NOT_EXIST, parameters => $"{parameters[0]} 没有方法 {parameters[1]}" },
         { SemanticErrorType.UNKNOWN_TYPE, parameters => $"未知类型" },
         { SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, parameters => $"实现了外部类型 {parameters[0]}" },
+        { SemanticErrorType.INVALID_THIS, parameters => "无效的 this" },
+        { SemanticErrorType.MISSING_FUNCTION_BODY, parameters => "缺少函数体" },
     };
 }

@@ -1,4 +1,6 @@
 ﻿using TypeScript.ExceptionSpace;
+using TypeScript.Expression;
+using TypeScript.Type;
 
 namespace TypeScript.Symbol;
 

@@ -1,4 +1,5 @@
 ﻿using TypeScript.ExceptionSpace;
+using TypeScript.Item;
 using TypeScript.Symbol;
 
 namespace TypeScript.Type;
@@ -9,16 +10,16 @@ public class ClassType(string name, ClassType.Field[] fields) : IType {
         public readonly IType type = type;
     }
 
-    public class Method(string name, FunctionSymbol symbol) {
+    public class Function(string name, FunctionSymbol symbol) {
         public readonly string name = name;
         public readonly FunctionSymbol symbol = symbol;
     }
 
     public readonly string name = name;
     public readonly Field[] fields = fields;
-    readonly List<Method> methods = [];
+    readonly List<Function> functions = [];
     readonly Dictionary<string, Field> fieldDict = new(fields.Select(field => new KeyValuePair<string, Field>(field.name, field)));
-    readonly Dictionary<string, Method> methodDict = [];
+    internal readonly NameSpace space = new();
     
     public bool EqualType(IType other) {
         return other == this;
@@ -28,12 +29,15 @@ public class ClassType(string name, ClassType.Field[] fields) : IType {
 
     public Field GetField(string name) => fieldDict[name];
 
-    public Method GetMethod(string name) => methodDict[name];
+    public ISymbol GetSymbol(string name) => space.GetSymbolOrException(name);
 
-    void IType.AddMethod(string name, FunctionSymbol symbol, SourcePosition position) {
-        Method method = new(name, symbol);
-        methods.Add(method);
-        methodDict.Add(name, method);
+    void IType.AddFunctions(IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
+        compiler.EnterNameSpace(space);
+        foreach (FunctionItem funItem in functions) {
+            funItem.AddSymbol(compiler);
+            this.functions.Add(new(funItem.name, funItem.GetSymbol()));
+        }
+        compiler.LeaveNameSpace();
     }
 
     internal Field InternalGetField(string name, SourcePosition position) {
@@ -44,19 +48,11 @@ public class ClassType(string name, ClassType.Field[] fields) : IType {
         throw new SemanticException(SemanticErrorType.FIELD_NOT_EXIST, [GetAppearance(), name], position);
     }
 
-    internal Method InternalGetMethod(string name, SourcePosition position) {
-        if (methodDict.TryGetValue(name, out Method? result)) {
-            return result;
-        }
-
-        throw new SemanticException(SemanticErrorType.METHOD_NOT_EXIST, [GetAppearance(), name], position);
-    }
-
     IType IType.GetFieldAccessResultType(string name, SourcePosition position) {
         return InternalGetField(name, position).type;
     }
 
-    FunctionSymbol IType.GetMethodSymbol(string name, SourcePosition position) {
-        return InternalGetMethod(name, position).symbol;
+    ISymbol IType.GetSymbol(string name, SourcePosition position) {
+        return space.GetSymbol(name, position);
     }
 }

@@ -9,6 +9,8 @@ public class WhileStatement(SourcePosition position, string? label, IExpression 
     public readonly IExpression condition = condition;
     public readonly BlockStatement body = body;
 
+    SourcePosition IStatement.GetPosition() => position;
+
     void IStatement.SetSemantic(Compiler compiler) {
         condition.SetSemantic(null, compiler);
 

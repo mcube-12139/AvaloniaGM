@@ -12,6 +12,8 @@ public class LetStatement(SourcePosition position, IPattern pattern, ITypeNode? 
     public readonly ITypeNode? type = type;
     public readonly IExpression? initializer = initializer;
 
+    SourcePosition IStatement.GetPosition() => position;
+
 
     void IStatement.SetSemantic(Compiler compiler) {
         IType definedType;

@@ -10,7 +10,4 @@ public interface ITypeSymbol: ISymbol {
     ITypeSymbol ISymbol.AsType(SourcePosition position) {
         return this;
     }
-    void AddImplSymbol(IType? regardedType, FunctionItem[] functions, SourcePosition position, Compiler compiler) {
-        throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetName()], position);
-    }
 }

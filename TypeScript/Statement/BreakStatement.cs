@@ -6,6 +6,8 @@ public class BreakStatement(SourcePosition position, string? label) : IStatement
 
     ILoopStatement? loop;
 
+    SourcePosition IStatement.GetPosition() => position;
+
     public ILoopStatement GetLoop() => loop!;
 
     void IStatement.SetSemantic(Compiler compiler) {

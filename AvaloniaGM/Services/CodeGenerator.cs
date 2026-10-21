@@ -51,6 +51,17 @@ internal class CodeGenerator {
         return (gameString, id);
     }
 
+    UndertaleVariable AddParameterVariable(IValueSymbol symbol) {
+        uint index = nextParameterIndex;
+        ++nextParameterIndex;
+
+        UndertaleVariable variable = GetSelfVariable($"argument{index}", true);
+
+        variables.Add(symbol, variable);
+
+        return variable;
+    }
+
     UndertaleVariable AddLocalVariable(string name) {
         (UndertaleString gameString, int id) = GetString(name);
         uint variableId = nextLocalIndex;
@@ -90,7 +101,8 @@ internal class CodeGenerator {
         }
     }
 
-    short GetFieldIndex(ClassType.Field field) {
+    short GetFieldIndex(ClassType type, ClassType.Field field) {
+        EnsureClassTypeDefined(type);
         return fieldIndices[field];
     }
 
@@ -523,6 +535,11 @@ internal class CodeGenerator {
                 Load(variable, VariableType.Normal);
                 break;
             }
+            case ThisParameterSymbol thisParameterSymbol: {
+                UndertaleVariable variable = variables.GetValueOrDefault(thisParameterSymbol)!;
+                Load(variable, VariableType.Normal);
+                break;
+            }
             default:
                 throw new NotImplementedException();
         }
@@ -581,12 +598,7 @@ internal class CodeGenerator {
     void PatternAddParameter(IPattern pattern) {
         switch (pattern) {
             case IdentifierPattern identifierPattern: {
-                uint index = nextParameterIndex;
-                ++nextParameterIndex;
-
-                UndertaleVariable variable = GetSelfVariable($"argument{index}", true);
-
-                variables.Add((ParameterSymbol)identifierPattern.GetSymbol(), variable);
+                AddParameterVariable((ParameterSymbol)identifierPattern.GetSymbol());
                 break;
             }
             default:
@@ -655,7 +667,7 @@ internal class CodeGenerator {
                 EvaluateExpression(value);
 
                 PushInt16((short)variable.InstanceType);
-                short index = GetFieldIndex(classType.GetField(name));
+                short index = GetFieldIndex(classType, classType.GetField(name));
                 PushInt16(index);
                 Convert(DataType.Int32);
 
@@ -690,7 +702,7 @@ internal class CodeGenerator {
                 UndertaleVariable variable = EvaluateExpressionToVariable(accessed, "accessed");
 
                 PushInt16((short)variable.InstanceType);
-                short index = GetFieldIndex(classType.GetField(name));
+                short index = GetFieldIndex(classType, classType.GetField(name));
                 PushInt16(index);
                 Convert(DataType.Int32);
 
@@ -705,7 +717,7 @@ internal class CodeGenerator {
     void CallMethodByType(IType type, IExpression callee, string name, IExpression[] parameters) {
         switch (type) {
             case ClassType classType: {
-                FunctionSymbol symbol = classType.GetMethod(name).symbol;
+                var symbol = (FunctionSymbol)classType.GetSymbol(name);
                 CallSymbol(symbol);
                 break;
             }
@@ -1192,11 +1204,10 @@ internal class CodeGenerator {
                 return variable;
             }
             case NewExpression newExpression: {
-                EnsureClassTypeDefined(newExpression.GetClassType());
                 UndertaleVariable variable = AddLocalVariable(name);
 
                 foreach (NewExpression.Field field in newExpression.fields) {
-                    short fieldIndex = GetFieldIndex(field.GetField());
+                    short fieldIndex = GetFieldIndex(newExpression.GetClassType(), field.GetField());
 
                     EvaluateExpression(field.value);
 
@@ -1480,8 +1491,12 @@ internal class CodeGenerator {
         switch (statement) {
             case ExpressionStatement expressionStatement: {
                 EvaluateExpression(expressionStatement.expression);
-                // 调用必定返回 Variable
-                if (expressionStatement.expression is CallExpression || expressionStatement.expression.GetResultType() != TupleType.EMPTY) {
+                // 特殊处理：调用必定返回 Variable
+                if (
+                    expressionStatement.expression is CallExpression
+                    || expressionStatement.expression is MethodCallExpression
+                    || expressionStatement.expression.GetResultType() != TupleType.EMPTY
+                ) {
                     PopUnused();
                 }
                 break;
@@ -1582,14 +1597,11 @@ internal class CodeGenerator {
         }
     }
 
-    void ParameterAddVariable(IParameter parameter) {
+    void AddParameterVariableByType(IParameter parameter) {
         switch (parameter) {
             case PatternParameter patternParameter: {
                 PatternAddParameter(patternParameter.pattern);
                 break;
-            }
-            case ThisParameter: {
-                throw new NotImplementedException();
             }
             default:
                 throw new NotImplementedException();
@@ -1621,49 +1633,64 @@ internal class CodeGenerator {
 
     void GenerateImpl(ImplNode impl) {
         foreach (FunctionItem funItem in impl.functions) {
-            GenerateItem(funItem);
+            GenerateFunctionItem(funItem);
         }
+    }
+
+    void GenerateFunctionItem(FunctionItem funItem) {
+        functionGenerationStates.Push(new(byteCount, instructions, types, nextLocalIndex, nextParameterIndex, codeLocals!, loopContexts));
+        byteCount = 0;
+        instructions = [];
+        types = [];
+        nextLocalIndex = 1;
+        nextParameterIndex = 0;
+
+        UndertaleCode? code = funCodes.GetValueOrDefault(funItem.name);
+        if (code == null) {
+            UserFunction userFun = GetUserFunction(funItem.GetSymbol());
+            code = userFun.code;
+        }
+        codeLocals = data!.CodeLocals.For(code);
+
+        if (funItem.thisParameter != null) {
+            AddParameterVariable(funItem.thisParameter.GetSymbol());
+        }
+        foreach (IParameter parameter in funItem.parameters) {
+            AddParameterVariableByType(parameter);
+        }
+
+        ExecuteBlockStatement(funItem.body!);
+
+        code.Replace(instructions);
+        code.Length = byteCount;
+        code.Offset = 0;
+        code.ArgumentsCount = 0;
+        code.LocalsCount = nextLocalIndex;
+
+        FunctionGenerationState state = functionGenerationStates.Pop();
+        byteCount = state.byteCount;
+        instructions = state.instructions;
+        types = state.types;
+        nextLocalIndex = state.nextLocalIndex;
+        nextParameterIndex = state.nextParameterIndex;
     }
 
     void GenerateItem(IItem item) {
         switch (item) {
             case FunctionItem funItem: {
-                functionGenerationStates.Push(new(byteCount, instructions, types, nextLocalIndex, nextParameterIndex, codeLocals!, loopContexts));
-                byteCount = 0;
-                instructions = [];
-                types = [];
-                nextLocalIndex = 1;
-                nextParameterIndex = 0;
-
-                UndertaleCode? code = funCodes.GetValueOrDefault(funItem.name);
-                if (code == null) {
-                    UserFunction userFun = GetUserFunction(funItem.GetSymbol());
-                    code = userFun.code;
-                }
-                codeLocals = data!.CodeLocals.For(code);
-
-                foreach (IParameter parameter in funItem.parameters) {
-                    ParameterAddVariable(parameter);
-                }
-
-                ExecuteBlockStatement(funItem.body);
-
-                code.Replace(instructions);
-                code.Length = byteCount;
-                code.Offset = 0;
-                code.ArgumentsCount = 0;
-                code.LocalsCount = nextLocalIndex;
-
-                FunctionGenerationState state = functionGenerationStates.Pop();
-                byteCount = state.byteCount;
-                instructions = state.instructions;
-                types = state.types;
-                nextLocalIndex = state.nextLocalIndex;
-                nextParameterIndex = state.nextParameterIndex;
+                GenerateFunctionItem(funItem);
                 break;
             }
-            case ClassItem classItem: {
-                /// 无事发生
+            case ClassItem: {
+                // 无事发生，因为字段表是惰性添加的
+                break;
+            }
+            case InterfaceItem interfaceItem: {
+                foreach (FunctionItem funItem in interfaceItem.functions) {
+                    if (funItem.body != null) {
+                        GenerateFunctionItem(funItem);
+                    }
+                }
                 break;
             }
             default:

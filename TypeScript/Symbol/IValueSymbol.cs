@@ -1,4 +1,6 @@
-﻿using TypeScript.Type;
+﻿using TypeScript.ExceptionSpace;
+using TypeScript.Expression;
+using TypeScript.Type;
 
 namespace TypeScript.Symbol;
 
@@ -8,4 +10,7 @@ public interface IValueSymbol: ISymbol {
     }
     IType GetValueType();
     internal IType LazyGetValueType(SourcePosition position, Compiler compiler);
+    internal IType GetMethodCallResultType(IExpression[] parameterTypes, SourcePosition position, Compiler compiler) {
+        throw new SemanticException(SemanticErrorType.METHOD_NOT_EXIST, [GetName()], position);
+    }
 }

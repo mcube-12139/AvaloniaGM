@@ -8,6 +8,8 @@ public class ReturnStatement(SourcePosition position, IExpression? value) : ISta
     public readonly SourcePosition position = position;
     public readonly IExpression? value = value;
 
+    SourcePosition IStatement.GetPosition() => position;
+
     void IStatement.SetSemantic(Compiler compiler) {
         IType resultType = compiler.GetResultType();
 

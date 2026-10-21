@@ -1,4 +1,5 @@
-﻿using TypeScript.Symbol;
+﻿using TypeScript.ExceptionSpace;
+using TypeScript.Symbol;
 using TypeScript.Type;
 using TypeScript.TypeNode;
 
@@ -35,12 +36,18 @@ public class ClassItem(SourcePosition position, string name, ClassItem.Field[] f
     }
 
     void IItem.SetSemantic(Compiler compiler) {
+        // 无事发生，因为 classFields 是惰性求值的
     }
 
     internal ClassType.Field[] ResolveFields(Compiler compiler) {
         if (classFields == null) {
             List<ClassType.Field> classFieldList = [];
+            HashSet<string> names = [];
             foreach (Field field in fields) {
+                if (!names.Add(field.name)) {
+                    throw new SemanticException(SemanticErrorType.FIELD_EXIST, [field.name], field.position);
+                }
+
                 field.ResolveType(compiler);
                 classFieldList.Add(field.GetFieldType());
             }

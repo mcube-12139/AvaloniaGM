@@ -3,6 +3,7 @@ using TypeScript.TypeNode;
 
 namespace TypeScript;
 
+// implementations 既没有符号，又要在 Item 添加符号后、分析语义前改别人的符号（对应的类型），所以不是 Item。
 public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? regardedType, FunctionItem[] functions) {
     public readonly SourcePosition position = position;
     public readonly ITypeNode typeNode = typeNode;
@@ -13,19 +14,14 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
         typeNode.SetSemantic(compiler);
         regardedType?.SetSemantic(compiler);
 
-        typeNode.AddImplSymbol(regardedType?.GetSelfType(), functions, compiler);
-
-        foreach (FunctionItem funItem in functions) {
-            if (funItem.thisParameter != null) {
-                funItem.ResolveType(compiler);
-                typeNode.GetSelfType().AddMethod(funItem.name, funItem.GetSymbol(), position);
-            }
-        }
+        typeNode.GetSelfType().AddFunctions(functions, position, compiler);
     }
 
     internal void SetSemantic(Compiler compiler) {
+        compiler.EnterThisType(typeNode.GetSelfType());
         foreach (FunctionItem funItem in functions) {
             funItem.SetSemantic(compiler);
         }
+        compiler.LeaveThisType();
     }
 }

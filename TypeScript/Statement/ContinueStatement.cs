@@ -6,6 +6,8 @@ public class ContinueStatement(SourcePosition position, string? label) : IStatem
 
     ILoopStatement? loop;
 
+    SourcePosition IStatement.GetPosition() => position;
+
     public ILoopStatement GetLoop() => loop!;
 
     void IStatement.SetSemantic(Compiler compiler) {

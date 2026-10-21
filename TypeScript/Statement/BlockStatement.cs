@@ -8,6 +8,8 @@ public class BlockStatement(SourcePosition position, IItem[] items, ImplNode[] i
     public readonly ImplNode[] impls = impls;
     public readonly IStatement[] statements = statements;
 
+    SourcePosition IStatement.GetPosition() => position;
+
     internal void SetSemanticWithStart(Compiler compiler, Action? start) {
         compiler.EnterNewNameSpace();
         start?.Invoke();

@@ -1,5 +1,6 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.Item;
 using TypeScript.Symbol;
 
 namespace TypeScript.Type;
@@ -8,7 +9,7 @@ public interface IType {
     string GetAppearance();
     bool EqualType(IType other);
 
-    void AddMethod(string name, FunctionSymbol symbol, SourcePosition position) {
+    void AddFunctions(IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
         throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
     }
 
@@ -16,8 +17,8 @@ public interface IType {
         throw new SemanticException(SemanticErrorType.NOT_CALLABLE, [GetAppearance()], position);
     }
 
-    FunctionSymbol GetMethodSymbol(string name, SourcePosition position) {
-        throw new SemanticException(SemanticErrorType.METHOD_NOT_EXIST, [GetAppearance(), name], position);
+    ISymbol GetSymbol(string name, SourcePosition position) {
+        throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [GetAppearance(), name], position);
     }
 
     IType GetFieldAccessResultType(string name, SourcePosition position) {

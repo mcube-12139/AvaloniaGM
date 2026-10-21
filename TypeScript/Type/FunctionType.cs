@@ -68,4 +68,20 @@ public class FunctionType : IType {
             }
         }
     }
+
+    internal void EnsureCanCallMethod(IExpression[] parameters, SourcePosition position, Compiler compiler) {
+        if (parameters.Length != parameterTypes.Length - 1) {
+            throw new SemanticException(SemanticErrorType.WRONG_PARAMETER_COUNT, [parameters.Length.ToString(), (parameterTypes.Length - 1).ToString()], position);
+        }
+        for (int i = 0; i != parameters.Length; ++i) {
+            IExpression parameter = parameters[i];
+            IType definedType = parameterTypes[i + 1];
+            parameter.SetSemantic(definedType, compiler);
+
+            IType parameterType = parameter.GetResultType();
+            if (!TypeHelp.IsType(parameterType, definedType)) {
+                throw new SemanticException(SemanticErrorType.WRONG_TYPE, [parameterType.GetAppearance(), definedType.GetAppearance()], position);
+            }
+        }
+    }
 }

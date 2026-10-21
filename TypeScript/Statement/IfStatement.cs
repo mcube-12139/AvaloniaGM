@@ -9,6 +9,8 @@ public class IfStatement(SourcePosition position, IExpression condition, BlockSt
     public readonly BlockStatement body = body;
     public readonly IStatement? elseBody = elseBody;
 
+    SourcePosition IStatement.GetPosition() => position;
+
     void IStatement.SetSemantic(Compiler compiler) {
         condition.SetSemantic(null, compiler);
 

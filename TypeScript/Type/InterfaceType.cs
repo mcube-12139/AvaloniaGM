@@ -1,4 +1,6 @@
-﻿namespace TypeScript.Type;
+﻿using TypeScript.Symbol;
+
+namespace TypeScript.Type;
 
 public class InterfaceType : IType {
     public readonly string name;
@@ -16,4 +18,8 @@ public class InterfaceType : IType {
     }
 
     string IType.GetAppearance() => name;
+
+    ISymbol IType.GetImplItemSymbol(string name, SourcePosition position) {
+        return space.GetSymbol(name, position);
+    }
 }

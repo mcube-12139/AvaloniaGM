@@ -1,5 +1,3 @@
-using TypeScript.ExceptionSpace;
-using TypeScript.Symbol;
 using TypeScript.Type;
 
 namespace TypeScript.Expression;
@@ -20,7 +18,7 @@ public class MethodCallExpression(SourcePosition position, IExpression callee, s
         callee.SetSemantic(null, compiler);
 
         type = callee.GetResultType()
-            .GetSymbol(name, position)
+            .GetImplItemSymbol(name, position)
             .AsValue(position)
             .GetMethodCallResultType(parameters, position, compiler);
     }

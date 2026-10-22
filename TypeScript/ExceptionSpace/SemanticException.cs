@@ -13,6 +13,7 @@ public enum SemanticErrorType {
     NOT_CLASS,
     NOT_PLACE,
     NOT_METHOD,
+    NOT_CONCEPT,
     MAY_NOT_RETURN,
     MAY_NOT_INITIALIZED,
     OPERATION_NOT_EXIST,
@@ -27,6 +28,9 @@ public enum SemanticErrorType {
     EXTERNAL_TYPE_IMPLEMENTED,
     INVALID_THIS,
     MISSING_FUNCTION_BODY,
+    CONCEPT_FUNCTION_NOT_EXIST,
+    NOT_IMPLEMENTING_CONCEPT_FUNCTION,
+    CONCEPT_NOT_IMPLEMENTED,
 }
 
 public class SemanticException(SemanticErrorType type, string[] parameters, SourcePosition position) : Exception($"{position.source}:{position.line}:{position.column}: {formatter[type](parameters)}") {
@@ -43,6 +47,7 @@ public class SemanticException(SemanticErrorType type, string[] parameters, Sour
         { SemanticErrorType.NOT_CLASS, parameters => $"{parameters[0]} 不是类" },
         { SemanticErrorType.NOT_PLACE, parameters => "不是位置式" },
         { SemanticErrorType.NOT_METHOD, parameters => $"{parameters[0]} 不是方法" },
+        { SemanticErrorType.NOT_CONCEPT, parameters => $"{parameters[0]} 不是概念" },
         { SemanticErrorType.MAY_NOT_RETURN, parameters => $"{parameters[0]} 可能不返回值" },
         { SemanticErrorType.MAY_NOT_INITIALIZED, parameters => $"{parameters[0]} 可能未初始化" },
         { SemanticErrorType.OPERATION_NOT_EXIST, parameters => $"{parameters[0]} 运算不存在" },
@@ -57,5 +62,8 @@ public class SemanticException(SemanticErrorType type, string[] parameters, Sour
         { SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, parameters => $"实现了外部类型 {parameters[0]}" },
         { SemanticErrorType.INVALID_THIS, parameters => "无效的 this" },
         { SemanticErrorType.MISSING_FUNCTION_BODY, parameters => "缺少函数体" },
+        { SemanticErrorType.CONCEPT_FUNCTION_NOT_EXIST, parameters => $"概念 {parameters[0]} 没有函数 {parameters[1]}" },
+        { SemanticErrorType.NOT_IMPLEMENTING_CONCEPT_FUNCTION, parameters => $"该函数未实现概念函数 {parameters[0]}" },
+        { SemanticErrorType.CONCEPT_NOT_IMPLEMENTED, parameters => $"未实现概念项 {parameters[0]}" },
     };
 }

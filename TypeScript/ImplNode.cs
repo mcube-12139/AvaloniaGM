@@ -1,4 +1,6 @@
-﻿using TypeScript.Item;
+﻿using TypeScript.ExceptionSpace;
+using TypeScript.Item;
+using TypeScript.Symbol;
 using TypeScript.Type;
 using TypeScript.TypeNode;
 
@@ -19,7 +21,7 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
             type.AddFunctions(functions, position, compiler);
         } else {
             regardedType.SetSemantic(compiler);
-            type.AddImpl(regardedType.GetSelfType(), functions, position, compiler);
+            type.AddImpl(regardedType.GetSymbol(), functions, position, compiler);
         }
     }
 
@@ -27,6 +29,38 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
         compiler.EnterThisType(typeNode.GetSelfType());
         foreach (FunctionItem funItem in functions) {
             funItem.SetSemantic(compiler);
+        }
+
+        if (regardedType != null) {
+            // 检查是否实现了该概念
+            ISymbol symbol = regardedType.GetSymbol();
+            Dictionary<string, FunctionSymbol> conceptFunctions = symbol.GetConceptFunctions(position);
+            HashSet<string> conceptFunctionNames = [.. conceptFunctions.Keys];
+            foreach (FunctionItem funItem in functions) {
+                if (!conceptFunctions.TryGetValue(funItem.name, out FunctionSymbol? conceptFun)) {
+                    throw new SemanticException(SemanticErrorType.CONCEPT_FUNCTION_NOT_EXIST, [symbol.GetName(), funItem.name], funItem.position);
+                }
+
+                FunctionSymbol funSymbol = funItem.GetSymbol();
+                if (funSymbol.method != conceptFun.method) {
+                    throw new SemanticException(SemanticErrorType.NOT_IMPLEMENTING_CONCEPT_FUNCTION, [conceptFun.name], funItem.position);
+                }
+
+                FunctionType funType = funSymbol.LazyGetValueType(position, compiler);
+                FunctionType conceptFunType = conceptFun.LazyGetValueType(position, compiler);
+                if (
+                    (!funSymbol.method && !funType.IsType(conceptFunType))
+                    || (funSymbol.method && !funType.IsMethodType(conceptFunType))
+                ) {
+                    throw new SemanticException(SemanticErrorType.NOT_IMPLEMENTING_CONCEPT_FUNCTION, [conceptFun.name], funItem.position);
+                }
+
+                conceptFunctionNames.Remove(funItem.name);
+            }
+
+            if (conceptFunctionNames.Count != 0) {
+                throw new SemanticException(SemanticErrorType.CONCEPT_NOT_IMPLEMENTED, [string.Join(", ", conceptFunctionNames)], position);
+            }
         }
         compiler.LeaveThisType();
     }

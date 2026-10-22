@@ -49,6 +49,54 @@ public class FunctionType : IType {
         return true;
     }
 
+    bool IType.IsType(IType other) => IsType(other);
+
+    internal bool IsType(IType other) {
+        if (other is not FunctionType otherFun) {
+            return false;
+        }
+
+        if (!TypeHelp.IsType(resultType, otherFun.resultType)) {
+            return false;
+        }
+
+        if (parameterTypes.Length != otherFun.parameterTypes.Length) {
+            return false;
+        }
+
+        // 参数逆变
+        for (int i = 0; i != parameterTypes.Length; ++i) {
+            if (!TypeHelp.IsType(otherFun.parameterTypes[i], parameterTypes[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    internal bool IsMethodType(IType other) {
+        if (other is not FunctionType otherFun) {
+            return false;
+        }
+
+        if (!TypeHelp.IsType(resultType, otherFun.resultType)) {
+            return false;
+        }
+
+        if (parameterTypes.Length != otherFun.parameterTypes.Length) {
+            return false;
+        }
+
+        // 参数逆变
+        for (int i = 1; i < parameterTypes.Length; ++i) {
+            if (!TypeHelp.IsType(otherFun.parameterTypes[i], parameterTypes[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     FunctionType IType.AsFunctionType(SourcePosition position, Compiler compiler) {
         return this;
     }

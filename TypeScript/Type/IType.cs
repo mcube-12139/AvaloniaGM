@@ -8,9 +8,12 @@ namespace TypeScript.Type;
 public interface IType {
     string GetAppearance();
     bool EqualType(IType other);
+    bool IsType(IType other) {
+        return EqualType(other);
+    }
 
-    void AddImpl(IType implType, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
-
+    void AddImpl(ISymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
+        throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
     }
 
     void AddFunctions(IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
@@ -21,7 +24,7 @@ public interface IType {
         throw new SemanticException(SemanticErrorType.NOT_CALLABLE, [GetAppearance()], position);
     }
 
-    ISymbol GetSymbol(string name, SourcePosition position) {
+    ISymbol GetImplItemSymbol(string name, SourcePosition position) {
         throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [GetAppearance(), name], position);
     }
 

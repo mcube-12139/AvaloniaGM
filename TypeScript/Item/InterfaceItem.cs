@@ -26,6 +26,7 @@ public class InterfaceItem : IItem {
         compiler.EnterNameSpace(symbol.type.space);
         foreach (FunctionItem funItem in functions) {
             funItem.AddSymbol(compiler);
+            symbol.conceptFunctions.Add(funItem.name, funItem.GetSymbol());
         }
         compiler.LeaveNameSpace();
         compiler.inInterface = false;

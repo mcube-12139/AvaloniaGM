@@ -1,6 +1,4 @@
 ﻿using TypeScript.ExceptionSpace;
-using TypeScript.Expression;
-using TypeScript.Type;
 
 namespace TypeScript.Symbol;
 
@@ -14,5 +12,8 @@ public interface ISymbol {
     }
     internal NameSpace GetNameSpace(SourcePosition position) {
         throw new SemanticException(SemanticErrorType.NO_NAME_SPACE, [GetName()], position);
+    }
+    internal Dictionary<string, FunctionSymbol> GetConceptFunctions(SourcePosition position) {
+        throw new SemanticException(SemanticErrorType.NOT_CONCEPT, [GetName()], position);
     }
 }

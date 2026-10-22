@@ -20,9 +20,14 @@ public class ClassType(string name, ClassType.Field[] fields) : IType {
     readonly List<Function> functions = [];
     readonly Dictionary<string, Field> fieldDict = new(fields.Select(field => new KeyValuePair<string, Field>(field.name, field)));
     internal readonly NameSpace space = new();
+    readonly List<ISymbol> implSymbols = [];
+    readonly HashSet<InterfaceType> implTypes = [];
     
     public bool EqualType(IType other) {
         return other == this;
+    }
+    bool IType.IsType(IType other) {
+        return other == this || implTypes.Contains(other);
     }
 
     public string GetAppearance() => name;
@@ -32,6 +37,20 @@ public class ClassType(string name, ClassType.Field[] fields) : IType {
     public ISymbol GetSymbol(string name) => space.GetSymbolOrException(name);
 
     void IType.AddFunctions(IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
+        compiler.EnterNameSpace(space);
+        foreach (FunctionItem funItem in functions) {
+            funItem.AddSymbol(compiler);
+            this.functions.Add(new(funItem.name, funItem.GetSymbol()));
+        }
+        compiler.LeaveNameSpace();
+    }
+
+    void IType.AddImpl(ISymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
+        implSymbols.Add(symbol);
+        if (symbol is InterfaceSymbol interfaceSymbol) {
+            implTypes.Add(interfaceSymbol.type);
+        }
+        
         compiler.EnterNameSpace(space);
         foreach (FunctionItem funItem in functions) {
             funItem.AddSymbol(compiler);
@@ -52,7 +71,7 @@ public class ClassType(string name, ClassType.Field[] fields) : IType {
         return InternalGetField(name, position).type;
     }
 
-    ISymbol IType.GetSymbol(string name, SourcePosition position) {
+    ISymbol IType.GetImplItemSymbol(string name, SourcePosition position) {
         return space.GetSymbol(name, position);
     }
 }

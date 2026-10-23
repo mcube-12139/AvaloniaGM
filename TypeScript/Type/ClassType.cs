@@ -71,7 +71,7 @@ public class ClassType(string name, ClassType.Field[] fields) : IType {
         return InternalGetField(name, position).type;
     }
 
-    ISymbol IType.GetImplItemSymbol(string name, SourcePosition position) {
+    ISymbol IType.GetAssociatedSymbol(string name, SourcePosition position) {
         return space.GetSymbol(name, position);
     }
 }

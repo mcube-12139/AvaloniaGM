@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using TypeScript.Item;
+﻿using TypeScript.Item;
 using TypeScript.Type;
 
 namespace TypeScript.Symbol;

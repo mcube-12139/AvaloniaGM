@@ -24,7 +24,7 @@ public interface IType {
         throw new SemanticException(SemanticErrorType.NOT_CALLABLE, [GetAppearance()], position);
     }
 
-    ISymbol GetImplItemSymbol(string name, SourcePosition position) {
+    ISymbol GetAssociatedSymbol(string name, SourcePosition position) {
         throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [GetAppearance(), name], position);
     }
 

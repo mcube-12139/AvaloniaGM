@@ -19,7 +19,7 @@ public class InterfaceType : IType {
 
     string IType.GetAppearance() => name;
 
-    ISymbol IType.GetImplItemSymbol(string name, SourcePosition position) {
+    ISymbol IType.GetAssociatedSymbol(string name, SourcePosition position) {
         return space.GetSymbol(name, position);
     }
 }

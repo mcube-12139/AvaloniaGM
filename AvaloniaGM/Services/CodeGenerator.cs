@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using TypeScript;
 using TypeScript.Expression;
 using TypeScript.Item;
@@ -223,6 +222,18 @@ internal class CodeGenerator {
         byteCount += 4;
 
         // int16 常量被按照 int32 类型处理
+        types.Push(DataType.Int32);
+    }
+
+    void PushInt32(int value) {
+        instructions.Add(new() {
+            Kind = Opcode.Push,
+            Type1 = DataType.Int32,
+            Type2 = DataType.Double,
+            ValueInt = value
+        });
+        byteCount += 8;
+
         types.Push(DataType.Int32);
     }
 
@@ -525,6 +536,13 @@ internal class CodeGenerator {
 
     void LoadSymbol(IValueSymbol symbol) {
         switch (symbol) {
+            case FunctionSymbol functionSymbol: {
+                if (!userFunctions.TryGetValue(functionSymbol, out UserFunction? userFun)) {
+                    throw new Exception("不能求值非自定义函数");
+                }
+                PushInt32(userFun.scriptId);
+                break;
+            }
             case LocalSymbol localSymbol: {
                 UndertaleVariable variable = variables.GetValueOrDefault(localSymbol)!;
                 Load(variable, VariableType.Normal);
@@ -561,7 +579,7 @@ internal class CodeGenerator {
         types.Push(DataType.Variable);
     }
 
-    void CallSymbol(IValueSymbol valueSymbol) {
+    void CallSymbol(IValueSymbol valueSymbol, int parameterCount) {
         switch (valueSymbol) {
             case FunctionSymbol functionSymbol: {
                 UndertaleFunction fun;
@@ -570,7 +588,19 @@ internal class CodeGenerator {
                 } else {
                     fun = GetUserFunction(functionSymbol).fun;
                 }
-                Call(fun, functionSymbol.GetFunctionType().parameterTypes.Length);
+                Call(fun, parameterCount);
+                break;
+            }
+            case LocalSymbol localSymbol: {
+                LoadSymbol(localSymbol);
+                Convert(DataType.Variable);
+                Call(data!.Functions.EnsureDefined("script_execute", data.Strings), parameterCount + 1);
+                break;
+            }
+            case ParameterSymbol parameterSymbol: {
+                LoadSymbol(parameterSymbol);
+                Convert(DataType.Variable);
+                Call(data!.Functions.EnsureDefined("script_execute", data.Strings), parameterCount + 1);
                 break;
             }
             default:
@@ -606,10 +636,10 @@ internal class CodeGenerator {
         }
     }
 
-    void ExpressionCall(IExpression called) {
+    void ExpressionCall(IExpression called, int parameterCount) {
         switch (called) {
             case PathExpression pathExpression: {
-                CallSymbol(pathExpression.GetSymbol());
+                CallSymbol(pathExpression.GetSymbol(), parameterCount);
                 break;
             }
             default:
@@ -717,10 +747,48 @@ internal class CodeGenerator {
     void CallMethodByType(IType type, IExpression callee, string name, IExpression[] parameters) {
         switch (type) {
             case ClassType classType: {
+                for (int i = parameters.Length - 1; i != -1; --i) {
+                    EvaluateExpression(parameters[i]);
+                    Convert(DataType.Variable);
+                }
+                EvaluateExpression(callee);
+                Convert(DataType.Variable);
+
                 var symbol = (FunctionSymbol)classType.GetSymbol(name);
-                CallSymbol(symbol);
+                CallSymbol(symbol, parameters.Length + 1);
                 break;
             }
+            /*
+            case InterfaceType interfaceType: {
+                // interfaceObject.methods[methodIndex](interfaceObject.classObject, parameter0, parameter1...)
+                for (int i = parameters.Length - 1; i != -1; --i) {
+                    EvaluateExpression(parameters[i]);
+                    Convert(DataType.Variable);
+                }
+                UndertaleVariable calleeVariable = EvaluateExpressionToVariable(callee, "callee");
+
+                // 载入 classObject
+                PushInt16((short)calleeVariable.InstanceType);
+                PushInt16(0);
+                Load(calleeVariable, VariableType.Array);
+
+                // 载入方法表
+                UndertaleVariable methodsVariable = AddLocalVariable("methods");
+
+                PushInt16((short)calleeVariable.InstanceType);
+                PushInt16(1);
+                Load(calleeVariable, VariableType.Array);
+                Store(methodsVariable, VariableType.Normal);
+
+                // 载入实际方法
+                PushInt16((short)methodsVariable.InstanceType);
+                PushInt32(interfaceType.GetMethodIndex(name));
+                Load(methodsVariable, VariableType.Array);
+
+                Call(data!.Functions.EnsureDefined("script_execute", data.Strings), parameters.Length + 2);
+                break;
+            }
+            */
             default:
                 throw new NotImplementedException();
         }
@@ -1288,15 +1356,6 @@ internal class CodeGenerator {
                 break;
             }
             case MethodCallExpression methodCallExpression: {
-                IExpression[] parameters = methodCallExpression.parameters;
-
-                for (int i = parameters.Length - 1; i != -1; --i) {
-                    EvaluateExpression(parameters[i]);
-                    Convert(DataType.Variable);
-                }
-                EvaluateExpression(methodCallExpression.callee);
-                Convert(DataType.Variable);
-
                 CallMethodByType(methodCallExpression.callee.GetResultType(), methodCallExpression.callee, methodCallExpression.name, methodCallExpression.parameters);
                 break;
             }
@@ -1307,7 +1366,7 @@ internal class CodeGenerator {
                     EvaluateExpression(parameters[i]);
                     Convert(DataType.Variable);
                 }
-                ExpressionCall(callExpression.called);
+                ExpressionCall(callExpression.called, parameters.Length);
                 break;
             }
             case NegateExpression negateExpression: {
@@ -1615,6 +1674,7 @@ internal class CodeGenerator {
 
             var code = UndertaleCode.CreateEmptyEntry(data, $"gml_Script_{funName}");
             UndertaleString nameStr = data!.Strings.MakeString(funName);
+            int scriptId = data.Scripts.Count;
             UndertaleScript script = new() {
                 Name = nameStr,
                 Code = code
@@ -1624,7 +1684,7 @@ internal class CodeGenerator {
 
             UndertaleFunction fun = data.Functions.EnsureDefined(funName, data.Strings);
 
-            result = new(script, fun, code);
+            result = new(scriptId, script, fun, code);
             userFunctions.Add(symbol, result);
         }
 

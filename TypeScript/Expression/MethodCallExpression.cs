@@ -18,7 +18,7 @@ public class MethodCallExpression(SourcePosition position, IExpression callee, s
         callee.SetSemantic(null, compiler);
 
         type = callee.GetResultType()
-            .GetImplItemSymbol(name, position)
+            .GetAssociatedSymbol(name, position)
             .AsValue(position)
             .GetMethodCallResultType(parameters, position, compiler);
     }

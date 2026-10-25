@@ -1,13 +1,25 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.Field;
 
 namespace TypeScript.Type;
 
 public class StringType : IType {
     string IType.GetAppearance() => "string";
+    static readonly Dictionary<string, IField> fields = new() {
+        { "length", new StringLengthField() }
+    };
 
     bool IType.EqualType(IType other) {
         return other == this;
+    }
+
+    IField IType.GetField(string name, SourcePosition position) {
+        if (fields.TryGetValue(name, out IField? result)) {
+            return result;
+        }
+
+        throw new SemanticException(SemanticErrorType.FIELD_NOT_EXIST, [name], position);
     }
 
     IType IType.GetAddResultType(IExpression right, SourcePosition position, Compiler compiler) {

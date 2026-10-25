@@ -24,9 +24,12 @@ public class InterfaceItem : IItem {
 
         compiler.inInterface = true;
         compiler.EnterNameSpace(symbol.type.space);
+        uint index = 0;
         foreach (FunctionItem funItem in functions) {
-            funItem.AddSymbol(compiler);
-            symbol.conceptFunctions.Add(funItem.name, funItem.GetSymbol());
+            ConceptFunctionSymbol funSymbol = funItem.CreateConceptSymbol(index);
+            symbol.conceptFunctions.Add(funItem.name, funSymbol);
+            compiler.AddSymbol(funItem.name, funSymbol, funItem.position);
+            ++index;
         }
         compiler.LeaveNameSpace();
         compiler.inInterface = false;
@@ -35,7 +38,7 @@ public class InterfaceItem : IItem {
     void IItem.SetSemantic(Compiler compiler) {
         compiler.EnterThisType(symbol!.type);
         foreach (FunctionItem funItem in functions) {
-            funItem.SetSemantic(compiler);
+            funItem.SetConceptSemantic(compiler);
         }
         compiler.LeaveThisType();
     }

@@ -18,6 +18,8 @@ public class FunctionItem(SourcePosition position, string name, ThisParameter? t
     readonly bool method = thisParameter != null;
     FunctionSymbol? symbol;
     FunctionType? functionType;
+    IType[]? parameterTypes;
+    IType? resultType;
 
     public FunctionSymbol GetSymbol() => symbol!;
 
@@ -30,6 +32,10 @@ public class FunctionItem(SourcePosition position, string name, ThisParameter? t
 
         symbol = FunctionSymbol.NewUnresolved(name, method, this, null);
         compiler.AddSymbol(name, symbol, position);
+    }
+
+    internal ConceptFunctionSymbol CreateConceptSymbol(uint index) {
+        return new(name, method, index, this);
     }
 
     void IItem.SetSemantic(Compiler compiler) => SetSemantic(compiler);
@@ -55,6 +61,10 @@ public class FunctionItem(SourcePosition position, string name, ThisParameter? t
         compiler.LeaveFunction();
     }
 
+    internal void SetConceptSemantic(Compiler compiler) {
+        ResolveConceptType(compiler);
+    }
+
     internal FunctionType ResolveType(Compiler compiler) {
         if (functionType == null) {
             thisParameter?.SetSemantic(compiler);
@@ -76,5 +86,19 @@ public class FunctionItem(SourcePosition position, string name, ThisParameter? t
         }
 
         return functionType;
+    }
+
+    internal (IType[], IType) ResolveConceptType(Compiler compiler) {
+        if (parameterTypes == null || resultType == null) {
+            foreach (IParameter parameter in parameters) {
+                parameter.SetTypeSemantic(compiler);
+            }
+            resultNode?.SetSemantic(compiler);
+
+            parameterTypes = [.. parameters.Select(parameter => parameter.GetParameterType())];
+            resultType = resultNode?.GetSelfType() ?? TupleType.EMPTY;
+        }
+
+        return (parameterTypes, resultType);
     }
 }

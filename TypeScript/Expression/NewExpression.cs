@@ -1,4 +1,5 @@
 ﻿using TypeScript.ExceptionSpace;
+using TypeScript.Field;
 using TypeScript.Type;
 using TypeScript.TypeNode;
 
@@ -10,10 +11,10 @@ public class NewExpression(SourcePosition position, PathType pathType, NewExpres
         public readonly string name = name;
         public readonly IExpression value = value;
 
-        ClassType.Field? classField;
+        StructField? classField;
         IType? valueType;
 
-        public ClassType.Field GetField() => classField!;
+        public StructField GetField() => classField!;
 
         public IType GetValueType() => valueType!;
 

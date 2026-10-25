@@ -29,7 +29,7 @@ public enum SemanticErrorType {
     INVALID_THIS,
     MISSING_FUNCTION_BODY,
     CONCEPT_FUNCTION_NOT_EXIST,
-    NOT_IMPLEMENTING_CONCEPT_FUNCTION,
+    NOT_SATISFY_CONCEPT_FUNCTION,
     CONCEPT_NOT_IMPLEMENTED,
 }
 
@@ -63,7 +63,7 @@ public class SemanticException(SemanticErrorType type, string[] parameters, Sour
         { SemanticErrorType.INVALID_THIS, parameters => "无效的 this" },
         { SemanticErrorType.MISSING_FUNCTION_BODY, parameters => "缺少函数体" },
         { SemanticErrorType.CONCEPT_FUNCTION_NOT_EXIST, parameters => $"概念 {parameters[0]} 没有函数 {parameters[1]}" },
-        { SemanticErrorType.NOT_IMPLEMENTING_CONCEPT_FUNCTION, parameters => $"该函数未实现概念函数 {parameters[0]}" },
+        { SemanticErrorType.NOT_SATISFY_CONCEPT_FUNCTION, parameters => $"该函数未实现概念函数 {parameters[0]}" },
         { SemanticErrorType.CONCEPT_NOT_IMPLEMENTED, parameters => $"未实现概念项 {parameters[0]}" },
     };
 }

@@ -1,4 +1,5 @@
-﻿using TypeScript.Item;
+﻿using TypeScript.Field;
+using TypeScript.Item;
 using TypeScript.Type;
 
 namespace TypeScript.Symbol;
@@ -17,7 +18,7 @@ public class ClassSymbol(string name, ClassItem item) : ITypeSymbol {
 
     IType ITypeSymbol.LazyGetSelfType(SourcePosition position, Compiler compiler) {
         if (type == null) {
-            ClassType.Field[] fields = item.ResolveFields(compiler);
+            StructField[] fields = item.ResolveFields(compiler);
 
             type = new(name, fields);
         }

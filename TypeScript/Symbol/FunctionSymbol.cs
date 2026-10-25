@@ -40,7 +40,7 @@ public class FunctionSymbol : IValueSymbol {
     internal static FunctionSymbol NewUnresolved(string name, bool method, FunctionItem item, string? hostName) =>
         new(name, method, null, item, hostName);
 
-    IType IValueSymbol.GetMethodCallResultType(IExpression[] parameterTypes, SourcePosition position, Compiler compiler) {
+    IType ISymbol.GetMethodCallResultType(IExpression[] parameterTypes, SourcePosition position, Compiler compiler) {
         if (!method) {
             throw new SemanticException(SemanticErrorType.NOT_METHOD, [name], position);
         }

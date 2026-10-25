@@ -1,5 +1,6 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.Field;
 using TypeScript.Item;
 using TypeScript.Symbol;
 
@@ -16,6 +17,10 @@ public interface IType {
         throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
     }
 
+    void SetImplMethods(IType type, FunctionSymbol[] methods, SourcePosition position) {
+        throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
+    }
+
     void AddFunctions(IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
         throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
     }
@@ -28,7 +33,7 @@ public interface IType {
         throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [GetAppearance(), name], position);
     }
 
-    IType GetFieldAccessResultType(string name, SourcePosition position) {
+    IField GetField(string name, SourcePosition position) {
         throw new SemanticException(SemanticErrorType.FIELD_NOT_EXIST, [GetAppearance(), name], position);
     }
 

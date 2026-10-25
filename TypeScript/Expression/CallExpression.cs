@@ -4,25 +4,28 @@ namespace TypeScript.Expression;
 
 public class CallExpression: IExpression {
     public readonly SourcePosition position;
-    public readonly IExpression called;
+    public readonly IExpression callee;
     public readonly IExpression[] parameters;
 
+    FunctionType? calleeType;
     IType? type;
 
-    internal CallExpression(SourcePosition position, IExpression called, IExpression[] parameters) {
+    public FunctionType GetCalleeType() => calleeType!;
+
+    internal CallExpression(SourcePosition position, IExpression callee, IExpression[] parameters) {
         this.position = position;
-        this.called = called;
+        this.callee = callee;
         this.parameters = parameters;
     }
 
     SourcePosition IExpression.GetPosition() => position;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
-        called.SetSemantic(null, compiler);
-        FunctionType funType = called.GetResultType().AsFunctionType(position, compiler);
-        funType.EnsureCanCall(parameters, position, compiler);
+        callee.SetSemantic(null, compiler);
+        calleeType = callee.GetResultType().AsFunctionType(position, compiler);
+        calleeType.EnsureCanCall(parameters, position, compiler);
 
-        type = funType.resultType;
+        type = calleeType.resultType;
     }
 
     IType IExpression.GetResultType() => type!;

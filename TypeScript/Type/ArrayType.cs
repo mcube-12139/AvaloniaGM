@@ -1,10 +1,14 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.Field;
 
 namespace TypeScript.Type;
 
 public class ArrayType: IType {
     static readonly Dictionary<IType, ArrayType> monomorphized = [];
+    static readonly Dictionary<string, IField> fields = new() {
+        { "length", new ArrayLengthField() }
+    };
 
     public readonly IType elementType;
 
@@ -45,6 +49,14 @@ public class ArrayType: IType {
         }
 
         return elementType;
+    }
+
+    IField IType.GetField(string name, SourcePosition position) {
+        if (fields.TryGetValue(name, out IField? result)) {
+            return result;
+        }
+
+        throw new SemanticException(SemanticErrorType.FIELD_NOT_EXIST, [name], position);
     }
 
     void IType.EnsureCanEqual(IExpression right, SourcePosition position, Compiler compiler) {

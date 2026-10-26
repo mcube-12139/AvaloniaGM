@@ -7,14 +7,16 @@ namespace TypeScript.Symbol;
 
 public class ConceptFunctionSymbol : ISymbol {
     public readonly string name;
+    internal readonly NameSpace itemSpace;
     public readonly bool method;
     public readonly uint index;
     internal IType[]? parameterTypes;
     internal IType? resultType;
     readonly FunctionItem? item;
 
-    internal ConceptFunctionSymbol(string name, bool method, uint index, FunctionItem? item) {
+    internal ConceptFunctionSymbol(string name, NameSpace itemSpace, bool method, uint index, FunctionItem? item) {
         this.name = name;
+        this.itemSpace = itemSpace;
         this.method = method;
         this.index = index;
         this.item = item;
@@ -29,7 +31,9 @@ public class ConceptFunctionSymbol : ISymbol {
     internal void LazyGetValueType(Compiler compiler) {
         // 不能调用 SetSemantic，会无限递归
         if (parameterTypes == null && resultType == null) {
+            compiler.PushNameSpace(itemSpace);
             (parameterTypes, resultType) = item!.ResolveConceptType(compiler);
+            compiler.PopNameSpace();
         }
     }
 

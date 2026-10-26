@@ -14,7 +14,7 @@ public class InterfaceType : IType {
     internal InterfaceType(string name) {
         this.name = name;
 
-        space = new();
+        space = new(null);
     }
 
     bool IType.EqualType(IType other) {

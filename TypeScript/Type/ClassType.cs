@@ -5,14 +5,22 @@ using TypeScript.Symbol;
 
 namespace TypeScript.Type;
 
-public class ClassType(string name, StructField[] fields) : IType {
-    public readonly string name = name;
-    public readonly StructField[] fields = fields;
-    readonly Dictionary<string, StructField> fieldDict = new(fields.Select(field => new KeyValuePair<string, StructField>(field.name, field)));
-    internal readonly NameSpace space = new();
+public class ClassType : IType {
+    public readonly string name;
+    public readonly StructField[] fields;
+
+    readonly Dictionary<string, StructField> fieldDict;
+    internal readonly NameSpace space = new(null);
     readonly List<ISymbol> implSymbols = [];
     readonly Dictionary<IType, FunctionSymbol[]?> implTypes = [];
-    
+
+    internal ClassType(string name, StructField[] fields) {
+        this.name = name;
+        this.fields = fields;
+
+        fieldDict = new(fields.Select(field => new KeyValuePair<string, StructField>(field.name, field)));
+    }
+
     public bool EqualType(IType other) {
         return other == this;
     }
@@ -25,11 +33,9 @@ public class ClassType(string name, StructField[] fields) : IType {
     public ISymbol GetSymbol(string name) => space.GetSymbolOrException(name);
 
     void IType.AddFunctions(IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
-        compiler.EnterNameSpace(space);
         foreach (FunctionItem funItem in functions) {
-            funItem.AddSymbol(compiler);
+            funItem.AddSymbolToSpace(space, compiler);
         }
-        compiler.LeaveNameSpace();
     }
 
     void IType.AddImpl(ISymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
@@ -38,11 +44,9 @@ public class ClassType(string name, StructField[] fields) : IType {
             implTypes.Add(interfaceSymbol.type, null);
         }
         
-        compiler.EnterNameSpace(space);
         foreach (FunctionItem funItem in functions) {
-            funItem.AddSymbol(compiler);
+            funItem.AddSymbolToSpace(space, compiler);
         }
-        compiler.LeaveNameSpace();
     }
 
     void IType.SetImplMethods(IType type, FunctionSymbol[] methods, SourcePosition position) {

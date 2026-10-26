@@ -15,11 +15,16 @@ public class BlockStatement(SourcePosition position, IItem[] items, ImplNode[] i
         start?.Invoke();
 
         foreach (IItem item in items) {
-            item.AddSymbol(compiler);
+            item.AddItemSymbol(compiler);
+        }
+
+        foreach (IItem item in items) {
+            item.AddImplSymbol(compiler);
         }
         foreach (ImplNode impl in impls) {
             impl.AddSymbol(compiler);
         }
+
         foreach (IItem item in items) {
             item.SetSemantic(compiler);
         }

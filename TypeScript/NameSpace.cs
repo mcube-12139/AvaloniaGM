@@ -5,8 +5,13 @@ using TypeScript.Symbol;
 namespace TypeScript;
 
 internal class NameSpace {
+    readonly internal NameSpace? upper;
     readonly Dictionary<string, ISymbol> symbols = [];
     readonly Dictionary<string, ILoopStatement> loops = [];
+
+    internal NameSpace(NameSpace? upper) {
+        this.upper = upper;
+    }
 
     internal void Clear() {
         symbols.Clear();

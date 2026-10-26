@@ -41,90 +41,6 @@ internal class CodeGenerator {
     UndertaleCodeLocals? codeLocals;
     readonly Dictionary<ILoopStatement, LoopContext> loopContexts = [];
 
-    (UndertaleString gameString, int id) GetString(string value) {
-        UndertaleString gameString;
-
-        if (!stringIds.TryGetValue(value, out int id)) {
-            gameString = new(value);
-            id = data!.Strings.Count;
-            stringIds.Add(value, id);
-            data.Strings.Add(gameString);
-        } else {
-            gameString = data!.Strings[id];
-        }
-
-        return (gameString, id);
-    }
-
-    UndertaleVariable AddParameterVariable(IValueSymbol symbol) {
-        uint index = nextParameterIndex;
-        ++nextParameterIndex;
-
-        UndertaleVariable variable = GetSelfVariable($"argument{index}", true);
-
-        variables.Add(symbol, variable);
-
-        return variable;
-    }
-
-    UndertaleVariable AddLocalVariable(string name) {
-        (UndertaleString gameString, int id) = GetString(name);
-
-        uint variableId = nextLocalIndex;
-        ++nextLocalIndex;
-
-        UndertaleVariable variable = data!.Variables.DefineLocal(data, (int)variableId, gameString, id);
-        codeLocals!.Locals.Add(new() {
-            Index = (uint)id,
-            Name = gameString,
-        });
-
-        if (nextLocalIndex > data.MaxLocalVarCount) {
-            data.MaxLocalVarCount = nextLocalIndex;
-        }
-
-        return variable;
-    }
-
-    UndertaleVariable GetGlobalVariable(string prefix, bool builtin) {
-        string name = $"{prefix}_{nextGlobalIndex}";
-        ++nextGlobalIndex;
-        (UndertaleString gameString, int id) = GetString(name);
-
-        if (!globalVariables.TryGetValue(name, out UndertaleVariable? result)) {
-            result = data!.Variables.Define(gameString, id, InstanceType.Global, builtin, data);
-            globalVariables.Add(name, result);
-        }
-
-        return result;
-    }
-
-    UndertaleVariable GetSelfVariable(string name, bool builtin) {
-        (UndertaleString gameString, int id) = GetString(name);
-
-        if (!selfVariables.TryGetValue(name, out UndertaleVariable? result)) {
-            result = data!.Variables.Define(gameString, id, InstanceType.Self, builtin, data);
-            selfVariables.Add(name, result);
-        }
-
-        return result;
-    }
-
-    void EnsureClassTypeDefined(ClassType type) {
-        if (classTypes.Add(type)) {
-            short index = 0;
-            foreach (StructField field in type.fields) {
-                fieldIndices.Add(field, index);
-                ++index;
-            }
-        }
-    }
-
-    short GetFieldIndex(ClassType type, StructField field) {
-        EnsureClassTypeDefined(type);
-        return fieldIndices[field];
-    }
-
     void Convert(DataType target) {
         DataType source = types.Pop();
 
@@ -232,7 +148,7 @@ internal class CodeGenerator {
         types.Push(DataType.Boolean);
     }
 
-    void PushInt16(short value) {
+    void PushShort(short value) {
         instructions.Add(new() {
             Kind = Opcode.PushI,
             Type1 = DataType.Int16,
@@ -245,9 +161,9 @@ internal class CodeGenerator {
         types.Push(DataType.Int32);
     }
 
-    void PushInt32(int value) {
+    void PushInt(int value) {
         if (value < 32768) {
-            PushInt16((short)value);
+            PushShort((short)value);
             return;
         }
 
@@ -544,6 +460,90 @@ internal class CodeGenerator {
         types.Push(DataType.Variable);
     }
 
+    (UndertaleString gameString, int id) GetString(string value) {
+        UndertaleString gameString;
+
+        if (!stringIds.TryGetValue(value, out int id)) {
+            gameString = new(value);
+            id = data!.Strings.Count;
+            stringIds.Add(value, id);
+            data.Strings.Add(gameString);
+        } else {
+            gameString = data!.Strings[id];
+        }
+
+        return (gameString, id);
+    }
+
+    UndertaleVariable AddParameterVariable(IValueSymbol symbol) {
+        uint index = nextParameterIndex;
+        ++nextParameterIndex;
+
+        UndertaleVariable variable = GetSelfVariable($"argument{index}", true);
+
+        variables.Add(symbol, variable);
+
+        return variable;
+    }
+
+    UndertaleVariable AddLocalVariable(string name) {
+        (UndertaleString gameString, int id) = GetString(name);
+
+        uint variableId = nextLocalIndex;
+        ++nextLocalIndex;
+
+        UndertaleVariable variable = data!.Variables.DefineLocal(data, (int)variableId, gameString, id);
+        codeLocals!.Locals.Add(new() {
+            Index = (uint)id,
+            Name = gameString,
+        });
+
+        if (nextLocalIndex > data.MaxLocalVarCount) {
+            data.MaxLocalVarCount = nextLocalIndex;
+        }
+
+        return variable;
+    }
+
+    UndertaleVariable GetGlobalVariable(string prefix, bool builtin) {
+        string name = $"{prefix}_{nextGlobalIndex}";
+        ++nextGlobalIndex;
+        (UndertaleString gameString, int id) = GetString(name);
+
+        if (!globalVariables.TryGetValue(name, out UndertaleVariable? result)) {
+            result = data!.Variables.Define(gameString, id, InstanceType.Global, builtin, data);
+            globalVariables.Add(name, result);
+        }
+
+        return result;
+    }
+
+    UndertaleVariable GetSelfVariable(string name, bool builtin) {
+        (UndertaleString gameString, int id) = GetString(name);
+
+        if (!selfVariables.TryGetValue(name, out UndertaleVariable? result)) {
+            result = data!.Variables.Define(gameString, id, InstanceType.Self, builtin, data);
+            selfVariables.Add(name, result);
+        }
+
+        return result;
+    }
+
+    void EnsureClassTypeDefined(ClassType type) {
+        if (classTypes.Add(type)) {
+            short index = 0;
+            foreach (StructField field in type.fields) {
+                fieldIndices.Add(field, index);
+                ++index;
+            }
+        }
+    }
+
+    short GetFieldIndex(ClassType type, StructField field) {
+        EnsureClassTypeDefined(type);
+        return fieldIndices[field];
+    }
+
     void StoreSymbol(IValueSymbol symbol) {
         switch (symbol) {
             case LocalSymbol localSymbol: {
@@ -567,7 +567,7 @@ internal class CodeGenerator {
                 if (!userFunctions.TryGetValue(functionSymbol, out UserFunction? userFun)) {
                     throw new Exception("不能求值非自定义函数");
                 }
-                PushInt32(userFun.scriptId);
+                PushInt(userFun.scriptId);
                 break;
             }
             case LocalSymbol localSymbol: {
@@ -711,7 +711,7 @@ internal class CodeGenerator {
                 UndertaleVariable variable = EvaluateExpressionToVariable(indexed, "indexed");
                 EvaluateExpression(value, arrayType.elementType);
 
-                PushInt16((short)variable.InstanceType);
+                PushShort((short)variable.InstanceType);
                 EvaluateExpression(index, null);
                 Convert(DataType.Int32);
 
@@ -729,9 +729,9 @@ internal class CodeGenerator {
                 UndertaleVariable variable = EvaluateExpressionToVariable(accessed, "accessed");
                 EvaluateExpression(value, structField.type);
 
-                PushInt16((short)variable.InstanceType);
+                PushShort((short)variable.InstanceType);
                 short index = GetFieldIndex((ClassType)type, structField);
-                PushInt16(index);
+                PushShort(index);
                 Convert(DataType.Int32);
 
                 Store(variable, VariableType.Array);
@@ -747,7 +747,7 @@ internal class CodeGenerator {
             case ArrayType: {
                 UndertaleVariable variable = EvaluateExpressionToVariable(indexed, "indexed");
 
-                PushInt16((short)variable.InstanceType);
+                PushShort((short)variable.InstanceType);
                 EvaluateExpression(index, null);
                 Convert(DataType.Int32);
 
@@ -764,9 +764,9 @@ internal class CodeGenerator {
             case StructField structField: {
                 UndertaleVariable variable = EvaluateExpressionToVariable(accessed, "accessed");
 
-                PushInt16((short)variable.InstanceType);
+                PushShort((short)variable.InstanceType);
                 short index = GetFieldIndex((ClassType)type, structField);
-                PushInt16(index);
+                PushShort(index);
                 Convert(DataType.Int32);
 
                 Load(variable, VariableType.Array);
@@ -816,19 +816,19 @@ internal class CodeGenerator {
                 // 载入方法表
                 UndertaleVariable methodsVariable = AddLocalVariable("methods");
 
-                PushInt16((short)calleeVariable.InstanceType);
-                PushInt16(1);
+                PushShort((short)calleeVariable.InstanceType);
+                PushShort(1);
                 Load(calleeVariable, VariableType.Array);
                 Store(methodsVariable, VariableType.Normal);
 
                 // 载入 classObject
-                PushInt16((short)calleeVariable.InstanceType);
-                PushInt16(0);
+                PushShort((short)calleeVariable.InstanceType);
+                PushShort(0);
                 Load(calleeVariable, VariableType.Array);
 
                 // 载入实际方法
-                PushInt16((short)methodsVariable.InstanceType);
-                PushInt32((int)symbol.index);
+                PushShort((short)methodsVariable.InstanceType);
+                PushInt((int)symbol.index);
                 Load(methodsVariable, VariableType.Array);
 
                 CallBuiltin("script_execute", parameters.Length + 2);
@@ -1307,14 +1307,14 @@ internal class CodeGenerator {
                     foreach (IExpression element in arrayExpression.elements) {
                         EvaluateExpression(element, null);
 
-                        PushInt16((short)InstanceType.Local);
-                        PushInt16(elementIndex);
+                        PushShort((short)InstanceType.Local);
+                        PushShort(elementIndex);
                         ++elementIndex;
 
                         Store(variable, VariableType.Array);
                     }
                 } else {
-                    PushInt16(0);
+                    PushShort(0);
                     Convert(DataType.Variable);
                     CallBuiltin("array_create", 1);
 
@@ -1333,13 +1333,13 @@ internal class CodeGenerator {
 
                         EvaluateExpression(field.value, classField.type);
 
-                        PushInt16((short)InstanceType.Local);
-                        PushInt16(fieldIndex);
+                        PushShort((short)InstanceType.Local);
+                        PushShort(fieldIndex);
 
                         Store(variable, VariableType.Array);
                     }
                 } else {
-                    PushInt16(0);
+                    PushShort(0);
                     Convert(DataType.Variable);
                     CallBuiltin("array_create", 1);
 
@@ -1611,14 +1611,14 @@ internal class CodeGenerator {
             // 处理 class 对象转换成接口对象
             UndertaleVariable variable = AddLocalVariable("tempInter");
 
-            PushInt16((short)variable.InstanceType);
-            PushInt16(0);
+            PushShort((short)variable.InstanceType);
+            PushShort(0);
             Store(variable, VariableType.Array);
 
             UndertaleVariable methodsVariable = methodsVariables[(classType, interfaceType)];
             Load(methodsVariable, VariableType.Normal);
-            PushInt16((short)variable.InstanceType);
-            PushInt16(1);
+            PushShort((short)variable.InstanceType);
+            PushShort(1);
             Store(variable, VariableType.Array);
 
             Load(variable, VariableType.Normal);
@@ -1777,6 +1777,10 @@ internal class CodeGenerator {
     }
 
     void GenerateFunctionItem(FunctionItem funItem) {
+        if (funItem.body == null || funItem.hostName != null) {
+            return;
+        }
+
         functionGenerationStates.Push(new(byteCount, instructions, types, nextLocalIndex, nextParameterIndex, codeLocals!, loopContexts));
         byteCount = 0;
         instructions = [];
@@ -1838,6 +1842,15 @@ internal class CodeGenerator {
                 // 无事发生
                 break;
             }
+            case NameSpaceItem nameSpaceItem: {
+                foreach (IItem subitem in nameSpaceItem.items) {
+                    GenerateItem(subitem);
+                }
+                foreach (ImplNode impl in nameSpaceItem.impls) {
+                    GenerateImpl(impl);
+                }
+                break;
+            }
             default:
                 throw new NotImplementedException();
         }
@@ -1850,10 +1863,10 @@ internal class CodeGenerator {
             short index = 0;
             foreach (FunctionSymbol symbol in impl.methodTable) {
                 UserFunction userFun = GetUserFunction(symbol);
-                PushInt32(userFun.scriptId);
+                PushInt(userFun.scriptId);
 
-                PushInt16((short)variable.InstanceType);
-                PushInt16(index);
+                PushShort((short)variable.InstanceType);
+                PushShort(index);
 
                 Store(variable, VariableType.Array);
             }
@@ -1878,6 +1891,15 @@ internal class CodeGenerator {
             case ClassItem:
             case InterfaceItem: {
                 // 无事发生
+                break;
+            }
+            case NameSpaceItem nameSpaceItem: {
+                foreach (IItem subitem in nameSpaceItem.items) {
+                    GenerateItemStatic(subitem);
+                }
+                foreach (ImplNode impl in nameSpaceItem.impls) {
+                    GenerateImplStatic(impl);
+                }
                 break;
             }
             default:

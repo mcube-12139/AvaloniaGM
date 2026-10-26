@@ -18,20 +18,21 @@ public class InterfaceItem : IItem {
 
     public InterfaceSymbol GetSymbol() => symbol!;
     
-    void IItem.AddSymbol(Compiler compiler) {
+    void IItem.AddItemSymbol(Compiler compiler) {
+        NameSpace space = compiler.space;
         symbol = new InterfaceSymbol(name, this);
         compiler.AddSymbol(name, symbol, position);
 
         compiler.inInterface = true;
-        compiler.EnterNameSpace(symbol.type.space);
+        NameSpace typeSpace = symbol.type.space;
         uint index = 0;
         foreach (FunctionItem funItem in functions) {
-            ConceptFunctionSymbol funSymbol = funItem.CreateConceptSymbol(index);
+            ConceptFunctionSymbol funSymbol = funItem.CreateConceptSymbol(space, index);
             symbol.conceptFunctions.Add(funItem.name, funSymbol);
-            compiler.AddSymbol(funItem.name, funSymbol, funItem.position);
+            typeSpace.AddSymbol(funItem.name, funSymbol, funItem.position);
+
             ++index;
         }
-        compiler.LeaveNameSpace();
         compiler.inInterface = false;
     }
 

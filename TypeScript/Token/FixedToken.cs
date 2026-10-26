@@ -31,6 +31,8 @@ internal class FixedToken(string appearance): IToken {
     internal static FixedToken TRUE = new("true");
     internal static FixedToken FALSE = new("false");
     internal static FixedToken NEW = new("new");
+    internal static FixedToken HOST = new("host");
+    internal static FixedToken UNKNOWN = new("unknown");
 
 
     internal static FixedToken END = new("[End]");
@@ -105,6 +107,8 @@ internal class FixedToken(string appearance): IToken {
         {"true", TRUE},
         {"false", FALSE},
         {"new", NEW},
+        {"host", HOST},
+        {"unknown", UNKNOWN},
     };
 
     internal static FixedToken? GetKeyword(string name) {

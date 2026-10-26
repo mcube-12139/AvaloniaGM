@@ -4,9 +4,16 @@ using TypeScript.Type;
 
 namespace TypeScript.Symbol;
 
-public class ClassSymbol(string name, ClassItem item) : ITypeSymbol {
-    public readonly string name = name;
-    internal ClassItem item = item;
+public class ClassSymbol : ITypeSymbol {
+    public readonly string name;
+    internal readonly NameSpace itemSpace;
+    internal ClassItem item;
+
+    internal ClassSymbol(string name, NameSpace itemSpace, ClassItem item) {
+        this.name = name;
+        this.itemSpace = itemSpace;
+        this.item = item;
+    }
 
     internal ClassType? type;
 
@@ -18,7 +25,9 @@ public class ClassSymbol(string name, ClassItem item) : ITypeSymbol {
 
     IType ITypeSymbol.LazyGetSelfType(SourcePosition position, Compiler compiler) {
         if (type == null) {
+            compiler.PushNameSpace(itemSpace);
             StructField[] fields = item.ResolveFields(compiler);
+            compiler.PopNameSpace();
 
             type = new(name, fields);
         }

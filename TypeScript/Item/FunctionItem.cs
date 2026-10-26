@@ -7,62 +7,82 @@ using TypeScript.Type;
 
 namespace TypeScript.Item;
 
-public class FunctionItem(SourcePosition position, string name, ThisParameter? thisParameter, IParameter[] parameters, ITypeNode? resultNode, BlockStatement? body) : IItem {
+public class FunctionItem(
+    SourcePosition position,
+    string name,
+    ThisParameter? thisParameter,
+    IParameter[] parameters,
+    ITypeNode? resultNode,
+    BlockStatement? body,
+    string? hostName
+) : IItem {
     public readonly SourcePosition position = position;
     public readonly string name = name;
     public readonly ThisParameter? thisParameter = thisParameter;
     public readonly IParameter[] parameters = parameters;
     public readonly ITypeNode? resultNode = resultNode;
     public readonly BlockStatement? body = body;
+    public readonly string? hostName = hostName;
 
     readonly bool method = thisParameter != null;
     FunctionSymbol? symbol;
     FunctionType? functionType;
+    ConceptFunctionSymbol? conceptSymbol;
     IType[]? parameterTypes;
     IType? resultType;
 
     public FunctionSymbol GetSymbol() => symbol!;
 
-    void IItem.AddSymbol(Compiler compiler) => AddSymbol(compiler);
+    void IItem.AddItemSymbol(Compiler compiler) {
+        compiler.AddSymbol(name, CreateSymbol(compiler), position);
+    }
 
-    internal void AddSymbol(Compiler compiler) {
-        if (body == null && !compiler.inInterface) {
+    internal FunctionSymbol CreateSymbol(Compiler compiler) {
+        if (body == null && hostName == null && !compiler.inInterface) {
             throw new SemanticException(SemanticErrorType.MISSING_FUNCTION_BODY, [], position);
         }
 
-        symbol = FunctionSymbol.NewUnresolved(name, method, this, null);
-        compiler.AddSymbol(name, symbol, position);
+        symbol = new(name, compiler.space, method, this, hostName);
+        return symbol;
     }
 
-    internal ConceptFunctionSymbol CreateConceptSymbol(uint index) {
-        return new(name, method, index, this);
+    internal void AddSymbolToSpace(NameSpace space, Compiler compiler) {
+        space.AddSymbol(name, CreateSymbol(compiler), position);
+    }
+
+    internal ConceptFunctionSymbol CreateConceptSymbol(NameSpace space, uint index) {
+        conceptSymbol = new(name, space, method, index, this);
+        return conceptSymbol;
     }
 
     void IItem.SetSemantic(Compiler compiler) => SetSemantic(compiler);
 
     internal void SetSemantic(Compiler compiler) {
-        ResolveType(compiler);
+        if (body != null) {
+            FunctionType funType = ResolveType(compiler);
 
-        IType resultType = functionType!.resultType;
+            IType resultType = funType.resultType;
 
-        compiler.EnterFunction(resultType);
+            compiler.EnterFunction(resultType);
 
-        thisParameter?.AddSymbol(compiler);
-        foreach (IParameter parameter in parameters) {
-            parameter.AddSymbol(compiler);
+            thisParameter?.AddSymbol(compiler);
+            foreach (IParameter parameter in parameters) {
+                parameter.AddSymbol(compiler);
+            }
+
+            body.SetSemantic(compiler);
+
+            if (resultType != TupleType.EMPTY && !compiler.GetReturned()) {
+                // 返回类型非()，必须显式返回
+                throw new SemanticException(SemanticErrorType.MAY_NOT_RETURN, [name], position);
+            }
+
+            compiler.LeaveFunction();
         }
-        body?.SetSemantic(compiler);
-
-        if (resultType != TupleType.EMPTY && !compiler.GetReturned()) {
-            // 返回类型非()必须显式返回
-            throw new SemanticException(SemanticErrorType.MAY_NOT_RETURN, [name], position);
-        }
-
-        compiler.LeaveFunction();
     }
 
     internal void SetConceptSemantic(Compiler compiler) {
-        ResolveConceptType(compiler);
+        // 无事发生
     }
 
     internal FunctionType ResolveType(Compiler compiler) {

@@ -4,7 +4,7 @@ using TypeScript.Symbol;
 
 namespace TypeScript.Type;
 
-public class InterfaceType : IType {
+public class InterfaceType : IType, IConcept {
     public readonly string name;
 
     internal readonly NameSpace space;
@@ -15,10 +15,6 @@ public class InterfaceType : IType {
         this.name = name;
 
         space = new(null);
-    }
-
-    bool IType.EqualType(IType other) {
-        return other == this;
     }
 
     string IType.GetAppearance() => name;

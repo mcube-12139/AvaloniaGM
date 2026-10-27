@@ -7,10 +7,10 @@ using TypeScript.TypeNode;
 namespace TypeScript;
 
 // implementations 既没有符号，又要在 Item 添加符号后、分析语义前改别人的符号（对应的类型），所以不是 Item。
-public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? regardedTypeNode, FunctionItem[] functions) {
+public class ImplNode(SourcePosition position, ITypeNode typeNode, Path? regardedTypeNode, FunctionItem[] functions) {
     public readonly SourcePosition position = position;
     public readonly ITypeNode typeNode = typeNode;
-    public readonly PathType? regardedTypeNode = regardedTypeNode;
+    public readonly Path? regardedTypeNode = regardedTypeNode;
     public readonly FunctionItem[] functions = functions;
 
     IType? implementedType;
@@ -22,19 +22,19 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
 
     internal void AddSymbol(Compiler compiler) {
         typeNode.SetSemantic(compiler);
-        implementedType = typeNode.GetSelfType();
+        implementedType = typeNode.GetSelfType(compiler);
 
         if (regardedTypeNode == null) {
             implementedType.AddFunctions(functions, position, compiler);
         } else {
-            regardedTypeNode.SetSemantic(compiler);
-            regardedType = regardedTypeNode.GetSelfType();
+            ((ITypeNode)regardedTypeNode).SetSemantic(compiler);
+            regardedType = regardedTypeNode.GetSelfType(compiler);
             implementedType.AddImpl(regardedTypeNode.GetSymbol(), functions, position, compiler);
         }
     }
 
     internal void SetSemantic(Compiler compiler) {
-        compiler.EnterThisType(typeNode.GetSelfType());
+        compiler.EnterThisType(typeNode.GetSelfType(compiler));
         foreach (FunctionItem funItem in functions) {
             funItem.SetSemantic(compiler);
         }

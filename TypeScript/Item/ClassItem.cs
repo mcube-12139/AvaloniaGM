@@ -17,7 +17,7 @@ public class ClassItem(SourcePosition position, string name, ClassItem.Field[] f
 
         internal void ResolveType(Compiler compiler) {
             typeNode.SetSemantic(compiler);
-            type = new(name, typeNode.GetSelfType());
+            type = new(name, typeNode.GetSelfType(compiler));
         }
     }
 

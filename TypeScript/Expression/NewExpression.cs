@@ -5,7 +5,7 @@ using TypeScript.TypeNode;
 
 namespace TypeScript.Expression;
 
-public class NewExpression(SourcePosition position, PathType pathType, NewExpression.Field[] fields): IExpression {
+public class NewExpression(SourcePosition position, Path pathType, NewExpression.Field[] fields): IExpression {
     public class Field(SourcePosition position, string name, IExpression value) {
         public readonly SourcePosition position = position;
         public readonly string name = name;
@@ -30,7 +30,7 @@ public class NewExpression(SourcePosition position, PathType pathType, NewExpres
     }
 
     public readonly SourcePosition position = position;
-    public readonly PathType pathType = pathType;
+    public readonly Path pathType = pathType;
     public readonly Field[] fields = fields;
 
     ClassType? type;
@@ -43,7 +43,7 @@ public class NewExpression(SourcePosition position, PathType pathType, NewExpres
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         pathType.SetSemantic(compiler);
-        IType t = pathType.GetSelfType();
+        IType t = pathType.GetSelfType(compiler);
         if (t is not ClassType classType) {
             throw new SemanticException(SemanticErrorType.NOT_CLASS, [t.GetAppearance()], pathType.position);
         }

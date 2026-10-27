@@ -30,10 +30,10 @@ public class FunctionSymbol : IValueSymbol {
         // 不能调用 SetSemantic，会无限递归
         if (type == null) {
             compiler.PushNameSpace(itemSpace);
-            type = item!.ResolveType(compiler);
+            item!.ResolveType(compiler);
             compiler.PopNameSpace();
         }
-        return type;
+        return type!;
     }
 
     IType IValueSymbol.GetValueType() => type!;

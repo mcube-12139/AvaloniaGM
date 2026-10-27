@@ -6,10 +6,6 @@ namespace TypeScript.Type;
 public class IntegerType : IType {
     string IType.GetAppearance() => "int";
 
-    bool IType.EqualType(IType other) {
-        return other == this;
-    }
-
     IType IType.GetNegativeResultType(SourcePosition position, Compiler compiler) {
         return this;
     }

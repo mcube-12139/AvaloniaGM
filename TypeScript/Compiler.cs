@@ -2,6 +2,8 @@
 using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
 using TypeScript.FlowContext;
+using TypeScript.GenericArgumentNode;
+using TypeScript.GenericParameter;
 using TypeScript.Item;
 using TypeScript.Parameter;
 using TypeScript.PathSegment;
@@ -226,8 +228,18 @@ public class Compiler {
             token = FixedToken.COMMA;
             NextChar();
         } else if (c == '.') {
-            token = FixedToken.FULL_STOP;
             NextChar();
+            if (c == '.') {
+                NextChar();
+                if (c == '=') {
+                    token = FixedToken.DOUBLE_FULL_STOP_EQUAL;
+                    NextChar();
+                } else {
+                    token = FixedToken.DOUBLE_FULL_STOP;
+                }
+            } else {
+                token = FixedToken.FULL_STOP;
+            }
         } else if (c == ':') {
             NextChar();
             if (c == ':') {
@@ -368,13 +380,6 @@ public class Compiler {
         }
     }
 
-    void AssertTokenKind<T>()
-        where T : IToken {
-        if (token is not T) {
-            throw TokenCannotBeHere();
-        }
-    }
-
     string GetIdentifierNameAndNextToken() {
         if (token is not IdentifierToken idToken) {
             throw TokenCannotBeHere();
@@ -397,7 +402,7 @@ public class Compiler {
         return new(position, name, value);
     }
 
-    IExpression[] ParseCallParameters() {
+    IExpression[] ParseCommaSeperatedExpressions() {
         List<IExpression> parameters = [];
         if (IsExpressionStart()) {
             for (; ; ) {
@@ -471,26 +476,8 @@ public class Compiler {
         } else if (token == FixedToken.LEFT_BRACKET) {
             // 数组
             NextToken();
-
-            List<IExpression> elements = [];
-            for (; ; ) {
-                if (token == FixedToken.RIGHT_BRACKET) {
-                    NextToken();
-                    break;
-                }
-
-                elements.Add(ParseExpression(0));
-
-                if (token == FixedToken.COMMA) {
-                    NextToken();
-                } else if (token == FixedToken.RIGHT_BRACKET) {
-                    NextToken();
-                    break;
-                } else {
-                    throw TokenCannotBeHere();
-                }
-            }
-
+            IExpression[] elements = ParseCommaSeperatedExpressions();
+            AssertAndNextToken(FixedToken.RIGHT_BRACKET);
             result = new ArrayExpression(position, [.. elements]);
         } else if (IsPathExpressionStart()) {
             // 路径
@@ -502,9 +489,9 @@ public class Compiler {
                 fromTop = false;
             }
 
-            List<IPathSegment> segments = [];
+            List<GenericPathSegment> segments = [];
             for (; ; ) {
-                segments.Add(ParsePathSegment());
+                segments.Add(ParseExpressionPathSegment());
 
                 if (token == FixedToken.DOUBLE_COLON) {
                     NextToken();
@@ -513,11 +500,11 @@ public class Compiler {
                 }
             }
 
-            result = new PathExpression(position, [.. segments], fromTop);
+            result = new Path(position, [.. segments], fromTop);
         } else if (token == FixedToken.NEW) {
             NextToken();
 
-            PathType pathType = ParsePathType();
+            Path pathType = ParsePathType();
 
             AssertAndNextToken(FixedToken.LEFT_BRACE);
             List<NewExpression.Field> fields = [];
@@ -671,7 +658,7 @@ public class Compiler {
                 } else if (token == FixedToken.LEFT_PARENTHESIS) {
                     // 调用
                     NextToken();
-                    IExpression[] parameters = ParseCallParameters();
+                    IExpression[] parameters = ParseCommaSeperatedExpressions();
                     AssertAndNextToken(FixedToken.RIGHT_PARENTHESIS);
 
                     result = new CallExpression(position, result, [.. parameters]);
@@ -688,7 +675,7 @@ public class Compiler {
                     if (token == FixedToken.LEFT_PARENTHESIS) {
                         // 调用方法
                         NextToken();
-                        IExpression[] parameters = ParseCallParameters();
+                        IExpression[] parameters = ParseCommaSeperatedExpressions();
                         AssertAndNextToken(FixedToken.RIGHT_PARENTHESIS);
 
                         result = new MethodCallExpression(position, result, name, parameters);
@@ -904,30 +891,89 @@ public class Compiler {
         return result;
     }
 
+    IGenericArgumentNode ParseGenericArgument() {
+        return ParseType();
+    }
+
+    bool IsGenericArgumentsStart() {
+        return token == FixedToken.LESS;
+    }
+
+    IGenericArgumentNode[] ParseGenericArguments() {
+        AssertAndNextToken(FixedToken.LESS);
+        List<IGenericArgumentNode> result = [];
+        for (; ; ) {
+            result.Add(ParseGenericArgument());
+
+            if (token == FixedToken.COMMA) {
+                NextToken();
+                if (token == FixedToken.GREATER) {
+                    NextToken();
+                    break;
+                }
+            } else if (token == FixedToken.GREATER) {
+                NextToken();
+                break;
+            } else {
+                throw TokenCannotBeHere();
+            }
+        }
+
+        return [.. result];
+    }
+
+    GenericPathSegment ParseExpressionPathSegment() {
+        SourcePosition position = tokenPosition;
+
+        IPathSegment segment = ParsePathSegment();
+        IGenericArgumentNode[]? genericArguments;
+        if (token == FixedToken.DOUBLE_COLON) {
+            NextToken();
+            genericArguments = ParseGenericArguments();
+        } else {
+            genericArguments = null;
+        }
+
+        return new(position, segment, genericArguments);
+    }
+
+    GenericPathSegment ParseTypePathSegment() {
+        SourcePosition position = tokenPosition;
+
+        IPathSegment segment = ParsePathSegment();
+        IGenericArgumentNode[]? genericArguments;
+        if (token == FixedToken.DOUBLE_COLON) {
+            NextToken();
+            genericArguments = ParseGenericArguments();
+        } else if (IsGenericArgumentsStart()) {
+            // 类型路径的泛型实参可省略::
+            genericArguments = ParseGenericArguments();
+        } else {
+            genericArguments = null;
+        }
+
+        return new(position, segment, genericArguments);
+    }
+
     bool IsPathTypeStart() {
         return token == FixedToken.DOUBLE_COLON
             || token is IdentifierToken;
     }
 
-    PathType ParsePathType() {
+    Path ParsePathType() {
         SourcePosition position = tokenPosition;
 
-        bool fromGlobal;
+        bool fromTop;
         if (token == FixedToken.DOUBLE_COLON) {
-            fromGlobal = true;
+            fromTop = true;
             NextToken();
         } else {
-            fromGlobal = false;
+            fromTop = false;
         }
 
-        List<string> segments = [];
+        List<GenericPathSegment> segments = [];
         for (; ; ) {
-            if (token is IdentifierToken idToken) {
-                segments.Add(idToken.name);
-                NextToken();
-            } else {
-                throw TokenCannotBeHere();
-            }
+            segments.Add(ParseTypePathSegment());
 
             if (token == FixedToken.DOUBLE_COLON) {
                 NextToken();
@@ -936,7 +982,7 @@ public class Compiler {
             }
         }
 
-        return new(position, fromGlobal, [.. segments]);
+        return new Path(position, [.. segments], fromTop);
     }
 
     ITypeNode ParseType() {
@@ -945,9 +991,6 @@ public class Compiler {
 
         if (IsPathTypeStart()) {
             result = ParsePathType();
-        } else if (token == FixedToken.UNKNOWN) {
-            result = new UnknownNode(position);
-            NextToken();
         } else {
             throw TokenCannotBeHere();
         }
@@ -1015,6 +1058,80 @@ public class Compiler {
         return [.. result];
     }
 
+    Path[]? TryParseBounds() {
+        if (token != FixedToken.COLON) {
+            return null;
+        }
+
+        NextToken();
+
+        List<Path> result = [];
+        for (; ; ) {
+            result.Add(ParsePathType());
+
+            if (token == FixedToken.AND) {
+                NextToken();
+            } else {
+                break;
+            }
+        }
+
+        return [.. result];
+    }
+
+    IGenericParameter ParseGenericParameter() {
+        SourcePosition position = tokenPosition;
+        IGenericParameter result;
+
+        if (token is IdentifierToken idToken) {
+            string name = idToken.name;
+            NextToken();
+
+            Path[]? bounds = TryParseBounds();
+
+            ITypeNode? defaultType;
+            if (token == FixedToken.EQUAL) {
+                NextToken();
+                defaultType = ParseType();
+            } else {
+                defaultType = null;
+            }
+
+            result = new TypeParameter(position, name, bounds, defaultType);
+        } else {
+            throw TokenCannotBeHere();
+        }
+
+        return result;
+    }
+
+    IGenericParameter[]? TryParseGenericParameters() {
+        if (token != FixedToken.LESS) {
+            return null;
+        }
+
+        NextToken();
+        List<IGenericParameter> result = [];
+        for (; ; ) {
+            result.Add(ParseGenericParameter());
+
+            if (token == FixedToken.COMMA) {
+                NextToken();
+                if (token == FixedToken.GREATER) {
+                    NextToken();
+                    break;
+                }
+            } else if (token == FixedToken.GREATER) {
+                NextToken();
+                break;
+            } else {
+                throw TokenCannotBeHere();
+            }
+        }
+
+        return [.. result];
+    }
+
     bool IsFunctionStart() {
         return token == FixedToken.FUNCTION;
     }
@@ -1024,11 +1141,9 @@ public class Compiler {
 
         AssertAndNextToken(FixedToken.FUNCTION);
 
-        if (token is not IdentifierToken idToken) {
-            throw TokenCannotBeHere();
-        }
-        string name = idToken.name;
-        NextToken();
+        string name = GetIdentifierNameAndNextToken();
+
+        IGenericParameter[]? genericParameters = TryParseGenericParameters();
 
         AssertAndNextToken(FixedToken.LEFT_PARENTHESIS);
         ThisParameter? thisParameter;
@@ -1085,7 +1200,7 @@ public class Compiler {
             throw TokenCannotBeHere();
         }
 
-        return new(position, name, thisParameter, parameters, type, body, hostName);
+        return new(position, name, genericParameters, thisParameter, parameters, type, body, hostName);
     }
 
     bool IsImplStart() {
@@ -1099,7 +1214,7 @@ public class Compiler {
 
         ITypeNode type = ParseType();
 
-        PathType? regardedType;
+        Path? regardedType;
         if (token == FixedToken.AS) {
             NextToken();
             regardedType = ParsePathType();
@@ -1327,8 +1442,6 @@ public class Compiler {
         thisParameterSymbol = null;
         this.resultType = resultType;
         returned = false;
-
-        EnterNewNameSpace();
     }
 
     internal void LeaveFunction() {
@@ -1337,8 +1450,6 @@ public class Compiler {
         thisParameterSymbol = context.thisParameterSymbol;
         resultType = context.resultType;
         returned = context.returned;
-
-        LeaveNameSpace();
     }
 
     internal void EnterThisType(IType thisType) {
@@ -1365,6 +1476,7 @@ public class Compiler {
         space.AddSymbol("int", new PrimitiveTypeSymbol("int", PrimitiveType.INTEGER), tokenPosition);
         space.AddSymbol("boolean", new PrimitiveTypeSymbol("boolean", PrimitiveType.BOOLEAN), tokenPosition);
         space.AddSymbol("string", new PrimitiveTypeSymbol("string", PrimitiveType.STRING), tokenPosition);
+        space.AddSymbol("unknown", new PrimitiveTypeSymbol("unknown", PrimitiveType.UNKNOWN), tokenPosition);
 
         List<FileNode> nodes = [];
         foreach ((string name, string content) in files) {

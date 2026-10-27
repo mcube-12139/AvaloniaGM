@@ -6,6 +6,7 @@ internal class FixedToken(string appearance): IToken {
     internal static FixedToken LET = new("let");
     internal static FixedToken TYPE = new("type");
     internal static FixedToken INTERFACE = new("interface");
+    internal static FixedToken CONCEPT = new("concept");
     internal static FixedToken AS = new("as");
     internal static FixedToken IMPLEMENT = new("implement");
     internal static FixedToken NAMESPACE = new("namespace");
@@ -28,11 +29,11 @@ internal class FixedToken(string appearance): IToken {
     internal static FixedToken FINALLY = new("finally");
     internal static FixedToken THROW = new("throw");
     internal static FixedToken THIS = new("this");
+    internal static FixedToken UPPER_THIS = new("This");
     internal static FixedToken TRUE = new("true");
     internal static FixedToken FALSE = new("false");
     internal static FixedToken NEW = new("new");
     internal static FixedToken HOST = new("host");
-    internal static FixedToken UNKNOWN = new("unknown");
 
 
     internal static FixedToken END = new("[End]");
@@ -44,6 +45,8 @@ internal class FixedToken(string appearance): IToken {
     internal static FixedToken COLON = new(":");
     internal static FixedToken COMMA = new(",");
     internal static FixedToken FULL_STOP = new(".");
+    internal static FixedToken DOUBLE_FULL_STOP = new("..");
+    internal static FixedToken DOUBLE_FULL_STOP_EQUAL = new("..=");
     internal static FixedToken LEFT_BRACKET = new("[");
     internal static FixedToken RIGHT_BRACKET = new("]");
     internal static FixedToken DOUBLE_COLON = new("::");
@@ -82,6 +85,7 @@ internal class FixedToken(string appearance): IToken {
         {"let", LET},
         {"type", TYPE},
         {"interface", INTERFACE},
+        {"concept", CONCEPT},
         {"as", AS},
         {"implement", IMPLEMENT},
         {"namespace", NAMESPACE},
@@ -104,11 +108,11 @@ internal class FixedToken(string appearance): IToken {
         {"finally", FINALLY},
         {"throw", THROW},
         {"this", THIS},
+        {"This", UPPER_THIS},
         {"true", TRUE},
         {"false", FALSE},
         {"new", NEW},
         {"host", HOST},
-        {"unknown", UNKNOWN},
     };
 
     internal static FixedToken? GetKeyword(string name) {

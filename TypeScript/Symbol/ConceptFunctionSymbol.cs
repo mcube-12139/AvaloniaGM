@@ -32,7 +32,7 @@ public class ConceptFunctionSymbol : ISymbol {
         // 不能调用 SetSemantic，会无限递归
         if (parameterTypes == null && resultType == null) {
             compiler.PushNameSpace(itemSpace);
-            (parameterTypes, resultType) = item!.ResolveConceptType(compiler);
+            item!.ResolveConceptType(compiler);
             compiler.PopNameSpace();
         }
     }

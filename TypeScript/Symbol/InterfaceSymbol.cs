@@ -12,8 +12,6 @@ public class InterfaceSymbol(string name, InterfaceItem item) : ITypeSymbol {
 
     string ISymbol.GetName() => name;
 
-    NameSpace ISymbol.GetNameSpace(SourcePosition position) => type.space;
-
     Dictionary<string, ConceptFunctionSymbol> ISymbol.GetConceptFunctions(SourcePosition position) => conceptFunctions;
 
     IType ITypeSymbol.GetSelfType() => type;

@@ -15,7 +15,7 @@ public class PatternParameter(SourcePosition position, IPattern pattern, ITypeNo
 
     void IParameter.SetTypeSemantic(Compiler compiler) {
         typeNode.SetSemantic(compiler);
-        type = typeNode.GetSelfType();
+        type = typeNode.GetSelfType(compiler);
     }
 
     void IParameter.AddSymbol(Compiler compiler) {

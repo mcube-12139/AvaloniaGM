@@ -10,10 +10,6 @@ public class StringType : IType {
         { "length", new StringLengthField() }
     };
 
-    bool IType.EqualType(IType other) {
-        return other == this;
-    }
-
     IField IType.GetField(string name, SourcePosition position) {
         if (fields.TryGetValue(name, out IField? result)) {
             return result;

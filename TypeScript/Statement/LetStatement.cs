@@ -23,7 +23,7 @@ public class LetStatement(SourcePosition position, IPattern pattern, ITypeNode? 
             definedType = initializer.GetResultType();
         } else {
             type.SetSemantic(compiler);
-            definedType = type.GetSelfType();
+            definedType = type.GetSelfType(compiler);
 
             if (initializer != null) {
                 initializer.SetSemantic(definedType, compiler);

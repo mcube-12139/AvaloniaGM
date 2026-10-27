@@ -27,28 +27,6 @@ public class FunctionType : IType {
         return $"({string.Join(", ", parameterTypes.Select(type => type.GetAppearance()))}) => {resultType.GetAppearance()}";
     }
 
-    bool IType.EqualType(IType other) {
-        if (other is not FunctionType otherFun) {
-            return false;
-        }
-
-        if (!resultType.EqualType(otherFun.resultType)) {
-            return false;
-        }
-
-        if (parameterTypes.Length != otherFun.parameterTypes.Length) {
-            return false;
-        }
-
-        for (int i = 0; i != parameterTypes.Length; ++i) {
-            if (!parameterTypes[i].EqualType(otherFun.parameterTypes[i])) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     bool IType.IsType(IType other) => IsType(other);
 
     internal bool IsType(IType other) {

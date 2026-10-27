@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Xml.Linq;
 using TypeScript;
 using TypeScript.Expression;
 using TypeScript.Field;
@@ -10,7 +9,6 @@ using TypeScript.Pattern;
 using TypeScript.Statement;
 using TypeScript.Symbol;
 using TypeScript.Type;
-using Underanalyzer.Compiler;
 using UndertaleModLib;
 using UndertaleModLib.Models;
 using static UndertaleModLib.Models.UndertaleInstruction;
@@ -671,8 +669,8 @@ internal class CodeGenerator {
 
     void ExpressionCall(IExpression called, int parameterCount) {
         switch (called) {
-            case PathExpression pathExpression: {
-                CallSymbol(pathExpression.GetSymbol(), parameterCount);
+            case Path pathExpression: {
+                CallSymbol((IValueSymbol)pathExpression.GetSymbol(), parameterCount);
                 break;
             }
             default:
@@ -1050,9 +1048,9 @@ internal class CodeGenerator {
                 SetFieldByType(accessExpr.accessed.GetResultType(), accessExpr.accessed, accessExpr.GetField(), expression);
                 break;
             }
-            case PathExpression pathExpression: {
+            case Path pathExpression: {
                 EvaluateExpression(expression, placeExpression.GetResultType());
-                StoreSymbol(pathExpression.GetSymbol());
+                StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
             default:
@@ -1062,10 +1060,10 @@ internal class CodeGenerator {
 
     void AddAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
-            case PathExpression pathExpression: {
+            case Path pathExpression: {
                 EvaluateExpression(placeExpression, null);
                 AddAssignByType(placeExpression.GetResultType(), expression);
-                StoreSymbol(pathExpression.GetSymbol());
+                StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
         }
@@ -1073,10 +1071,10 @@ internal class CodeGenerator {
 
     void SubtractAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
-            case PathExpression pathExpression: {
+            case Path pathExpression: {
                 EvaluateExpression(placeExpression, null);
                 SubtractAssignByType(placeExpression.GetResultType(), expression);
-                StoreSymbol(pathExpression.GetSymbol());
+                StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
         }
@@ -1084,10 +1082,10 @@ internal class CodeGenerator {
 
     void MultiplyAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
-            case PathExpression pathExpression: {
+            case Path pathExpression: {
                 EvaluateExpression(placeExpression, null);
                 MultiplyAssignByType(placeExpression.GetResultType(), expression);
-                StoreSymbol(pathExpression.GetSymbol());
+                StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
         }
@@ -1095,10 +1093,10 @@ internal class CodeGenerator {
 
     void DivideAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
-            case PathExpression pathExpression: {
+            case Path pathExpression: {
                 EvaluateExpression(placeExpression, null);
                 DivideAssignByType(placeExpression.GetResultType(), expression);
-                StoreSymbol(pathExpression.GetSymbol());
+                StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
         }
@@ -1106,10 +1104,10 @@ internal class CodeGenerator {
 
     void ModuloAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
-            case PathExpression pathExpression: {
+            case Path pathExpression: {
                 EvaluateExpression(placeExpression, null);
                 ModuloAssignByType(placeExpression.GetResultType(), expression);
-                StoreSymbol(pathExpression.GetSymbol());
+                StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
         }
@@ -1117,10 +1115,10 @@ internal class CodeGenerator {
 
     void BitAndAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
-            case PathExpression pathExpression: {
+            case Path pathExpression: {
                 EvaluateExpression(placeExpression, null);
                 BitAndAssignByType(placeExpression.GetResultType(), expression);
-                StoreSymbol(pathExpression.GetSymbol());
+                StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
         }
@@ -1128,10 +1126,10 @@ internal class CodeGenerator {
 
     void BitOrAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
-            case PathExpression pathExpression: {
+            case Path pathExpression: {
                 EvaluateExpression(placeExpression, null);
                 BitOrAssignByType(placeExpression.GetResultType(), expression);
-                StoreSymbol(pathExpression.GetSymbol());
+                StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
         }
@@ -1139,10 +1137,10 @@ internal class CodeGenerator {
 
     void BitXorAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
-            case PathExpression pathExpression: {
+            case Path pathExpression: {
                 EvaluateExpression(placeExpression, null);
                 BitXorAssignByType(placeExpression.GetResultType(), expression);
-                StoreSymbol(pathExpression.GetSymbol());
+                StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
         }
@@ -1150,10 +1148,10 @@ internal class CodeGenerator {
 
     void LeftShiftAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
-            case PathExpression pathExpression: {
+            case Path pathExpression: {
                 EvaluateExpression(placeExpression, null);
                 LeftShiftAssignByType(placeExpression.GetResultType(), expression);
-                StoreSymbol(pathExpression.GetSymbol());
+                StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
         }
@@ -1161,10 +1159,10 @@ internal class CodeGenerator {
 
     void RightShiftAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
-            case PathExpression pathExpression: {
+            case Path pathExpression: {
                 EvaluateExpression(placeExpression, null);
                 RightShiftAssignByType(placeExpression.GetResultType(), expression);
-                StoreSymbol(pathExpression.GetSymbol());
+                StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
         }
@@ -1295,8 +1293,8 @@ internal class CodeGenerator {
 
     UndertaleVariable EvaluateExpressionToVariable(IExpression expression, string name) {
         switch (expression) {
-            case PathExpression pathExpression: {
-                IValueSymbol symbol = pathExpression.GetSymbol();
+            case Path pathExpression: {
+                IValueSymbol symbol = (IValueSymbol)pathExpression.GetSymbol();
                 return variables.GetValueOrDefault(symbol)!;
             }
             case ArrayExpression arrayExpression: {
@@ -1394,8 +1392,8 @@ internal class CodeGenerator {
                 types.Push(DataType.String);
                 break;
             }
-            case PathExpression pathExpression: {
-                LoadSymbol(pathExpression.GetSymbol());
+            case Path pathExpression: {
+                LoadSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
             case ArrayExpression arrayExpression: {

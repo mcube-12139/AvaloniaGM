@@ -12,6 +12,9 @@ public interface ISymbol {
     internal ITypeSymbol AsType(SourcePosition position) {
         throw new SemanticException(SemanticErrorType.NOT_TYPE, [GetName()], position);
     }
+    internal IGenericSymbol AsGeneric(SourcePosition position) {
+        throw new SemanticException(SemanticErrorType.NOT_GENERIC, [GetName()], position);
+    }
     internal NameSpace GetNameSpace(SourcePosition position) {
         throw new SemanticException(SemanticErrorType.NO_NAME_SPACE, [GetName()], position);
     }

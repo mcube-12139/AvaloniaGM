@@ -1,16 +1,16 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
 using TypeScript.Field;
+using TypeScript.GenericArgument;
 using TypeScript.Item;
 using TypeScript.Symbol;
 
 namespace TypeScript.Type;
 
-public interface IType {
+public interface IType: IGenericArgument {
     string GetAppearance();
-    bool EqualType(IType other);
     bool IsType(IType other) {
-        return EqualType(other);
+        return other == this;
     }
 
     void AddImpl(ISymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {

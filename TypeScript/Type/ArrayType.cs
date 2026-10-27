@@ -29,18 +29,6 @@ public class ArrayType: IType {
         return $"{elementType.GetAppearance()}[]";
     }
 
-    bool IType.EqualType(IType other) {
-        if (other is not ArrayType otherArray) {
-            return false;
-        }
-
-        if (!elementType.EqualType(otherArray.elementType)) {
-            return false;
-        }
-
-        return true;
-    }
-
     IType IType.GetIndexResultType(IExpression index, SourcePosition position, Compiler compiler) {
         index.SetSemantic(PrimitiveType.INTEGER, compiler);
         IType indexType = index.GetResultType();

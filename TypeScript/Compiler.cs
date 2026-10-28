@@ -489,7 +489,7 @@ public class Compiler {
                 fromTop = false;
             }
 
-            List<GenericPathSegment> segments = [];
+            List<Path.Segment> segments = [];
             for (; ; ) {
                 segments.Add(ParseExpressionPathSegment());
 
@@ -922,7 +922,7 @@ public class Compiler {
         return [.. result];
     }
 
-    GenericPathSegment ParseExpressionPathSegment() {
+    Path.Segment ParseExpressionPathSegment() {
         SourcePosition position = tokenPosition;
 
         IPathSegment segment = ParsePathSegment();
@@ -937,7 +937,7 @@ public class Compiler {
         return new(position, segment, genericArguments);
     }
 
-    GenericPathSegment ParseTypePathSegment() {
+    Path.Segment ParseTypePathSegment() {
         SourcePosition position = tokenPosition;
 
         IPathSegment segment = ParsePathSegment();
@@ -971,7 +971,7 @@ public class Compiler {
             fromTop = false;
         }
 
-        List<GenericPathSegment> segments = [];
+        List<Path.Segment> segments = [];
         for (; ; ) {
             segments.Add(ParseTypePathSegment());
 

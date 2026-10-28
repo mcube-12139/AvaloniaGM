@@ -18,14 +18,16 @@ public class TypeParameter: IGenericParameter {
         this.defaultType = defaultType;
     }
 
-    void IGenericParameter.AddSymbol(Compiler compiler) {
-        IConcept[] typeBounds;
+    IGenericParameterSymbol IGenericParameter.AddSymbol(Compiler compiler) {
+        IConceptSymbol[] typeBounds;
         if (bounds != null) {
-            typeBounds = [.. bounds.Select(bound => bound.GetConcept(compiler))];
+            typeBounds = [.. bounds.Select(bound => bound.GetSymbol().AsConcept(position))];
         } else {
             typeBounds = [];
         }
         symbol = new(name, new(typeBounds));
         compiler.AddSymbol(name, symbol, position);
+
+        return symbol;
     }
 }

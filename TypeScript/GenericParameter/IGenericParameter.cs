@@ -1,5 +1,7 @@
-﻿namespace TypeScript.GenericParameter;
+﻿using TypeScript.Symbol;
+
+namespace TypeScript.GenericParameter;
 
 public interface IGenericParameter {
-    internal void AddSymbol(Compiler compiler);
+    internal IGenericParameterSymbol AddSymbol(Compiler compiler);
 }

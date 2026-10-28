@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TypeScript;
 using TypeScript.Expression;
 using TypeScript.Field;
+using TypeScript.GenericArgument;
 using TypeScript.Item;
 using TypeScript.Parameter;
 using TypeScript.Pattern;
@@ -474,14 +475,16 @@ internal class CodeGenerator {
     }
 
     UndertaleVariable AddParameterVariable(IValueSymbol symbol) {
-        uint index = nextParameterIndex;
-        ++nextParameterIndex;
+        if (!variables.TryGetValue(symbol, out UndertaleVariable? result)) {
+            uint index = nextParameterIndex;
+            ++nextParameterIndex;
 
-        UndertaleVariable variable = GetSelfVariable($"argument{index}", true);
+            result = GetSelfVariable($"argument{index}", true);
 
-        variables.Add(symbol, variable);
+            variables.Add(symbol, result);
+        }
 
-        return variable;
+        return result;
     }
 
     UndertaleVariable AddLocalVariable(string name) {
@@ -875,6 +878,10 @@ internal class CodeGenerator {
 
     void AddByType(IType type, IExpression right) {
         switch (type) {
+            case GenericType genericType: {
+                AddByType(genericType.concreteType!, right);
+                break;
+            }
             case IntegerType:
             case StringType: {
                 EvaluateExpression(right, null);
@@ -1774,11 +1781,7 @@ internal class CodeGenerator {
         }
     }
 
-    void GenerateFunctionItem(FunctionItem funItem) {
-        if (funItem.body == null || funItem.hostName != null) {
-            return;
-        }
-
+    void GenerateFunctionInstance(FunctionItem funItem, FunctionSymbol funSymbol) {
         functionGenerationStates.Push(new(byteCount, instructions, types, nextLocalIndex, nextParameterIndex, codeLocals!, loopContexts));
         byteCount = 0;
         instructions = [];
@@ -1788,7 +1791,7 @@ internal class CodeGenerator {
 
         UndertaleCode? code = funCodes.GetValueOrDefault(funItem.name);
         if (code == null) {
-            UserFunction userFun = GetUserFunction(funItem.GetSymbol());
+            UserFunction userFun = GetUserFunction(funSymbol);
             code = userFun.code;
         } else {
             // 静态期：生成方法表
@@ -1824,6 +1827,20 @@ internal class CodeGenerator {
         types = state.types;
         nextLocalIndex = state.nextLocalIndex;
         nextParameterIndex = state.nextParameterIndex;
+    }
+
+    void GenerateFunctionItem(FunctionItem funItem) {
+        if (funItem.body == null || funItem.hostName != null) {
+            return;
+        }
+
+        if (!funItem.IsGeneric()) {
+            GenerateFunctionInstance(funItem, funItem.GetSymbol());
+        } else {
+            foreach (FunctionSymbol funSymbol in funItem.genericSymbol!.IterateSymbolSetGenericArguments()) {
+                GenerateFunctionInstance(funItem, funSymbol);
+            }
+        }
     }
 
     void GenerateItem(IItem item) {

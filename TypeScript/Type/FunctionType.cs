@@ -4,7 +4,7 @@ using TypeScript.Expression;
 namespace TypeScript.Type;
 
 public class FunctionType : IType {
-    static readonly Dictionary<(IType[] parameterTypes, IType resultType), FunctionType> monomorphized = [];
+    static readonly Dictionary<(IType[] parameterTypes, IType resultType), FunctionType> instantiated = [];
 
     public readonly IType[] parameterTypes;
     public readonly IType resultType;
@@ -14,14 +14,20 @@ public class FunctionType : IType {
         this.resultType = resultType;
     }
 
-    internal static FunctionType Monomorphize(IType[] parameterTypes, IType resultType) {
-        if (!monomorphized.TryGetValue((parameterTypes, resultType), out FunctionType? result)) {
+    internal static FunctionType Instantiate(IType[] parameterTypes, IType resultType) {
+        if (!instantiated.TryGetValue((parameterTypes, resultType), out FunctionType? result)) {
             result = new(parameterTypes, resultType);
-            monomorphized.Add((parameterTypes, resultType), result);
+            instantiated.Add((parameterTypes, resultType), result);
         }
 
         return result;
     }
+
+    internal FunctionType Monomorphize() {
+        return Instantiate([.. parameterTypes.Select(type => type.Monomorphize())], resultType.Monomorphize());
+    }
+
+    IType IType.Monomorphize() => Monomorphize();
 
     public string GetAppearance() {
         return $"({string.Join(", ", parameterTypes.Select(type => type.GetAppearance()))}) => {resultType.GetAppearance()}";

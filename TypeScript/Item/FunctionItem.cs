@@ -5,6 +5,7 @@ using TypeScript.Symbol;
 using TypeScript.TypeNode;
 using TypeScript.Type;
 using TypeScript.GenericParameter;
+using TypeScript.GenericArgument;
 
 namespace TypeScript.Item;
 
@@ -44,12 +45,14 @@ public class FunctionItem : IItem {
 
     readonly bool method;
     FunctionSymbol? symbol;
-    GenericFunctionSymbol? genericSymbol;
+    public GenericFunctionSymbol? genericSymbol;
     ConceptFunctionSymbol? conceptSymbol;
     bool typeResolved = false;
     bool conceptTypeResolved = false;
 
     public FunctionSymbol GetSymbol() => symbol!;
+
+    public bool IsGeneric() => genericParameters != null;
 
     void IItem.AddItemSymbol(Compiler compiler) {
         compiler.AddSymbol(name, CreateSymbol(compiler), position);
@@ -72,7 +75,7 @@ public class FunctionItem : IItem {
         }
 
         if (genericParameters == null && !compiler.inInterface) {
-            symbol = new(name, compiler.space, method, this, hostName);
+            symbol = new(name, null, compiler.space, method, this, hostName);
             return symbol;
         } else {
             // 接口函数或带泛型参数的是泛型函数
@@ -144,9 +147,11 @@ public class FunctionItem : IItem {
     void ResolveTypeInSpace(Compiler compiler) {
         if (!typeResolved) {
             if (genericParameters != null) {
+                List<IGenericParameterSymbol> genericParameterSymbols = [];
                 foreach (IGenericParameter genericParameter in genericParameters) {
-                    genericParameter.AddSymbol(compiler);
+                    genericParameterSymbols.Add(genericParameter.AddSymbol(compiler));
                 }
+                genericSymbol!.parameterSymbols = [.. genericParameterSymbols];
             }
 
             thisParameter?.SetSemantic(compiler);
@@ -165,9 +170,9 @@ public class FunctionItem : IItem {
             IType resultType = resultNode?.GetSelfType(compiler) ?? TupleType.EMPTY;
 
             if (symbol != null) {
-                symbol.type = FunctionType.Monomorphize(parameterTypes, resultType);
+                symbol.type = FunctionType.Instantiate(parameterTypes, resultType);
             } else {
-                genericSymbol!.type = FunctionType.Monomorphize(parameterTypes, resultType);
+                genericSymbol!.type = FunctionType.Instantiate(parameterTypes, resultType);
             }
 
             typeResolved = true;

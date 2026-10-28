@@ -1,10 +1,11 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.GenericArgument;
 
 namespace TypeScript.Type;
 
 public class IntegerType : IType {
-    string IType.GetAppearance() => "int";
+    string IGenericArgument.GetAppearance() => "int";
 
     IType IType.GetNegativeResultType(SourcePosition position, Compiler compiler) {
         return this;

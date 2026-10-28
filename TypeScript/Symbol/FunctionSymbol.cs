@@ -7,15 +7,15 @@ namespace TypeScript.Symbol;
 
 public class FunctionSymbol : IValueSymbol {
     public readonly string name;
+    internal FunctionType? type;
     internal readonly NameSpace itemSpace;
     public readonly bool method;
     readonly FunctionItem? item;
     public readonly string? hostName;
 
-    internal FunctionType? type;
-
-    internal FunctionSymbol(string name, NameSpace itemSpace, bool method, FunctionItem? item, string? hostName) {
+    internal FunctionSymbol(string name, FunctionType? type, NameSpace itemSpace, bool method, FunctionItem? item, string? hostName) {
         this.name = name;
+        this.type = type;
         this.itemSpace = itemSpace;
         this.method = method;
         this.item = item;

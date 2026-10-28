@@ -42,7 +42,7 @@ public class NewExpression(SourcePosition position, Path pathType, NewExpression
     public ClassType GetClassType() => type!;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
-        pathType.SetSemantic(compiler);
+        ((ITypeNode)pathType).SetSemantic(compiler);
         IType t = pathType.GetSelfType(compiler);
         if (t is not ClassType classType) {
             throw new SemanticException(SemanticErrorType.NOT_CLASS, [t.GetAppearance()], pathType.position);

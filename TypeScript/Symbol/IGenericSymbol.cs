@@ -4,5 +4,5 @@ namespace TypeScript.Symbol;
 
 public interface IGenericSymbol: ISymbol {
     IGenericSymbol ISymbol.AsGeneric(SourcePosition position) => this;
-    ISymbol Monomorphize(IGenericArgument[] arguments, SourcePosition position);
+    ISymbol Monomorphize(IGenericArgument[] arguments, SourcePosition position, Compiler compiler);
 }

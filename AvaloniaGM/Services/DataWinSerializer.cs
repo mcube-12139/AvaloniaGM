@@ -14,7 +14,6 @@ using UndertaleModLib.Compiler;
 using UndertaleModLib.Models;
 using UndertaleModLib.Util;
 using AvaloniaGM.Models;
-using TypeScript;
 
 namespace AvaloniaGM.Services;
 
@@ -135,8 +134,8 @@ public class DataWinSerializer
                 funCodes.Add(funName, code);
             }
         }
-        Compiler compiler = new();
-        FileNode[] nodes = compiler.Compile(files);
+        TypeScript.Compiler compiler = new();
+        TypeScript.FileNode[] nodes = compiler.Compile(files);
 
         new CodeGenerator().Generate(data, nodes, funCodes);
 

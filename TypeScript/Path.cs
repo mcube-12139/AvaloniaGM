@@ -9,11 +9,44 @@ using TypeScript.TypeNode;
 namespace TypeScript;
 
 public class Path : IPlaceExpression, ITypeNode {
+    public class Segment {
+        public readonly SourcePosition position;
+        public readonly IPathSegment segment;
+        public readonly IGenericArgumentNode[]? genericArguments;
+
+        internal Segment(SourcePosition position, IPathSegment segment, IGenericArgumentNode[]? genericArguments) {
+            this.position = position;
+            this.segment = segment;
+            this.genericArguments = genericArguments;
+        }
+
+        ISymbol TryMonomorphize(ISymbol symbol, Compiler compiler) {
+            if (genericArguments == null) {
+                return symbol;
+            }
+
+            foreach (IGenericArgumentNode argument in genericArguments) {
+                argument.SetSemantic(compiler);
+            }
+
+            IGenericArgument[] arguments = [.. genericArguments.Select(genericArgument => genericArgument.GetArgument(compiler))];
+            return symbol.AsGeneric(position).Monomorphize(arguments, position, compiler);
+        }
+
+        internal ISymbol GetSymbol(Compiler compiler) {
+            return TryMonomorphize(segment.GetSymbol(compiler), compiler);
+        }
+
+        internal ISymbol GetSymbolInNameSpace(NameSpace space, Compiler compiler) {
+            return TryMonomorphize(segment.GetSymbolInNameSpace(space), compiler);
+        }
+    }
+
     public readonly SourcePosition position;
-    public readonly GenericPathSegment[] segments;
+    public readonly Segment[] segments;
     public readonly bool fromTop;
 
-    internal Path(SourcePosition position, GenericPathSegment[] segments, bool fromTop) {
+    internal Path(SourcePosition position, Segment[] segments, bool fromTop) {
         this.position = position;
         this.segments = segments;
         this.fromTop = fromTop;
@@ -21,19 +54,18 @@ public class Path : IPlaceExpression, ITypeNode {
 
     ISymbol? symbol;
     IType? type;
-    IValueSymbol? valueSymbol;
 
     SourcePosition IExpression.GetPosition() => position;
 
     IType ITypeNode.GetSelfType(Compiler compiler) => GetSelfType(compiler);
 
-    void ITypeNode.SetSemantic(Compiler compiler) {
+    void IGenericArgumentNode.SetSemantic(Compiler compiler) {
         SetSymbol(compiler);
     }
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         SetSymbol(compiler);
-        valueSymbol = symbol!.AsValue(position);
+        IValueSymbol valueSymbol = symbol!.AsValue(position);
         type = valueSymbol.LazyGetValueType(position, compiler);
         valueSymbol.EnsureCanLoad(position);
     }
@@ -62,7 +94,7 @@ public class Path : IPlaceExpression, ITypeNode {
 
     void IPlaceExpression.SetAssignSemantic(Compiler compiler) {
         SetSymbol(compiler);
-        valueSymbol = symbol!.AsValue(position);
+        IValueSymbol valueSymbol = symbol!.AsValue(position);
         type = valueSymbol.LazyGetValueType(position, compiler);
         valueSymbol.Store(position, compiler);
     }

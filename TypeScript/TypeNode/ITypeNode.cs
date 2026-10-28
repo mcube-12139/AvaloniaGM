@@ -4,6 +4,5 @@ using TypeScript.Type;
 namespace TypeScript.TypeNode;
 
 public interface ITypeNode: IGenericArgumentNode {
-    internal void SetSemantic(Compiler compiler);
-    IType GetSelfType(Compiler compiler);
+    internal IType GetSelfType(Compiler compiler);
 }

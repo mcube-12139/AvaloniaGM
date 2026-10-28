@@ -1,5 +1,7 @@
-﻿namespace TypeScript.Type;
+﻿using TypeScript.GenericArgument;
+
+namespace TypeScript.Type;
 
 public class UnknownType : IType {
-    string IType.GetAppearance() => "unknown";
+    string IGenericArgument.GetAppearance() => "unknown";
 }

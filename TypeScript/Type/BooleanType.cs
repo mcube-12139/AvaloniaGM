@@ -1,10 +1,11 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.GenericArgument;
 
 namespace TypeScript.Type;
 
 public class BooleanType : IType {
-    string IType.GetAppearance() => "boolean";
+    string IGenericArgument.GetAppearance() => "boolean";
 
     IType IType.GetNotResultType(SourcePosition position, Compiler compiler) {
         return this;

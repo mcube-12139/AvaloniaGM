@@ -1,11 +1,12 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
 using TypeScript.Field;
+using TypeScript.GenericArgument;
 
 namespace TypeScript.Type;
 
 public class StringType : IType {
-    string IType.GetAppearance() => "string";
+    string IGenericArgument.GetAppearance() => "string";
     static readonly Dictionary<string, IField> fields = new() {
         { "length", new StringLengthField() }
     };

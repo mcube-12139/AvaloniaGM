@@ -1,10 +1,11 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.GenericArgument;
 using TypeScript.Symbol;
 
 namespace TypeScript.Type;
 
-public class InterfaceType : IType, IConcept {
+public class InterfaceType : IType {
     public readonly string name;
 
     internal readonly NameSpace space;
@@ -17,7 +18,7 @@ public class InterfaceType : IType, IConcept {
         space = new(null);
     }
 
-    string IType.GetAppearance() => name;
+    string IGenericArgument.GetAppearance() => name;
 
     ISymbol IType.GetAssociatedSymbol(string name, SourcePosition position) {
         return space.GetSymbol(name, position);

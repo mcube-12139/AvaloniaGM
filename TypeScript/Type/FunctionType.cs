@@ -24,10 +24,10 @@ public class FunctionType : IType {
     }
 
     internal FunctionType Monomorphize() {
-        return Instantiate([.. parameterTypes.Select(type => type.Monomorphize())], resultType.Monomorphize());
+        return Instantiate([.. parameterTypes.Select(type => type.GetConcreteType())], resultType.GetConcreteType());
     }
 
-    IType IType.Monomorphize() => Monomorphize();
+    IType IType.GetConcreteType() => Monomorphize();
 
     public string GetAppearance() {
         return $"({string.Join(", ", parameterTypes.Select(type => type.GetAppearance()))}) => {resultType.GetAppearance()}";

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using TypeScript;
 using TypeScript.Expression;
 using TypeScript.Field;
-using TypeScript.GenericArgument;
 using TypeScript.Item;
 using TypeScript.Parameter;
 using TypeScript.Pattern;
@@ -23,6 +22,8 @@ internal class CodeGenerator {
     readonly Dictionary<string, int> stringIds = [];
     readonly Dictionary<string, UndertaleVariable> globalVariables = [];
     readonly Dictionary<string, UndertaleVariable> selfVariables = [];
+    // 因为存在泛型函数，一个 LocalSymbol 可能存在于多个 FunctionSymbol 中，不能单独作为键
+    readonly Dictionary<(FunctionSymbol fun, LocalSymbol local), UndertaleVariable> localVariables = [];
     readonly Dictionary<IValueSymbol, UndertaleVariable> variables = [];
     readonly HashSet<ClassType> classTypes = [];
     readonly Dictionary<StructField, short> fieldIndices = [];
@@ -30,6 +31,7 @@ internal class CodeGenerator {
     uint nextFunctionIndex = 0;
 
     readonly Stack<FunctionGenerationState> functionGenerationStates = [];
+    FunctionSymbol? nowFunction;
     uint byteCount;
     List<UndertaleInstruction> instructions = [];
     Stack<DataType> types = [];
@@ -548,7 +550,7 @@ internal class CodeGenerator {
     void StoreSymbol(IValueSymbol symbol) {
         switch (symbol) {
             case LocalSymbol localSymbol: {
-                UndertaleVariable variable = variables.GetValueOrDefault(localSymbol)!;
+                UndertaleVariable variable = localVariables[(nowFunction!, localSymbol)];
                 Store(variable, VariableType.Normal);
                 break;
             }
@@ -572,7 +574,7 @@ internal class CodeGenerator {
                 break;
             }
             case LocalSymbol localSymbol: {
-                UndertaleVariable variable = variables.GetValueOrDefault(localSymbol)!;
+                UndertaleVariable variable = localVariables[(nowFunction!, localSymbol)];
                 Load(variable, VariableType.Normal);
                 break;
             }
@@ -646,7 +648,7 @@ internal class CodeGenerator {
                 var symbol = (LocalSymbol)identifierPattern.GetSymbol();
 
                 UndertaleVariable variable = AddLocalVariable(identifierPattern.name);
-                variables.Add(symbol, variable);
+                localVariables.Add((nowFunction!, symbol), variable);
 
                 if (initializer != null) {
                     EvaluateExpression(initializer, symbol.type);
@@ -1302,7 +1304,7 @@ internal class CodeGenerator {
         switch (expression) {
             case Path pathExpression: {
                 IValueSymbol symbol = (IValueSymbol)pathExpression.GetSymbol();
-                return variables.GetValueOrDefault(symbol)!;
+                return variables[symbol];
             }
             case ArrayExpression arrayExpression: {
                 UndertaleVariable variable = AddLocalVariable(name);
@@ -1782,7 +1784,8 @@ internal class CodeGenerator {
     }
 
     void GenerateFunctionInstance(FunctionItem funItem, FunctionSymbol funSymbol) {
-        functionGenerationStates.Push(new(byteCount, instructions, types, nextLocalIndex, nextParameterIndex, codeLocals!, loopContexts));
+        functionGenerationStates.Push(new(funSymbol, byteCount, instructions, types, nextLocalIndex, nextParameterIndex, codeLocals!, loopContexts));
+        nowFunction = funSymbol;
         byteCount = 0;
         instructions = [];
         types = [];
@@ -1822,6 +1825,7 @@ internal class CodeGenerator {
         code.LocalsCount = nextLocalIndex;
 
         FunctionGenerationState state = functionGenerationStates.Pop();
+        nowFunction = state.funSymbol;
         byteCount = state.byteCount;
         instructions = state.instructions;
         types = state.types;

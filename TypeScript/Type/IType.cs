@@ -10,7 +10,7 @@ namespace TypeScript.Type;
 public interface IType: IGenericArgument {
     IType IGenericArgument.AsType(SourcePosition position) => this;
 
-    IType Monomorphize() {
+    IType GetConcreteType() {
         return this;
     }
 

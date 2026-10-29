@@ -18,7 +18,7 @@ public class GenericType: IType {
         return string.Join(" & ", bounds);
     }
 
-    IType IType.Monomorphize() => concreteType!;
+    IType IType.GetConcreteType() => concreteType!;
 
     IType IType.GetAddResultType(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(PrimitiveType.INTEGER, compiler);

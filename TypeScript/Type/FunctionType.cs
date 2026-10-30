@@ -1,5 +1,6 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.Symbol;
 
 namespace TypeScript.Type;
 
@@ -23,11 +24,11 @@ public class FunctionType : IType {
         return result;
     }
 
-    internal FunctionType Monomorphize() {
+    internal FunctionType GetConcreteType() {
         return Instantiate([.. parameterTypes.Select(type => type.GetConcreteType())], resultType.GetConcreteType());
     }
 
-    IType IType.GetConcreteType() => Monomorphize();
+    IType IType.GetConcreteType() => GetConcreteType();
 
     public string GetAppearance() {
         return $"({string.Join(", ", parameterTypes.Select(type => type.GetAppearance()))}) => {resultType.GetAppearance()}";
@@ -115,5 +116,18 @@ public class FunctionType : IType {
                 throw new SemanticException(SemanticErrorType.WRONG_TYPE, [parameterType.GetAppearance(), definedType.GetAppearance()], position);
             }
         }
+    }
+
+    internal GenericInferContext InferGenericParameters(IType? target, IExpression[] parameters, SourcePosition position, Compiler compiler) {
+        if (parameters.Length != parameterTypes.Length) {
+            throw new SemanticException(SemanticErrorType.WRONG_PARAMETER_COUNT, [parameters.Length.ToString(), parameterTypes.Length.ToString()], position);
+        }
+        GenericInferContext context = new(position, compiler);
+        for (int i = 0; i != parameterTypes.Length; ++i) {
+            parameterTypes[i].InferGenericByArgument(parameters[i], context);
+        }
+        resultType.InferGenericByTarget(target, context);
+
+        return context;
     }
 }

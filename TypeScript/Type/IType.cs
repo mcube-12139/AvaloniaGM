@@ -14,6 +14,21 @@ public interface IType: IGenericArgument {
         return this;
     }
 
+    internal void InferGenericByArgument(IExpression argument, GenericInferContext context) {
+        argument.SetSemantic(this, context.compiler);
+
+        IType parameterType = argument.GetResultType();
+        if (!TypeHelp.IsType(parameterType, this)) {
+            throw new SemanticException(SemanticErrorType.WRONG_TYPE, [parameterType.GetAppearance(), GetAppearance()], context.position);
+        }
+    }
+
+    internal void InferGenericByTarget(IType? target, GenericInferContext context) {
+        if (target != null && !TypeHelp.IsType(this, target)) {
+            throw new SemanticException(SemanticErrorType.WRONG_TYPE, [GetAppearance(), target.GetAppearance()], context.position);
+        }
+    }
+
     bool IsType(IType other) {
         return other == this;
     }

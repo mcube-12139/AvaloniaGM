@@ -60,17 +60,27 @@ public class Path : IPlaceExpression, ITypeNode {
     IType ITypeNode.GetSelfType(Compiler compiler) => GetSelfType(compiler);
 
     void IGenericArgumentNode.SetSemantic(Compiler compiler) {
-        SetSymbol(compiler);
+        symbol = FindSymbol(compiler);
+    }
+
+    FunctionType IExpression.SetCallSemantic(IType? target, IExpression[] parameters, Compiler compiler) {
+        ISymbol maybeGenericSymbol = FindSymbol(compiler);
+        IValueSymbol valueSymbol = maybeGenericSymbol.GetGenericOmittedCallSymbol(type, parameters, position, compiler);
+        symbol = valueSymbol;
+        FunctionType funType = valueSymbol.LazyGetValueType(position, compiler).AsFunctionType(position, compiler);
+        type = funType;
+
+        return funType;
     }
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
-        SetSymbol(compiler);
+        symbol = FindSymbol(compiler);
         IValueSymbol valueSymbol = symbol!.AsValue(position);
         type = valueSymbol.LazyGetValueType(position, compiler);
         valueSymbol.EnsureCanLoad(position);
     }
 
-    void SetSymbol(Compiler compiler) {
+    ISymbol FindSymbol(Compiler compiler) {
         ISymbol nowSymbol;
         if (!fromTop) {
             nowSymbol = segments[0].GetSymbol(compiler);
@@ -81,7 +91,8 @@ public class Path : IPlaceExpression, ITypeNode {
         for (int i = 1; i != segments.Length; ++i) {
             nowSymbol = segments[i].GetSymbolInNameSpace(nowSymbol.GetNameSpace(position), compiler);
         }
-        symbol = nowSymbol;
+
+        return nowSymbol;
     }
 
     internal IType GetSelfType(Compiler compiler) {
@@ -93,7 +104,7 @@ public class Path : IPlaceExpression, ITypeNode {
     public ISymbol GetSymbol() => symbol!;
 
     void IPlaceExpression.SetAssignSemantic(Compiler compiler) {
-        SetSymbol(compiler);
+        symbol = FindSymbol(compiler);
         IValueSymbol valueSymbol = symbol!.AsValue(position);
         type = valueSymbol.LazyGetValueType(position, compiler);
         valueSymbol.Store(position, compiler);

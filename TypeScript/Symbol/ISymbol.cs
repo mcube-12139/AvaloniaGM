@@ -18,6 +18,9 @@ public interface ISymbol {
     internal IGenericSymbol AsGeneric(SourcePosition position) {
         throw new SemanticException(SemanticErrorType.NOT_GENERIC, [GetName()], position);
     }
+    internal IValueSymbol GetGenericOmittedCallSymbol(IType? target, IExpression[] parameters, SourcePosition position, Compiler compiler) {
+        throw new SemanticException(SemanticErrorType.NOT_CALLABLE, [GetName()], position);
+    }
     internal NameSpace GetNameSpace(SourcePosition position) {
         throw new SemanticException(SemanticErrorType.NO_NAME_SPACE, [GetName()], position);
     }

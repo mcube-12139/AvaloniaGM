@@ -21,10 +21,7 @@ public class CallExpression: IExpression {
     SourcePosition IExpression.GetPosition() => position;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
-        callee.SetSemantic(null, compiler);
-        calleeType = callee.GetResultType().AsFunctionType(position, compiler);
-        calleeType.EnsureCanCall(parameters, position, compiler);
-
+        calleeType = callee.SetCallSemantic(target, parameters, compiler);
         type = calleeType.resultType;
     }
 

@@ -1841,7 +1841,7 @@ internal class CodeGenerator {
         if (!funItem.IsGeneric()) {
             GenerateFunctionInstance(funItem, funItem.GetSymbol());
         } else {
-            foreach (FunctionSymbol funSymbol in funItem.genericSymbol!.IterateSymbolSetGenericArguments()) {
+            foreach (FunctionSymbol funSymbol in funItem.genericSymbol!.SetGenericArgumentsAndIterateSymbol()) {
                 GenerateFunctionInstance(funItem, funSymbol);
             }
         }

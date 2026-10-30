@@ -1,4 +1,5 @@
-﻿using TypeScript.GenericArgument;
+﻿using TypeScript.ExceptionSpace;
+using TypeScript.GenericArgument;
 using TypeScript.Type;
 
 namespace TypeScript.Symbol;
@@ -24,5 +25,12 @@ public class TypeParameterSymbol : ITypeSymbol, IGenericParameterSymbol {
 
     void IGenericParameterSymbol.SetArgumentOrThrow(IGenericArgument argument) {
         type.concreteType = (IType)argument;
+    }
+
+    IGenericArgument IGenericParameterSymbol.SetInferredArgument(GenericInferContext context) {
+        IType inferredType = context.TryGetInferredType(type) ?? throw new SemanticException(SemanticErrorType.GENERIC_PARAMETER_NOT_INFERRED, [name], context.position);
+
+        type.concreteType = inferredType;
+        return inferredType;
     }
 }

@@ -34,6 +34,7 @@ public enum SemanticErrorType {
     CONCEPT_FUNCTION_NOT_EXIST,
     NOT_SATISFY_CONCEPT_FUNCTION,
     CONCEPT_NOT_IMPLEMENTED,
+    GENERIC_PARAMETER_NOT_INFERRED,
 }
 
 public class SemanticException(SemanticErrorType type, string[] parameters, SourcePosition position) : Exception($"{position.source}:{position.line}:{position.column}: {formatter[type](parameters)}") {
@@ -71,5 +72,6 @@ public class SemanticException(SemanticErrorType type, string[] parameters, Sour
         { SemanticErrorType.CONCEPT_FUNCTION_NOT_EXIST, parameters => $"概念 {parameters[0]} 没有函数 {parameters[1]}" },
         { SemanticErrorType.NOT_SATISFY_CONCEPT_FUNCTION, parameters => $"该函数未实现概念函数 {parameters[0]}" },
         { SemanticErrorType.CONCEPT_NOT_IMPLEMENTED, parameters => $"未实现概念项 {parameters[0]}" },
+        { SemanticErrorType.GENERIC_PARAMETER_NOT_INFERRED, parameters => $"未推断出泛型参数 {parameters[0]}" },
     };
 }

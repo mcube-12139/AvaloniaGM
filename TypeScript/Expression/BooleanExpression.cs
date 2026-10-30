@@ -3,14 +3,15 @@
 namespace TypeScript.Expression;
 
 public class BooleanExpression(SourcePosition position, bool value) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly bool value = value;
 
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     IType IExpression.GetResultType() => PrimitiveType.BOOLEAN;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
     }
 }
+

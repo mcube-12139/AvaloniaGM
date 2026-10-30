@@ -3,11 +3,11 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class AssignExpression(SourcePosition position, IPlaceExpression left, IExpression right) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IPlaceExpression left = left;
     public readonly IExpression right = right;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IType GetResultType() => TupleType.EMPTY;
 
@@ -16,3 +16,4 @@ public class AssignExpression(SourcePosition position, IPlaceExpression left, IE
         left.GetResultType().EnsureCanAssign(right, position, compiler);
     }
 }
+

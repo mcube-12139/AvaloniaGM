@@ -3,13 +3,13 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class LeftShiftExpression(SourcePosition position, IExpression left, IExpression right) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IExpression left = left;
     public readonly IExpression right = right;
 
     IType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IType GetResultType() => type!;
 
@@ -18,3 +18,4 @@ public class LeftShiftExpression(SourcePosition position, IExpression left, IExp
         type = left.GetResultType().GetLeftShiftResultType(right, position, compiler);
     }
 }
+

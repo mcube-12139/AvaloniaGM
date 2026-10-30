@@ -42,12 +42,12 @@ public class Path : IPlaceExpression, ITypeNode {
         }
     }
 
-    public readonly SourcePosition position;
+    internal readonly ExpressionHead head;
     public readonly Segment[] segments;
     public readonly bool fromTop;
 
     internal Path(SourcePosition position, Segment[] segments, bool fromTop) {
-        this.position = position;
+        head = new(position);
         this.segments = segments;
         this.fromTop = fromTop;
     }
@@ -55,7 +55,7 @@ public class Path : IPlaceExpression, ITypeNode {
     ISymbol? symbol;
     IType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     IType ITypeNode.GetSelfType(Compiler compiler) => GetSelfType(compiler);
 
@@ -65,9 +65,9 @@ public class Path : IPlaceExpression, ITypeNode {
 
     FunctionType IExpression.SetCallSemantic(IType? target, IExpression[] parameters, Compiler compiler) {
         ISymbol maybeGenericSymbol = FindSymbol(compiler);
-        IValueSymbol valueSymbol = maybeGenericSymbol.GetGenericOmittedCallSymbol(type, parameters, position, compiler);
+        IValueSymbol valueSymbol = maybeGenericSymbol.GetGenericOmittedCallSymbol(type, parameters, head.position, compiler);
         symbol = valueSymbol;
-        FunctionType funType = valueSymbol.LazyGetValueType(position, compiler).AsFunctionType(position, compiler);
+        FunctionType funType = valueSymbol.LazyGetValueType(head.position, compiler).AsFunctionType(head.position, compiler);
         type = funType;
 
         return funType;
@@ -75,9 +75,9 @@ public class Path : IPlaceExpression, ITypeNode {
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         symbol = FindSymbol(compiler);
-        IValueSymbol valueSymbol = symbol!.AsValue(position);
-        type = valueSymbol.LazyGetValueType(position, compiler);
-        valueSymbol.EnsureCanLoad(position);
+        IValueSymbol valueSymbol = symbol!.AsValue(head.position);
+        type = valueSymbol.LazyGetValueType(head.position, compiler);
+        valueSymbol.EnsureCanLoad(head.position);
     }
 
     ISymbol FindSymbol(Compiler compiler) {
@@ -89,14 +89,14 @@ public class Path : IPlaceExpression, ITypeNode {
         }
 
         for (int i = 1; i != segments.Length; ++i) {
-            nowSymbol = segments[i].GetSymbolInNameSpace(nowSymbol.GetNameSpace(position), compiler);
+            nowSymbol = segments[i].GetSymbolInNameSpace(nowSymbol.GetNameSpace(head.position), compiler);
         }
 
         return nowSymbol;
     }
 
     internal IType GetSelfType(Compiler compiler) {
-        return symbol!.AsType(position).LazyGetSelfType(position, compiler);
+        return symbol!.AsType(head.position).LazyGetSelfType(head.position, compiler);
     }
 
     IType IExpression.GetResultType() => type!;
@@ -105,9 +105,9 @@ public class Path : IPlaceExpression, ITypeNode {
 
     void IPlaceExpression.SetAssignSemantic(Compiler compiler) {
         symbol = FindSymbol(compiler);
-        IValueSymbol valueSymbol = symbol!.AsValue(position);
-        type = valueSymbol.LazyGetValueType(position, compiler);
-        valueSymbol.Store(position, compiler);
+        IValueSymbol valueSymbol = symbol!.AsValue(head.position);
+        type = valueSymbol.LazyGetValueType(head.position, compiler);
+        valueSymbol.Store(head.position, compiler);
     }
 
     IGenericArgument IGenericArgumentNode.GetArgument(Compiler compiler) => GetSelfType(compiler);

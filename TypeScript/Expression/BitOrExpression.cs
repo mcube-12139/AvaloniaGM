@@ -3,13 +3,13 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class BitOrExpression(SourcePosition position, IExpression left, IExpression right) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IExpression left = left;
     public readonly IExpression right = right;
 
     IType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IType GetResultType() => type!;
 
@@ -18,3 +18,4 @@ public class BitOrExpression(SourcePosition position, IExpression left, IExpress
         type = left.GetResultType().GetBitOrResultType(right, position, compiler);
     }
 }
+

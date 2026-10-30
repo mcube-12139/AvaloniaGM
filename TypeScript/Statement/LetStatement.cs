@@ -1,5 +1,4 @@
-﻿using TypeScript.ExceptionSpace;
-using TypeScript.Expression;
+﻿using TypeScript.Expression;
 using TypeScript.Pattern;
 using TypeScript.TypeNode;
 using TypeScript.Type;
@@ -27,10 +26,7 @@ public class LetStatement(SourcePosition position, IPattern pattern, ITypeNode? 
 
             if (initializer != null) {
                 initializer.SetSemantic(definedType, compiler);
-                IType initializerType = initializer.GetResultType();
-                if (!TypeHelp.IsType(initializerType, definedType)) {
-                    throw new SemanticException(SemanticErrorType.WRONG_TYPE, [initializerType.GetAppearance(), definedType.GetAppearance()], position);
-                }
+                initializer.SetTargetType(definedType);
             }
         }
 

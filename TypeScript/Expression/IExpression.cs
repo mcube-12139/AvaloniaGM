@@ -4,7 +4,17 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public interface IExpression {
-    SourcePosition GetPosition();
+    internal ExpressionHead GetHead();
+    SourcePosition GetPosition() => GetHead().position;
+    IType? GetTargetType() => GetHead().targetType;
+    internal void SetTargetType(IType targetType) {
+        if (!TypeHelp.IsType(GetResultType(), targetType)) {
+            throw new SemanticException(SemanticErrorType.WRONG_TYPE, [GetResultType().GetAppearance(), targetType.GetAppearance()], GetPosition());
+        }
+
+        GetHead().targetType = targetType;
+    }
+
     IType GetResultType();
     internal FunctionType SetCallSemantic(IType? target, IExpression[] parameters, Compiler compiler) {
         SetSemantic(null, compiler);
@@ -17,3 +27,4 @@ public interface IExpression {
         throw new SemanticException(SemanticErrorType.NOT_PLACE, [], GetPosition());
     }
 }
+

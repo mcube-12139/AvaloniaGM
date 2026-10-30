@@ -3,14 +3,16 @@
 namespace TypeScript.Expression;
 
 public class StringExpression(SourcePosition position, string value) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly string value = value;
 
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     IType IExpression.GetResultType() => PrimitiveType.STRING;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
+        // 无事发生
     }
 }
+

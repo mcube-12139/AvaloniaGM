@@ -6,3 +6,4 @@ public interface IPlaceExpression : IExpression {
     }
     internal void SetAssignSemantic(Compiler compiler);
 }
+

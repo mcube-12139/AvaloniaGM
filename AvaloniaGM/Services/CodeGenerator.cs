@@ -651,7 +651,7 @@ internal class CodeGenerator {
                 localVariables.Add((nowFunction!, symbol), variable);
 
                 if (initializer != null) {
-                    EvaluateExpression(initializer, symbol.type);
+                    EvaluateExpression(initializer);
                     Store(variable, VariableType.Normal);
                 }
                 break;
@@ -712,10 +712,10 @@ internal class CodeGenerator {
         switch (type) {
             case ArrayType arrayType: {
                 UndertaleVariable variable = EvaluateExpressionToVariable(indexed, "indexed");
-                EvaluateExpression(value, arrayType.elementType);
+                EvaluateExpression(value);
 
                 PushShort((short)variable.InstanceType);
-                EvaluateExpression(index, null);
+                EvaluateExpression(index);
                 Convert(DataType.Int32);
 
                 Store(variable, VariableType.Array);
@@ -730,7 +730,7 @@ internal class CodeGenerator {
         switch (field) {
             case StructField structField: {
                 UndertaleVariable variable = EvaluateExpressionToVariable(accessed, "accessed");
-                EvaluateExpression(value, structField.type);
+                EvaluateExpression(value);
 
                 PushShort((short)variable.InstanceType);
                 short index = GetFieldIndex((ClassType)type, structField);
@@ -751,7 +751,7 @@ internal class CodeGenerator {
                 UndertaleVariable variable = EvaluateExpressionToVariable(indexed, "indexed");
 
                 PushShort((short)variable.InstanceType);
-                EvaluateExpression(index, null);
+                EvaluateExpression(index);
                 Convert(DataType.Int32);
 
                 Load(variable, VariableType.Array);
@@ -776,12 +776,12 @@ internal class CodeGenerator {
                 break;
             }
             case ArrayLengthField: {
-                EvaluateExpression(accessed, null);
+                EvaluateExpression(accessed);
                 CallBuiltin("array_length_1d", 1);
                 break;
             }
             case StringLengthField: {
-                EvaluateExpression(accessed, null);
+                EvaluateExpression(accessed);
                 CallBuiltin("string_length", 1);
                 break;
             }
@@ -797,10 +797,10 @@ internal class CodeGenerator {
                 var funType = symbol.GetFunctionType();
 
                 for (int i = parameters.Length - 1; i != -1; --i) {
-                    EvaluateExpression(parameters[i], funType.parameterTypes[i + 1]);
+                    EvaluateExpression(parameters[i]);
                     Convert(DataType.Variable);
                 }
-                EvaluateExpression(callee, null);
+                EvaluateExpression(callee);
                 Convert(DataType.Variable);
 
                 CallSymbol(symbol, parameters.Length + 1);
@@ -811,7 +811,7 @@ internal class CodeGenerator {
                 ConceptFunctionSymbol symbol = interfaceType.GetConceptFunction(name);
                 IType[] parameterTypes = symbol.GetParameterTypes();
                 for (int i = parameters.Length - 1; i != -1; --i) {
-                    EvaluateExpression(parameters[i], parameterTypes[i]);
+                    EvaluateExpression(parameters[i]);
                     Convert(DataType.Variable);
                 }
                 UndertaleVariable calleeVariable = EvaluateExpressionToVariable(callee, "callee");
@@ -845,7 +845,7 @@ internal class CodeGenerator {
     void MultiplyByType(IType type, IExpression right) {
         switch (type) {
             case IntegerType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Multiply();
                 break;
             }
@@ -857,7 +857,7 @@ internal class CodeGenerator {
     void DivideByType(IType type, IExpression right) {
         switch (type) {
             case IntegerType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Divide();
                 break;
             }
@@ -869,7 +869,7 @@ internal class CodeGenerator {
     void ModuloByType(IType type, IExpression right) {
         switch (type) {
             case IntegerType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Modulo();
                 break;
             }
@@ -886,7 +886,7 @@ internal class CodeGenerator {
             }
             case IntegerType:
             case StringType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Add();
                 break;
             }
@@ -898,7 +898,7 @@ internal class CodeGenerator {
     void SubtractByType(IType type, IExpression right) {
         switch (type) {
             case IntegerType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Subtract();
                 break;
             }
@@ -931,7 +931,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType: {
                 Convert(DataType.Int32);
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Convert(DataType.Int32);
                 BitAnd();
                 break;
@@ -945,7 +945,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType: {
                 Convert(DataType.Int32);
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Convert(DataType.Int32);
                 BitXor();
                 break;
@@ -959,7 +959,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType: {
                 Convert(DataType.Int32);
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Convert(DataType.Int32);
                 BitOr();
                 break;
@@ -973,7 +973,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType:
             case StringType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Compare(ComparisonType.GT);
                 break;
             }
@@ -986,7 +986,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType:
             case StringType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Compare(ComparisonType.GTE);
                 break;
             }
@@ -999,7 +999,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType:
             case StringType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Compare(ComparisonType.LT);
                 break;
             }
@@ -1012,7 +1012,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType:
             case StringType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Compare(ComparisonType.LTE);
                 break;
             }
@@ -1025,7 +1025,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType:
             case StringType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Compare(ComparisonType.EQ);
                 break;
             }
@@ -1038,7 +1038,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType:
             case StringType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Compare(ComparisonType.NEQ);
                 break;
             }
@@ -1046,7 +1046,6 @@ internal class CodeGenerator {
                 throw new NotImplementedException();
         }
     }
-
     void AssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case IndexExpression indexExpression: {
@@ -1058,7 +1057,7 @@ internal class CodeGenerator {
                 break;
             }
             case Path pathExpression: {
-                EvaluateExpression(expression, placeExpression.GetResultType());
+                EvaluateExpression(expression);
                 StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
@@ -1070,7 +1069,7 @@ internal class CodeGenerator {
     void AddAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case Path pathExpression: {
-                EvaluateExpression(placeExpression, null);
+                EvaluateExpression(placeExpression);
                 AddAssignByType(placeExpression.GetResultType(), expression);
                 StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
@@ -1081,7 +1080,7 @@ internal class CodeGenerator {
     void SubtractAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case Path pathExpression: {
-                EvaluateExpression(placeExpression, null);
+                EvaluateExpression(placeExpression);
                 SubtractAssignByType(placeExpression.GetResultType(), expression);
                 StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
@@ -1092,7 +1091,7 @@ internal class CodeGenerator {
     void MultiplyAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case Path pathExpression: {
-                EvaluateExpression(placeExpression, null);
+                EvaluateExpression(placeExpression);
                 MultiplyAssignByType(placeExpression.GetResultType(), expression);
                 StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
@@ -1103,7 +1102,7 @@ internal class CodeGenerator {
     void DivideAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case Path pathExpression: {
-                EvaluateExpression(placeExpression, null);
+                EvaluateExpression(placeExpression);
                 DivideAssignByType(placeExpression.GetResultType(), expression);
                 StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
@@ -1114,7 +1113,7 @@ internal class CodeGenerator {
     void ModuloAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case Path pathExpression: {
-                EvaluateExpression(placeExpression, null);
+                EvaluateExpression(placeExpression);
                 ModuloAssignByType(placeExpression.GetResultType(), expression);
                 StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
@@ -1125,7 +1124,7 @@ internal class CodeGenerator {
     void BitAndAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case Path pathExpression: {
-                EvaluateExpression(placeExpression, null);
+                EvaluateExpression(placeExpression);
                 BitAndAssignByType(placeExpression.GetResultType(), expression);
                 StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
@@ -1136,7 +1135,7 @@ internal class CodeGenerator {
     void BitOrAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case Path pathExpression: {
-                EvaluateExpression(placeExpression, null);
+                EvaluateExpression(placeExpression);
                 BitOrAssignByType(placeExpression.GetResultType(), expression);
                 StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
@@ -1147,7 +1146,7 @@ internal class CodeGenerator {
     void BitXorAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case Path pathExpression: {
-                EvaluateExpression(placeExpression, null);
+                EvaluateExpression(placeExpression);
                 BitXorAssignByType(placeExpression.GetResultType(), expression);
                 StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
@@ -1158,7 +1157,7 @@ internal class CodeGenerator {
     void LeftShiftAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case Path pathExpression: {
-                EvaluateExpression(placeExpression, null);
+                EvaluateExpression(placeExpression);
                 LeftShiftAssignByType(placeExpression.GetResultType(), expression);
                 StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
@@ -1169,19 +1168,18 @@ internal class CodeGenerator {
     void RightShiftAssignToPlace(IPlaceExpression placeExpression, IExpression expression) {
         switch (placeExpression) {
             case Path pathExpression: {
-                EvaluateExpression(placeExpression, null);
+                EvaluateExpression(placeExpression);
                 RightShiftAssignByType(placeExpression.GetResultType(), expression);
                 StoreSymbol((IValueSymbol)pathExpression.GetSymbol());
                 break;
             }
         }
     }
-
     void AddAssignByType(IType type, IExpression right) {
         switch (type) {
             case IntegerType:
             case StringType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Add();
                 break;
             }
@@ -1193,7 +1191,7 @@ internal class CodeGenerator {
     void SubtractAssignByType(IType type, IExpression right) {
         switch (type) {
             case IntegerType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Subtract();
                 break;
             }
@@ -1205,7 +1203,7 @@ internal class CodeGenerator {
     void MultiplyAssignByType(IType type, IExpression right) {
         switch (type) {
             case IntegerType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Multiply();
                 break;
             }
@@ -1217,7 +1215,7 @@ internal class CodeGenerator {
     void DivideAssignByType(IType type, IExpression right) {
         switch (type) {
             case IntegerType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Divide();
                 break;
             }
@@ -1229,7 +1227,7 @@ internal class CodeGenerator {
     void ModuloAssignByType(IType type, IExpression right) {
         switch (type) {
             case IntegerType: {
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Modulo();
                 break;
             }
@@ -1242,7 +1240,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType: {
                 Convert(DataType.Int32);
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Convert(DataType.Int32);
                 BitAnd();
                 break;
@@ -1256,7 +1254,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType: {
                 Convert(DataType.Int32);
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Convert(DataType.Int32);
                 BitOr();
                 break;
@@ -1270,7 +1268,7 @@ internal class CodeGenerator {
         switch (type) {
             case IntegerType: {
                 Convert(DataType.Int32);
-                EvaluateExpression(right, null);
+                EvaluateExpression(right);
                 Convert(DataType.Int32);
                 BitXor();
                 break;
@@ -1279,7 +1277,6 @@ internal class CodeGenerator {
                 throw new NotImplementedException();
         }
     }
-
     void LeftShiftAssignByType(IType type, IExpression right) {
         switch (type) {
             case IntegerType: {
@@ -1312,7 +1309,7 @@ internal class CodeGenerator {
                 if (arrayExpression.elements.Length != 0) {
                     short elementIndex = 0;
                     foreach (IExpression element in arrayExpression.elements) {
-                        EvaluateExpression(element, null);
+                        EvaluateExpression(element);
 
                         PushShort((short)InstanceType.Local);
                         PushShort(elementIndex);
@@ -1338,7 +1335,7 @@ internal class CodeGenerator {
                         StructField classField = field.GetField();
                         short fieldIndex = GetFieldIndex(newExpression.GetClassType(), classField);
 
-                        EvaluateExpression(field.value, classField.type);
+                        EvaluateExpression(field.value);
 
                         PushShort((short)InstanceType.Local);
                         PushShort(fieldIndex);
@@ -1360,7 +1357,7 @@ internal class CodeGenerator {
         }
     }
 
-    void EvaluateExpression(IExpression expression, IType? targetType) {
+    void EvaluateExpression(IExpression expression) {
         switch (expression) {
             case IntegerExpression integerExpression: {
                 int value = int.Parse(integerExpression.valueStr);
@@ -1432,110 +1429,110 @@ internal class CodeGenerator {
 
                 IType[] calleeParameterTypes = callExpression.GetCalleeType().parameterTypes;
                 for (int i = parameters.Length - 1; i != -1; --i) {
-                    EvaluateExpression(parameters[i], calleeParameterTypes[i]);
+                    EvaluateExpression(parameters[i]);
                     Convert(DataType.Variable);
                 }
                 ExpressionCall(callExpression.callee, parameters.Length);
                 break;
             }
             case NegateExpression negateExpression: {
-                EvaluateExpression(negateExpression.expression, null);
+                EvaluateExpression(negateExpression.expression);
                 NegateByType(negateExpression.expression.GetResultType());
                 break;
             }
             case NotExpression notExpression: {
-                EvaluateExpression(notExpression.expression, null);
+                EvaluateExpression(notExpression.expression);
                 NotByType(notExpression.expression.GetResultType());
                 break;
             }
             case MultiplyExpression multiplyExpression: {
-                EvaluateExpression(multiplyExpression.left, null);
+                EvaluateExpression(multiplyExpression.left);
                 MultiplyByType(multiplyExpression.left.GetResultType(), multiplyExpression.right);
                 break;
             }
             case DivideExpression divideExpression: {
-                EvaluateExpression(divideExpression.left, null);
+                EvaluateExpression(divideExpression.left);
                 DivideByType(divideExpression.left.GetResultType(), divideExpression.right);
                 break;
             }
             case ModuloExpression moduloExpression: {
-                EvaluateExpression(moduloExpression.left, null);
+                EvaluateExpression(moduloExpression.left);
                 ModuloByType(moduloExpression.left.GetResultType(), moduloExpression.right);
                 break;
             }
             case AddExpression addExpression: {
-                EvaluateExpression(addExpression.left, null);
+                EvaluateExpression(addExpression.left);
                 AddByType(addExpression.left.GetResultType(), addExpression.right);
                 break;
             }
             case SubtractExpression subtractExpression: {
-                EvaluateExpression(subtractExpression.left, null);
+                EvaluateExpression(subtractExpression.left);
                 SubtractByType(subtractExpression.left.GetResultType(), subtractExpression.right);
                 break;
             }
             case LeftShiftExpression leftShiftExpression: {
-                EvaluateExpression(leftShiftExpression.left, null);
+                EvaluateExpression(leftShiftExpression.left);
                 LeftShiftByType(leftShiftExpression.left.GetResultType(), leftShiftExpression.right);
                 break;
             }
             case RightShiftExpression rightShiftExpression: {
-                EvaluateExpression(rightShiftExpression.left, null);
+                EvaluateExpression(rightShiftExpression.left);
                 RightShiftByType(rightShiftExpression.left.GetResultType(), rightShiftExpression.right);
                 break;
             }
             case BitAndExpression bitAndExpression: {
-                EvaluateExpression(bitAndExpression.left, null);
+                EvaluateExpression(bitAndExpression.left);
                 BitAndByType(bitAndExpression.left.GetResultType(), bitAndExpression.right);
                 break;
             }
             case BitXorExpression bitXorExpression: {
-                EvaluateExpression(bitXorExpression.left, null);
+                EvaluateExpression(bitXorExpression.left);
                 BitXorByType(bitXorExpression.left.GetResultType(), bitXorExpression.right);
                 break;
             }
             case BitOrExpression bitOrExpression: {
-                EvaluateExpression(bitOrExpression.left, null);
+                EvaluateExpression(bitOrExpression.left);
                 BitOrByType(bitOrExpression.left.GetResultType(), bitOrExpression.right);
                 break;
             }
             case GreaterExpression greaterExpression: {
-                EvaluateExpression(greaterExpression.left, null);
+                EvaluateExpression(greaterExpression.left);
                 GreaterByType(greaterExpression.left.GetResultType(), greaterExpression.right);
                 break;
             }
             case GreaterEqualExpression greaterEqualExpression: {
-                EvaluateExpression(greaterEqualExpression.left, null);
+                EvaluateExpression(greaterEqualExpression.left);
                 GreaterEqualByType(greaterEqualExpression.left.GetResultType(), greaterEqualExpression.right);
                 break;
             }
             case LessExpression lessExpression: {
-                EvaluateExpression(lessExpression.left, null);
+                EvaluateExpression(lessExpression.left);
                 LessByType(lessExpression.left.GetResultType(), lessExpression.right);
                 break;
             }
             case LessEqualExpression lessEqualExpression: {
-                EvaluateExpression(lessEqualExpression.left, null);
+                EvaluateExpression(lessEqualExpression.left);
                 LessEqualByType(lessEqualExpression.left.GetResultType(), lessEqualExpression.right);
                 break;
             }
             case EqualExpression equalExpression: {
-                EvaluateExpression(equalExpression.left, null);
+                EvaluateExpression(equalExpression.left);
                 EqualByType(equalExpression.left.GetResultType(), equalExpression.right);
                 break;
             }
             case NotEqualExpression notEqualExpression: {
-                EvaluateExpression(notEqualExpression.left, null);
+                EvaluateExpression(notEqualExpression.left);
                 NotEqualByType(notEqualExpression.left.GetResultType(), notEqualExpression.right);
                 break;
             }
             case AndExpression andExpression: {
-                EvaluateExpression(andExpression.left, null);
+                EvaluateExpression(andExpression.left);
                 Convert(DataType.Boolean);
 
                 uint bfStart = byteCount;
                 UndertaleInstruction bfInstruction = BranchFalse();
 
-                EvaluateExpression(andExpression.right, null);
+                EvaluateExpression(andExpression.right);
                 Convert(DataType.Boolean);
 
                 uint branchStart = byteCount;
@@ -1548,13 +1545,13 @@ internal class CodeGenerator {
                 break;
             }
             case OrExpression orExpression: {
-                EvaluateExpression(orExpression.left, null);
+                EvaluateExpression(orExpression.left);
                 Convert(DataType.Boolean);
 
                 uint btStart = byteCount;
                 UndertaleInstruction btInstruction = BranchTrue();
 
-                EvaluateExpression(orExpression.right, null);
+                EvaluateExpression(orExpression.right);
                 Convert(DataType.Boolean);
 
                 uint branchStart = byteCount;
@@ -1614,7 +1611,9 @@ internal class CodeGenerator {
                 throw new NotImplementedException();
         }
 
-        if (expression.GetResultType() is ClassType classType && targetType is InterfaceType interfaceType) {
+        IType resultType = expression.GetResultType();
+        IType? target = expression.GetTargetType();
+        if (resultType is ClassType classType && target is InterfaceType interfaceType) {
             // 处理 class 对象转换成接口对象
             UndertaleVariable variable = AddLocalVariable("tempInter");
 
@@ -1635,7 +1634,7 @@ internal class CodeGenerator {
     void ExecuteStatement(IStatement statement) {
         switch (statement) {
             case ExpressionStatement expressionStatement: {
-                EvaluateExpression(expressionStatement.expression, null);
+                EvaluateExpression(expressionStatement.expression);
                 // 特殊处理：调用必定返回 Variable
                 if (
                     expressionStatement.expression is CallExpression
@@ -1651,7 +1650,7 @@ internal class CodeGenerator {
                 break;
             }
             case IfStatement ifStatement: {
-                EvaluateExpression(ifStatement.condition, null);
+                EvaluateExpression(ifStatement.condition);
                 uint bfStart = byteCount;
                 UndertaleInstruction bfInstruction = BranchFalse();
 
@@ -1675,7 +1674,7 @@ internal class CodeGenerator {
                 uint start = byteCount;
                 LoopContext context = new(start);
 
-                EvaluateExpression(whileStatement.condition, null);
+                EvaluateExpression(whileStatement.condition);
                 uint bfStart = byteCount;
                 UndertaleInstruction bfInstruction = BranchFalse();
 
@@ -1710,7 +1709,7 @@ internal class CodeGenerator {
             }
             case ReturnStatement returnStatement: {
                 if (returnStatement.value != null) {
-                    EvaluateExpression(returnStatement.value, returnStatement.GetTargetType());
+                    EvaluateExpression(returnStatement.value);
                     if (returnStatement.value.GetResultType() != TupleType.EMPTY) {
                         Return();
                     } else {
@@ -1841,6 +1840,7 @@ internal class CodeGenerator {
         if (!funItem.IsGeneric()) {
             GenerateFunctionInstance(funItem, funItem.GetSymbol());
         } else {
+            // 生成单态化函数实例
             foreach (FunctionSymbol funSymbol in funItem.genericSymbol!.SetGenericArgumentsAndIterateSymbol()) {
                 GenerateFunctionInstance(funItem, funSymbol);
             }

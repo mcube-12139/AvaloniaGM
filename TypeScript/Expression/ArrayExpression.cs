@@ -4,12 +4,12 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class ArrayExpression(SourcePosition position, IExpression[] elements) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IExpression[] elements = elements;
 
     IType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IType GetResultType() => type!;
 
@@ -38,3 +38,4 @@ public class ArrayExpression(SourcePosition position, IExpression[] elements) : 
         }
     }
 }
+

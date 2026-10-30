@@ -3,7 +3,7 @@
 namespace TypeScript.Expression;
 
 public class CallExpression: IExpression {
-    public readonly SourcePosition position;
+    internal readonly ExpressionHead head;
     public readonly IExpression callee;
     public readonly IExpression[] parameters;
 
@@ -13,12 +13,12 @@ public class CallExpression: IExpression {
     public FunctionType GetCalleeType() => calleeType!;
 
     internal CallExpression(SourcePosition position, IExpression callee, IExpression[] parameters) {
-        this.position = position;
+        head = new(position);
         this.callee = callee;
         this.parameters = parameters;
     }
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         calleeType = callee.SetCallSemantic(target, parameters, compiler);
@@ -27,3 +27,4 @@ public class CallExpression: IExpression {
 
     IType IExpression.GetResultType() => type!;
 }
+

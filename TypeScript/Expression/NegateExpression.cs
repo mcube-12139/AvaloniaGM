@@ -3,12 +3,12 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class NegateExpression(SourcePosition position, IExpression expression) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IExpression expression = expression;
 
     IType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IType GetResultType() => type!;
 
@@ -17,3 +17,4 @@ public class NegateExpression(SourcePosition position, IExpression expression) :
         type = expression.GetResultType().GetNegativeResultType(position, compiler);
     }
 }
+

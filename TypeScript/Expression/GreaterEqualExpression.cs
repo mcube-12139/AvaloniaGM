@@ -3,11 +3,11 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class GreaterEqualExpression(SourcePosition position, IExpression left, IExpression right) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IExpression left = left;
     public readonly IExpression right = right;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IType GetResultType() => PrimitiveType.BOOLEAN;
 
@@ -16,3 +16,4 @@ public class GreaterEqualExpression(SourcePosition position, IExpression left, I
         left.GetResultType().EnsureCanGreaterEqual(right, position, compiler);
     }
 }
+

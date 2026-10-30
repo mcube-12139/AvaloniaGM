@@ -3,13 +3,13 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class IndexExpression(SourcePosition position, IExpression indexed, IExpression index) : IPlaceExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IExpression indexed = indexed;
     public readonly IExpression index = index;
 
     IType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IType GetResultType() => type!;
 
@@ -23,3 +23,4 @@ public class IndexExpression(SourcePosition position, IExpression indexed, IExpr
         type = indexed.GetResultType().GetIndexResultType(index, position, compiler);
     }
 }
+

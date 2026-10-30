@@ -7,7 +7,6 @@ namespace TypeScript.Expression;
 
 public class NewExpression(SourcePosition position, Path pathType, NewExpression.Field[] fields): IExpression {
     public class Field(SourcePosition position, string name, IExpression value) {
-        public readonly SourcePosition position = position;
         public readonly string name = name;
         public readonly IExpression value = value;
 
@@ -21,21 +20,18 @@ public class NewExpression(SourcePosition position, Path pathType, NewExpression
         internal void SetSemantic(ClassType type, Compiler compiler) {
             classField = type.InternalGetField(name, position);
             value.SetSemantic(classField.type, compiler);
+            value.SetTargetType(classField.type);
             valueType = value.GetResultType();
-
-            if (!TypeHelp.IsType(valueType, classField.type)) {
-                throw new SemanticException(SemanticErrorType.WRONG_TYPE, [valueType.GetAppearance(), classField.type.GetAppearance()], position);
-            }
         }
     }
 
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly Path pathType = pathType;
     public readonly Field[] fields = fields;
 
     ClassType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     IType IExpression.GetResultType() => type!;
 
@@ -45,7 +41,7 @@ public class NewExpression(SourcePosition position, Path pathType, NewExpression
         ((ITypeNode)pathType).SetSemantic(compiler);
         IType t = pathType.GetSelfType(compiler);
         if (t is not ClassType classType) {
-            throw new SemanticException(SemanticErrorType.NOT_CLASS, [t.GetAppearance()], pathType.position);
+            throw new SemanticException(SemanticErrorType.NOT_CLASS, [t.GetAppearance()], pathType.head.position);
         }
         type = classType;
 
@@ -57,3 +53,4 @@ public class NewExpression(SourcePosition position, Path pathType, NewExpression
         }
     }
 }
+

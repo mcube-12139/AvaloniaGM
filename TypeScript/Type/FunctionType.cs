@@ -94,11 +94,7 @@ public class FunctionType : IType {
             IExpression parameter = parameters[i];
             IType definedType = parameterTypes[i];
             parameter.SetSemantic(definedType, compiler);
-
-            IType parameterType = parameter.GetResultType();
-            if (!TypeHelp.IsType(parameterType, definedType)) {
-                throw new SemanticException(SemanticErrorType.WRONG_TYPE, [parameterType.GetAppearance(), definedType.GetAppearance()], position);
-            }
+            parameter.SetTargetType(definedType);
         }
     }
 

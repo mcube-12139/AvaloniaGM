@@ -3,11 +3,11 @@
 namespace TypeScript.Expression;
 
 public class IntegerExpression(SourcePosition position, string valueStr) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly string valueStr = valueStr;
     IType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         /*
@@ -29,3 +29,4 @@ public class IntegerExpression(SourcePosition position, string valueStr) : IExpr
 
     IType IExpression.GetResultType() => type!;
 }
+

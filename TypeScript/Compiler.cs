@@ -37,9 +37,10 @@ public class Compiler {
     IType? thisType;
     readonly Stack<FunctionContext> functionContexts = [];
     internal ThisParameterSymbol? thisParameterSymbol;
+    internal ThisTypeSymbol? thisTypeSymbol;
     IType resultType = TupleType.EMPTY;
     bool returned;
-    internal bool inInterface;
+    internal ConceptContext conceptContext = ConceptContext.NONE;
 
     public Compiler() {
         NameSpace space = new(null);
@@ -423,7 +424,13 @@ public class Compiler {
     }
 
     bool IsPathExpressionStart() {
-        return token is IdentifierToken || token == FixedToken.THIS || token == FixedToken.DOUBLE_COLON;
+        return IsPathSegmentStart() || token == FixedToken.DOUBLE_COLON;
+    }
+
+    bool IsPathSegmentStart() {
+        return token is IdentifierToken
+            || token == FixedToken.THIS
+            || token == FixedToken.UPPER_THIS;
     }
 
     IPathSegment ParsePathSegment() {
@@ -435,6 +442,9 @@ public class Compiler {
             NextToken();
         } else if (token == FixedToken.THIS) {
             result = new ThisSegment(position);
+            NextToken();
+        } else if (token == FixedToken.UPPER_THIS) {
+            result = new UpperThisSegment(position);
             NextToken();
         } else {
             throw TokenCannotBeHere();
@@ -491,11 +501,22 @@ public class Compiler {
 
             List<Path.Segment> segments = [];
             for (; ; ) {
-                segments.Add(ParseExpressionPathSegment());
+                SourcePosition segmentPosition = tokenPosition;
 
+                IPathSegment segment = ParsePathSegment();
                 if (token == FixedToken.DOUBLE_COLON) {
                     NextToken();
+                    if (IsGenericArgumentsStart()) {
+                        segments.Add(new(segmentPosition, segment, ParseGenericArguments()));
+                        if (token != FixedToken.DOUBLE_COLON) {
+                            break;
+                        }
+                        NextToken();
+                    } else {
+                        segments.Add(new(segmentPosition, segment, null));
+                    }
                 } else {
+                    segments.Add(new(segmentPosition, segment, null));
                     break;
                 }
             }
@@ -922,39 +943,6 @@ public class Compiler {
         return [.. result];
     }
 
-    Path.Segment ParseExpressionPathSegment() {
-        SourcePosition position = tokenPosition;
-
-        IPathSegment segment = ParsePathSegment();
-        IGenericArgumentNode[]? genericArguments;
-        if (token == FixedToken.DOUBLE_COLON) {
-            NextToken();
-            genericArguments = ParseGenericArguments();
-        } else {
-            genericArguments = null;
-        }
-
-        return new(position, segment, genericArguments);
-    }
-
-    Path.Segment ParseTypePathSegment() {
-        SourcePosition position = tokenPosition;
-
-        IPathSegment segment = ParsePathSegment();
-        IGenericArgumentNode[]? genericArguments;
-        if (token == FixedToken.DOUBLE_COLON) {
-            NextToken();
-            genericArguments = ParseGenericArguments();
-        } else if (IsGenericArgumentsStart()) {
-            // 类型路径的泛型实参可省略::
-            genericArguments = ParseGenericArguments();
-        } else {
-            genericArguments = null;
-        }
-
-        return new(position, segment, genericArguments);
-    }
-
     bool IsPathTypeStart() {
         return token == FixedToken.DOUBLE_COLON
             || token is IdentifierToken;
@@ -973,29 +961,38 @@ public class Compiler {
 
         List<Path.Segment> segments = [];
         for (; ; ) {
-            segments.Add(ParseTypePathSegment());
+            SourcePosition segmentPosition = tokenPosition;
 
+            IPathSegment segment = ParsePathSegment();
             if (token == FixedToken.DOUBLE_COLON) {
                 NextToken();
+                if (IsGenericArgumentsStart()) {
+                    segments.Add(new(segmentPosition, segment, ParseGenericArguments()));
+                    if (token != FixedToken.DOUBLE_COLON) {
+                        break;
+                    }
+                    NextToken();
+                } else {
+                    segments.Add(new(segmentPosition, segment, null));
+                }
+            } else if (IsGenericArgumentsStart()) {
+                // 类型路径可以省略泛型实参前的::
+                segments.Add(new(segmentPosition, segment, ParseGenericArguments()));
+                if (token != FixedToken.DOUBLE_COLON) {
+                    break;
+                }
+                NextToken();
             } else {
+                segments.Add(new(segmentPosition, segment, null));
                 break;
             }
         }
 
-        return new Path(position, [.. segments], fromTop);
+        return new(position, [.. segments], fromTop);
     }
 
     ITypeNode ParseType() {
-        SourcePosition position = tokenPosition;
-        ITypeNode result;
-
-        if (IsPathTypeStart()) {
-            result = ParsePathType();
-        } else {
-            throw TokenCannotBeHere();
-        }
-
-        return result;
+        return ParsePathType();
     }
 
     ClassItem.Field ParseClassField() {
@@ -1239,6 +1236,7 @@ public class Compiler {
     bool IsItemStart() {
         return IsFunctionStart()
             || token == FixedToken.CLASS
+            || token == FixedToken.CONCEPT
             || token == FixedToken.INTERFACE
             || token == FixedToken.NAMESPACE;
     }
@@ -1270,6 +1268,24 @@ public class Compiler {
             }
 
             result = new ClassItem(position, name, [.. fields]);
+        } else if (token == FixedToken.CONCEPT) {
+            NextToken();
+
+            string name = GetIdentifierNameAndNextToken();
+
+            AssertAndNextToken(FixedToken.LEFT_BRACE);
+            List<FunctionItem> functions = [];
+            for (; ; ) {
+                if (token == FixedToken.RIGHT_BRACE) {
+                    NextToken();
+                    break;
+                }
+
+                functions.Add(ParseFunction());
+            }
+
+            // TODO
+            return new ConceptItem(position, name, [], [], [], [.. functions]);
         } else if (token == FixedToken.INTERFACE) {
             NextToken();
 

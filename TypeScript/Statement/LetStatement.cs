@@ -2,6 +2,7 @@
 using TypeScript.Pattern;
 using TypeScript.TypeNode;
 using TypeScript.Type;
+using TypeScript.Item;
 
 namespace TypeScript.Statement;
 
@@ -14,7 +15,7 @@ public class LetStatement(SourcePosition position, IPattern pattern, ITypeNode? 
     SourcePosition IStatement.GetPosition() => position;
 
 
-    void IStatement.SetSemantic(Compiler compiler) {
+    void IItem.SetSemantic(Compiler compiler) {
         IType definedType;
 
         if (type == null) {

@@ -6,54 +6,72 @@ using TypeScript.TypeNode;
 
 namespace TypeScript;
 
-// implementations 既没有符号，又要在 Item 添加符号后、分析语义前改别人的符号（对应的类型），所以不是 Item。
-public class ImplNode(SourcePosition position, ITypeNode typeNode, Path? regardedTypeNode, FunctionItem[] functions) {
-    public readonly SourcePosition position = position;
-    public readonly ITypeNode typeNode = typeNode;
-    public readonly Path? regardedTypeNode = regardedTypeNode;
-    public readonly FunctionItem[] functions = functions;
+// implementations 既没有符号，又要在 Item 添加符号后、分析语义前改别人的符号（对应的类型），所以不能当作 Item 处理。
+public class ImplNode {
+    public readonly SourcePosition position;
+    public readonly ITypeNode typeNode;
+    public readonly Path? conceptNode;
+    public readonly FunctionItem[] functions;
 
     IType? implementedType;
-    IType? regardedType;
-    public FunctionSymbol[]? methodTable;
+    IConceptSymbol? conceptSymbol;
+    NameSpace? parameterSpace;
+
+    internal ImplNode(SourcePosition position, ITypeNode typeNode, Path? conceptNode, FunctionItem[] functions) {
+        this.position = position;
+        this.typeNode = typeNode;
+        this.conceptNode = conceptNode;
+        this.functions = functions;
+    }
 
     public IType GetImplementedType() => implementedType!;
-    public IType GetRegardedType() => regardedType!;
+    public IConceptSymbol? GetConceptSymbol() => conceptSymbol;
 
     internal void AddSymbol(Compiler compiler) {
         typeNode.SetSemantic(compiler);
         implementedType = typeNode.GetSelfType(compiler);
-
-        if (regardedTypeNode == null) {
-            implementedType.AddFunctions(functions, position, compiler);
+        if (conceptNode == null) {
+            foreach (FunctionItem funItem in functions) {
+                implementedType.AddInherentImpl(funItem.CreateSymbol(compiler), position);
+            }
         } else {
-            ((ITypeNode)regardedTypeNode).SetSemantic(compiler);
-            regardedType = regardedTypeNode.GetSelfType(compiler);
-            implementedType.AddImpl(regardedTypeNode.GetSymbol(), functions, position, compiler);
+            ((ITypeNode)conceptNode).SetSemantic(compiler);
+            conceptSymbol = conceptNode.GetSymbol().AsConcept(position);
+            implementedType.AddConceptImpl(conceptSymbol, functions.Select(funItem => funItem.CreateSymbol(compiler)), position);
+        }
+    }
+
+    void EnterParameterSpace(Compiler compiler) {
+        if (parameterSpace == null) {
+            parameterSpace = compiler.EnterNewNameSpace();
+        } else {
+            compiler.space = parameterSpace;
         }
     }
 
     internal void SetSemantic(Compiler compiler) {
-        compiler.EnterThisType(typeNode.GetSelfType(compiler));
+        EnterParameterSpace(compiler);
+        compiler.thisTypeSymbol = new(implementedType!);
+
         foreach (FunctionItem funItem in functions) {
             funItem.SetSemantic(compiler);
         }
 
-        if (regardedTypeNode != null) {
+        if (conceptSymbol != null) {
             // 检查是否实现了该概念
-            ISymbol symbol = regardedTypeNode.GetSymbol();
-            Dictionary<string, ConceptFunctionSymbol> conceptFunctions = symbol.GetConceptFunctions(position);
+            Dictionary<string, GenericFunctionSymbol> conceptFunctions = conceptSymbol.GetFunctions();
             HashSet<string> conceptFunctionNames = [.. conceptFunctions.Keys];
 
-            methodTable = new FunctionSymbol[functions.Length];
             foreach (FunctionItem funItem in functions) {
-                if (!conceptFunctions.TryGetValue(funItem.name, out ConceptFunctionSymbol? conceptFun)) {
-                    throw new SemanticException(SemanticErrorType.CONCEPT_FUNCTION_NOT_EXIST, [symbol.GetName(), funItem.name], funItem.position);
+                if (!conceptFunctions.TryGetValue(funItem.name, out GenericFunctionSymbol? conceptFun)) {
+                    throw new SemanticException(SemanticErrorType.CONCEPT_FUNCTION_NOT_EXIST, [conceptSymbol.GetName(), funItem.name], funItem.position);
                 }
 
-                FunctionSymbol funSymbol = funItem.GetSymbol();
-                conceptFun.EnsureSatisfySelf(funSymbol, funItem.position, compiler);
-                methodTable[conceptFun.index] = funSymbol;
+                if (funItem.symbol != null) {
+                    conceptFun.EnsureSatisfyConcept(funItem.symbol, funItem.position);
+                } else {
+                    throw new NotImplementedException();
+                }
 
                 conceptFunctionNames.Remove(funItem.name);
             }
@@ -62,8 +80,9 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, Path? regarde
                 throw new SemanticException(SemanticErrorType.CONCEPT_NOT_IMPLEMENTED, [string.Join(", ", conceptFunctionNames)], position);
             }
 
-            implementedType!.SetImplMethods(regardedType!, methodTable, position);
         }
-        compiler.LeaveThisType();
+
+        compiler.thisTypeSymbol = null;
+        compiler.LeaveNameSpace();
     }
 }

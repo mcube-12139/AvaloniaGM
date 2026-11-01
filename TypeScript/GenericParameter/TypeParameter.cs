@@ -25,7 +25,7 @@ public class TypeParameter: IGenericParameter {
         } else {
             typeBounds = [];
         }
-        symbol = new(name, new(typeBounds));
+        symbol = new(name, new(typeBounds, null));
         compiler.AddSymbol(name, symbol, position);
 
         return symbol;

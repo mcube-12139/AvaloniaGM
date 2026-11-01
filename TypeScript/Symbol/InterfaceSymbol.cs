@@ -17,4 +17,8 @@ public class InterfaceSymbol(string name, InterfaceItem item) : ITypeSymbol, ICo
     IType ITypeSymbol.GetSelfType() => type;
 
     IType ITypeSymbol.LazyGetSelfType(SourcePosition position, Compiler compiler) => type;
+
+    Dictionary<string, GenericFunctionSymbol> IConceptSymbol.GetFunctions() {
+        throw new NotImplementedException();
+    }
 }

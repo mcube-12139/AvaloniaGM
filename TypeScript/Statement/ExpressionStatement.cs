@@ -1,4 +1,5 @@
 ﻿using TypeScript.Expression;
+using TypeScript.Item;
 
 namespace TypeScript.Statement;
 
@@ -7,7 +8,7 @@ public class ExpressionStatement(IExpression expression): IStatement {
 
     SourcePosition IStatement.GetPosition() => expression.GetPosition();
 
-    void IStatement.SetSemantic(Compiler compiler) {
+    void IItem.SetSemantic(Compiler compiler) {
         expression.SetSemantic(null, compiler);
     }
 }

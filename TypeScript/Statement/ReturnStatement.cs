@@ -1,5 +1,6 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.Item;
 using TypeScript.Type;
 
 namespace TypeScript.Statement;
@@ -10,7 +11,7 @@ public class ReturnStatement(SourcePosition position, IExpression? value) : ISta
 
     SourcePosition IStatement.GetPosition() => position;
 
-    void IStatement.SetSemantic(Compiler compiler) {
+    void IItem.SetSemantic(Compiler compiler) {
         IType? targetType = compiler.GetResultType();
 
         if (value != null) {

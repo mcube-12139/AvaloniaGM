@@ -8,8 +8,9 @@ public class GenericType: IType {
 
     public IType? concreteType;
 
-    internal GenericType(IConceptSymbol[] bounds) {
+    internal GenericType(IConceptSymbol[] bounds, IType? concreteType) {
         this.bounds = bounds;
+        this.concreteType = concreteType;
     }
 
     public string GetAppearance() {

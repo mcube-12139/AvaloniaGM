@@ -19,7 +19,7 @@ public class ClassSymbol : ITypeSymbol {
 
     string ISymbol.GetName() => name;
 
-    NameSpace ISymbol.GetNameSpace(SourcePosition position) => type!.space;
+    NameSpace ISymbol.GetNameSpace(SourcePosition position) => ((IType)type!).GetNameSpace();
 
     IType ITypeSymbol.GetSelfType() => type!;
 

@@ -6,6 +6,7 @@ using TypeScript.Symbol;
 namespace TypeScript.Type;
 
 public class ClassType : IType {
+    readonly TypeHead head;
     public readonly string name;
     public readonly StructField[] fields;
 
@@ -15,11 +16,14 @@ public class ClassType : IType {
     readonly Dictionary<IType, FunctionSymbol[]?> implTypes = [];
 
     internal ClassType(string name, StructField[] fields) {
+        head = new();
         this.name = name;
         this.fields = fields;
 
         fieldDict = new(fields.Select(field => new KeyValuePair<string, StructField>(field.name, field)));
     }
+
+    TypeHead IType.GetHead() => head;
 
     public bool EqualType(IType other) {
         return other == this;

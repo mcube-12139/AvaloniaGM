@@ -1,6 +1,7 @@
-﻿namespace TypeScript.Statement;
+﻿using TypeScript.Item;
 
-public interface IStatement {
+namespace TypeScript.Statement;
+
+public interface IStatement: IItem {
     SourcePosition GetPosition();
-    internal void SetSemantic(Compiler compiler);
 }

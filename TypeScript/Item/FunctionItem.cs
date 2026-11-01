@@ -5,7 +5,6 @@ using TypeScript.Symbol;
 using TypeScript.TypeNode;
 using TypeScript.Type;
 using TypeScript.GenericParameter;
-using TypeScript.GenericArgument;
 
 namespace TypeScript.Item;
 
@@ -44,22 +43,29 @@ public class FunctionItem : IItem {
     }
 
     readonly bool method;
-    FunctionSymbol? symbol;
+    public FunctionSymbol? symbol;
     public GenericFunctionSymbol? genericSymbol;
     ConceptFunctionSymbol? conceptSymbol;
     bool typeResolved = false;
     bool conceptTypeResolved = false;
 
-    public FunctionSymbol GetSymbol() => symbol!;
-
     public bool IsGeneric() => genericParameters != null;
 
     void IItem.AddItemSymbol(Compiler compiler) {
         compiler.AddSymbol(name, CreateSymbol(compiler), position);
+        if (body != null) {
+            ((IItem)body).AddItemSymbol(compiler);
+        }
+    }
+
+    void IItem.AddImplSymbol(Compiler compiler) {
+        if (body != null) {
+            ((IItem)body).AddImplSymbol(compiler);
+        }
     }
 
     internal ISymbol CreateSymbol(Compiler compiler) {
-        if (compiler.inInterface) {
+        if (compiler.conceptContext == ConceptContext.INTERFACE) {
             // 接口函数必须有 this，且无额外泛型参数
             if (!method) {
                 throw new SemanticException(SemanticErrorType.MISSING_THIS, [], position);
@@ -67,14 +73,14 @@ public class FunctionItem : IItem {
             if (genericParameters != null) {
                 throw new SemanticException(SemanticErrorType.INVALID_GENERIC_PARAMETERS, [], position);
             }
-        } else {
+        } else if (compiler.conceptContext == ConceptContext.NONE) {
             // 非接口函数必须具体
             if (body == null && hostName == null) {
                 throw new SemanticException(SemanticErrorType.MISSING_FUNCTION_BODY, [], position);
             }
         }
 
-        if (genericParameters == null && !compiler.inInterface) {
+        if (genericParameters == null && compiler.conceptContext == ConceptContext.NONE) {
             symbol = new(name, null, compiler.space, method, this, hostName);
             return symbol;
         } else {

@@ -1,5 +1,6 @@
 ﻿using TypeScript.Expression;
 using TypeScript.FlowContext;
+using TypeScript.Item;
 
 namespace TypeScript.Statement;
 
@@ -11,7 +12,7 @@ public class IfStatement(SourcePosition position, IExpression condition, BlockSt
 
     SourcePosition IStatement.GetPosition() => position;
 
-    void IStatement.SetSemantic(Compiler compiler) {
+    void IItem.SetSemantic(Compiler compiler) {
         condition.SetSemantic(null, compiler);
 
         compiler.EnterFlow(new IfFlowContext());

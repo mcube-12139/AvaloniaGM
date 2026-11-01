@@ -48,19 +48,6 @@ public class GenericFunctionSymbol : IGenericSymbol {
         return result;
     }
 
-    /// <summary>
-    /// 代入泛型实参，穷举单态函数符号
-    /// </summary>
-    /// <returns></returns>
-    public IEnumerable<FunctionSymbol> SetGenericArgumentsAndIterateSymbol() {
-        foreach ((IGenericArgument[] arguments, FunctionSymbol funSymbol) in monomorphized) {
-            for (int i = 0; i != arguments.Length; ++i) {
-                parameterSymbols![i].SetArgumentOrThrow(arguments[i]);
-            }
-            yield return funSymbol;
-        }
-    }
-
     ISymbol IGenericSymbol.Monomorphize(IGenericArgument[] arguments, SourcePosition position, Compiler compiler) {
         Resolve(compiler);
         if (!monomorphized.TryGetValue(arguments, out FunctionSymbol? result)) {
@@ -93,5 +80,22 @@ public class GenericFunctionSymbol : IGenericSymbol {
             item!.ResolveType(compiler);
             compiler.PopNameSpace();
         }
+    }
+
+    /// <summary>
+    /// 代入泛型实参，穷举单态函数符号
+    /// </summary>
+    /// <returns></returns>
+    public IEnumerable<FunctionSymbol> SetGenericArgumentsAndIterateSymbol() {
+        foreach ((IGenericArgument[] arguments, FunctionSymbol funSymbol) in monomorphized) {
+            for (int i = 0; i != arguments.Length; ++i) {
+                parameterSymbols![i].SetArgumentOrThrow(arguments[i]);
+            }
+            yield return funSymbol;
+        }
+    }
+
+    internal void EnsureSatisfyConcept(FunctionSymbol fun, SourcePosition position) {
+        // TODO
     }
 }

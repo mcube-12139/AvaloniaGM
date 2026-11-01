@@ -8,6 +8,24 @@ using TypeScript.Symbol;
 namespace TypeScript.Type;
 
 public interface IType: IGenericArgument {
+    internal TypeHead GetHead() {
+        throw new NotImplementedException();
+    }
+    internal NameSpace GetNameSpace() => GetHead().space;
+    internal void AddInherentImpl(ISymbol symbol, SourcePosition position) {
+        TypeHead head = GetHead();
+        head.space.AddSymbol(symbol.GetName(), symbol, position);
+    }
+    internal void AddConceptImpl(IConceptSymbol conceptSymbol, IEnumerable<ISymbol> symbols, SourcePosition position) {
+        TypeHead head = GetHead();
+        NameSpace implSpace = new(null);
+        foreach (ISymbol symbol in symbols) {
+            head.space.AddSymbol(symbol.GetName(), symbol, position);
+            implSpace.AddSymbol(symbol.GetName(), symbol, position);
+        }
+        head.impls.Add(conceptSymbol, implSpace);
+    }
+
     IType IGenericArgument.AsType(SourcePosition position) => this;
 
     IType GetConcreteType() {

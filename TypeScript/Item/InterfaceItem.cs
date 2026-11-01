@@ -23,7 +23,7 @@ public class InterfaceItem : IItem {
         symbol = new InterfaceSymbol(name, this);
         compiler.AddSymbol(name, symbol, position);
 
-        compiler.inInterface = true;
+        compiler.conceptContext = ConceptContext.INTERFACE;
         NameSpace typeSpace = symbol.type.space;
         uint index = 0;
         foreach (FunctionItem funItem in functions) {
@@ -33,7 +33,7 @@ public class InterfaceItem : IItem {
 
             ++index;
         }
-        compiler.inInterface = false;
+        compiler.conceptContext = ConceptContext.NONE;
     }
 
     void IItem.SetSemantic(Compiler compiler) {

@@ -8,15 +8,33 @@ public class BlockStatement(SourcePosition position, IItem[] items, ImplNode[] i
     public readonly ImplNode[] impls = impls;
     public readonly IStatement[] statements = statements;
 
+    NameSpace? space;
+
     SourcePosition IStatement.GetPosition() => position;
 
-    internal void SetSemanticWithStart(Compiler compiler, Action? start) {
-        compiler.EnterNewNameSpace();
-        start?.Invoke();
+    void EnterNameSpace(Compiler compiler) {
+        if (space == null) {
+            space = compiler.EnterNewNameSpace();
+        } else {
+            compiler.space = space;
+        }
+    }
+
+    void IItem.AddItemSymbol(Compiler compiler) {
+        EnterNameSpace(compiler);
 
         foreach (IItem item in items) {
             item.AddItemSymbol(compiler);
         }
+        foreach (IStatement statement in statements) {
+            statement.AddItemSymbol(compiler);
+        }
+
+        compiler.LeaveNameSpace();
+    }
+
+    void IItem.AddImplSymbol(Compiler compiler) {
+        EnterNameSpace(compiler);
 
         foreach (IItem item in items) {
             item.AddImplSymbol(compiler);
@@ -24,6 +42,16 @@ public class BlockStatement(SourcePosition position, IItem[] items, ImplNode[] i
         foreach (ImplNode impl in impls) {
             impl.AddSymbol(compiler);
         }
+        foreach (IStatement statement in statements) {
+            statement.AddImplSymbol(compiler);
+        }
+
+        compiler.LeaveNameSpace();
+    }
+
+    internal void SetSemanticWithStart(Compiler compiler, Action? start) {
+        EnterNameSpace(compiler);
+        start?.Invoke();
 
         foreach (IItem item in items) {
             item.SetSemantic(compiler);
@@ -42,5 +70,5 @@ public class BlockStatement(SourcePosition position, IItem[] items, ImplNode[] i
         SetSemanticWithStart(compiler, null);
     }
 
-    void IStatement.SetSemantic(Compiler compiler) => SetSemantic(compiler);
+    void IItem.SetSemantic(Compiler compiler) => SetSemantic(compiler);
 }

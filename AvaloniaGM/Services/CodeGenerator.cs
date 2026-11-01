@@ -1838,7 +1838,7 @@ internal class CodeGenerator {
         }
 
         if (!funItem.IsGeneric()) {
-            GenerateFunctionInstance(funItem, funItem.GetSymbol());
+            GenerateFunctionInstance(funItem, funItem.symbol!);
         } else {
             // 生成单态化函数实例
             foreach (FunctionSymbol funSymbol in funItem.genericSymbol!.SetGenericArgumentsAndIterateSymbol()) {
@@ -1857,8 +1857,9 @@ internal class CodeGenerator {
                 // 无事发生，因为字段表是惰性添加的
                 break;
             }
-            case InterfaceItem: {
-                // 无事发生
+            case InterfaceItem:
+            case ConceptItem: {
+                // TODO：生成默认实现
                 break;
             }
             case NameSpaceItem nameSpaceItem: {
@@ -1876,6 +1877,7 @@ internal class CodeGenerator {
     }
 
     void GenerateImplStatic(ImplNode impl) {
+        /*
         if (impl.methodTable != null) {
             UndertaleVariable variable = GetGlobalVariable("methods", false);
 
@@ -1890,8 +1892,10 @@ internal class CodeGenerator {
                 Store(variable, VariableType.Array);
             }
 
-            methodsVariables.Add((impl.GetImplementedType(), impl.GetRegardedType()), variable);
+            throw new NotImplementedException();
+            // methodsVariables.Add((impl.GetImplementedType(), impl.GetRegardedType()), variable);
         }
+        */
     }
 
     void GenerateItemStatic(IItem item) {
@@ -1908,7 +1912,8 @@ internal class CodeGenerator {
                 break;
             }
             case ClassItem:
-            case InterfaceItem: {
+            case InterfaceItem:
+            case ConceptItem: {
                 // 无事发生
                 break;
             }

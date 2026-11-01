@@ -1,4 +1,6 @@
-﻿namespace TypeScript.Statement;
+﻿using TypeScript.Item;
+
+namespace TypeScript.Statement;
 
 public class ContinueStatement(SourcePosition position, string? label) : IStatement {
     public readonly SourcePosition position = position;
@@ -10,7 +12,7 @@ public class ContinueStatement(SourcePosition position, string? label) : IStatem
 
     public ILoopStatement GetLoop() => loop!;
 
-    void IStatement.SetSemantic(Compiler compiler) {
+    void IItem.SetSemantic(Compiler compiler) {
         loop = compiler.GetLoop(label, position);
     }
 }

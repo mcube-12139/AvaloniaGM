@@ -1,17 +1,18 @@
 ﻿using TypeScript.Field;
 using TypeScript.Item;
+using TypeScript.NameSpace;
 using TypeScript.Type;
 
 namespace TypeScript.Symbol;
 
 public class ClassSymbol : ITypeSymbol {
     public readonly string name;
-    internal readonly NameSpace itemSpace;
+    internal readonly SpaceState itemState;
     internal ClassItem item;
 
-    internal ClassSymbol(string name, NameSpace itemSpace, ClassItem item) {
+    internal ClassSymbol(string name, SpaceState itemState, ClassItem item) {
         this.name = name;
-        this.itemSpace = itemSpace;
+        this.itemState = itemState;
         this.item = item;
     }
 
@@ -19,15 +20,15 @@ public class ClassSymbol : ITypeSymbol {
 
     string ISymbol.GetName() => name;
 
-    NameSpace ISymbol.GetNameSpace(SourcePosition position) => ((IType)type!).GetNameSpace();
+    SymbolSpace ISymbol.GetNameSpace(SourcePosition position) => ((IType)type!).GetNameSpace();
 
     IType ITypeSymbol.GetSelfType() => type!;
 
     IType ITypeSymbol.LazyGetSelfType(SourcePosition position, Compiler compiler) {
         if (type == null) {
-            compiler.PushNameSpace(itemSpace);
+            compiler.PushSpaceState(itemState);
             StructField[] fields = item.ResolveFields(compiler);
-            compiler.PopNameSpace();
+            compiler.PopSpaceState();
 
             type = new(name, fields);
         }

@@ -1,4 +1,5 @@
 ﻿using TypeScript.Item;
+using TypeScript.NameSpace;
 
 namespace TypeScript.Statement;
 
@@ -8,20 +9,12 @@ public class BlockStatement(SourcePosition position, IItem[] items, ImplNode[] i
     public readonly ImplNode[] impls = impls;
     public readonly IStatement[] statements = statements;
 
-    NameSpace? space;
+    BlockSpace? space;
 
     SourcePosition IStatement.GetPosition() => position;
 
-    void EnterNameSpace(Compiler compiler) {
-        if (space == null) {
-            space = compiler.EnterNewNameSpace();
-        } else {
-            compiler.space = space;
-        }
-    }
-
     void IItem.AddItemSymbol(Compiler compiler) {
-        EnterNameSpace(compiler);
+        space = compiler.EnterOrNewBlockSpace(space);
 
         foreach (IItem item in items) {
             item.AddItemSymbol(compiler);
@@ -30,27 +23,27 @@ public class BlockStatement(SourcePosition position, IItem[] items, ImplNode[] i
             statement.AddItemSymbol(compiler);
         }
 
-        compiler.LeaveNameSpace();
+        compiler.LeaveBlockSpace();
     }
 
-    void IItem.AddImplSymbol(Compiler compiler) {
-        EnterNameSpace(compiler);
+    void IItem.AddImpl(Compiler compiler) {
+        space = compiler.EnterOrNewBlockSpace(space);
 
         foreach (IItem item in items) {
-            item.AddImplSymbol(compiler);
+            item.AddImpl(compiler);
         }
         foreach (ImplNode impl in impls) {
-            impl.AddSymbol(compiler);
+            impl.AddImpl(compiler);
         }
         foreach (IStatement statement in statements) {
-            statement.AddImplSymbol(compiler);
+            statement.AddImpl(compiler);
         }
 
-        compiler.LeaveNameSpace();
+        compiler.LeaveBlockSpace();
     }
 
     internal void SetSemanticWithStart(Compiler compiler, Action? start) {
-        EnterNameSpace(compiler);
+        space = compiler.EnterOrNewBlockSpace(space);
         start?.Invoke();
 
         foreach (IItem item in items) {
@@ -63,7 +56,7 @@ public class BlockStatement(SourcePosition position, IItem[] items, ImplNode[] i
             statement.SetSemantic(compiler);
         }
 
-        compiler.LeaveNameSpace();
+        compiler.LeaveBlockSpace();
     }
 
     internal void SetSemantic(Compiler compiler) {

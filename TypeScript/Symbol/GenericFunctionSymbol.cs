@@ -2,6 +2,7 @@
 using TypeScript.Expression;
 using TypeScript.GenericArgument;
 using TypeScript.Item;
+using TypeScript.NameSpace;
 using TypeScript.Type;
 
 namespace TypeScript.Symbol;
@@ -10,16 +11,16 @@ public class GenericFunctionSymbol : IGenericSymbol {
     public readonly Dictionary<IGenericArgument[], FunctionSymbol> monomorphized = [];
 
     public readonly string name;
-    internal readonly NameSpace itemSpace;
+    internal readonly SpaceState itemState;
     public readonly bool method;
     readonly FunctionItem? item;
 
     internal IGenericParameterSymbol[]? parameterSymbols;
     internal FunctionType? type;
 
-    internal GenericFunctionSymbol(string name, NameSpace itemSpace, bool method, FunctionItem? item) {
+    internal GenericFunctionSymbol(string name, SpaceState itemState, bool method, FunctionItem? item) {
         this.name = name;
-        this.itemSpace = itemSpace;
+        this.itemState = itemState;
         this.method = method;
         this.item = item;
     }
@@ -37,7 +38,7 @@ public class GenericFunctionSymbol : IGenericSymbol {
             result = new(
                 $"{name}_{string.Join('_', arguments.Select(argument => argument.GetAppearance()))}",
                 monomorphizedType,
-                itemSpace,
+                itemState,
                 method,
                 null,
                 null
@@ -63,7 +64,7 @@ public class GenericFunctionSymbol : IGenericSymbol {
             result = new(
                 $"{name}_{string.Join('_', arguments.Select(argument => argument.GetAppearance()))}",
                 monomorphizedType,
-                itemSpace,
+                itemState,
                 method,
                 null,
                 null
@@ -76,9 +77,9 @@ public class GenericFunctionSymbol : IGenericSymbol {
 
     void Resolve(Compiler compiler) {
         if (type == null) {
-            compiler.PushNameSpace(itemSpace);
+            compiler.PushSpaceState(itemState);
             item!.ResolveType(compiler);
-            compiler.PopNameSpace();
+            compiler.PopSpaceState();
         }
     }
 
@@ -93,9 +94,5 @@ public class GenericFunctionSymbol : IGenericSymbol {
             }
             yield return funSymbol;
         }
-    }
-
-    internal void EnsureSatisfyConcept(FunctionSymbol fun, SourcePosition position) {
-        // TODO
     }
 }

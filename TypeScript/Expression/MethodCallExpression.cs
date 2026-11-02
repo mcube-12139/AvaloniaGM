@@ -18,7 +18,8 @@ public class MethodCallExpression(SourcePosition position, IExpression callee, s
         callee.SetSemantic(null, compiler);
 
         type = callee.GetResultType()
-            .GetAssociatedSymbol(name, position)
+            .GetNameSpace()
+            .GetSymbol(name, position)
             .GetMethodCallResultType(parameters, position, compiler);
     }
 }

@@ -5,6 +5,7 @@ using TypeScript.FlowContext;
 using TypeScript.GenericArgumentNode;
 using TypeScript.GenericParameter;
 using TypeScript.Item;
+using TypeScript.NameSpace;
 using TypeScript.Parameter;
 using TypeScript.PathSegment;
 using TypeScript.Pattern;
@@ -28,22 +29,23 @@ public class Compiler {
     IToken token = FixedToken.END;
     readonly StringBuilder builder = new();
 
-    readonly Stack<NameSpace> spaces = [];
-    readonly NameSpace topSpace;
-    internal NameSpace space;
+    readonly Stack<SpaceState> spaceStates = [];
+    readonly SymbolSpace topSpace;
+    internal INameSpace space;
+    internal BlockSpace? blockSpace;
     readonly List<ILoopStatement> loops = [];
     readonly Stack<IFlowContext> flowContexts = [];
     readonly Stack<IType> thisTypes = [];
     IType? thisType;
     readonly Stack<FunctionContext> functionContexts = [];
     internal ThisParameterSymbol? thisParameterSymbol;
-    internal ThisTypeSymbol? thisTypeSymbol;
+    internal ITypeSymbol? thisTypeSymbol;
     IType resultType = TupleType.EMPTY;
     bool returned;
     internal ConceptContext conceptContext = ConceptContext.NONE;
 
     public Compiler() {
-        NameSpace space = new(null);
+        SymbolSpace space = new(null);
         topSpace = space;
         this.space = space;
     }
@@ -1349,7 +1351,7 @@ public class Compiler {
     }
 
     internal ISymbol GetSymbol(string name, SourcePosition position) {
-        for (NameSpace? space = this.space; space != null; space = space.upper) {
+        for (INameSpace? space = this.space; space != null; space = space.GetUpper()) {
             ISymbol? symbol = space.TryGetSymbol(name);
             if (symbol != null) {
                 return symbol;
@@ -1359,7 +1361,7 @@ public class Compiler {
         throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [name], position);
     }
 
-    internal NameSpace GetTopNameSpace() => topSpace;
+    internal SymbolSpace GetTopNameSpace() => topSpace;
 
     internal ILoopStatement GetLoop(string? label, SourcePosition position) {
         if (loops.Count == 0) {
@@ -1369,7 +1371,7 @@ public class Compiler {
         if (label == null) {
             return loops[^1];
         } else {
-            for (NameSpace? space = this.space; space != null; space = space.upper) {
+            for (BlockSpace? space = blockSpace; space != null; space = space.upperBlock) {
                 ILoopStatement? statement = space.TryGetLoop(label);
                 if (statement != null) {
                     return statement;
@@ -1380,29 +1382,70 @@ public class Compiler {
         }
     }
 
-    internal void PushNameSpace(NameSpace space) {
-        spaces.Push(this.space);
+    internal SpaceState GetSpaceState() => new(space, blockSpace);
+
+    internal void PushSpaceState(SpaceState state) {
+        spaceStates.Push(state);
+        space = state.space;
+        blockSpace = state.blockSpace;
+    }
+
+    internal void PopSpaceState() {
+        SpaceState state = spaceStates.Pop();
+        space = state.space;
+        blockSpace = state.blockSpace;
+    }
+
+    internal SymbolSpace EnterNewSymbolSpace() {
+        SymbolSpace space = new(this.space);
         this.space = space;
-    }
-
-    internal void PopNameSpace() {
-        space = spaces.Pop();
-    }
-
-    internal NameSpace EnterNewNameSpace() {
-        space = new(space);
 
         return space;
     }
 
+    internal BlockSpace EnterOrNewBlockSpace(BlockSpace? space) {
+        BlockSpace blockSpace;
+        if (space == null) {
+            blockSpace = new(this.space, this.blockSpace);
+        } else {
+            blockSpace = space;
+        }
+        this.space = blockSpace;
+        this.blockSpace = blockSpace;
+
+        return blockSpace;
+    }
+
+    /// <summary>
+    /// 参数是空则进入新建名字空间；否则进入参数指定的空间
+    /// </summary>
+    /// <param name="space"></param>
+    /// <returns></returns>
+    internal SymbolSpace EnterOrNewSymbolSpace(SymbolSpace? space) {
+        SymbolSpace symbolSpace;
+        if (space == null) {
+            symbolSpace = new(this.space);
+        } else {
+            symbolSpace = space;
+        }
+        this.space = symbolSpace;
+
+        return symbolSpace;
+    }
+
     internal void LeaveNameSpace() {
-        space = space.upper!;
+        space = space.GetUpper()!;
+    }
+
+    internal void LeaveBlockSpace() {
+        space = space.GetUpper()!;
+        blockSpace = blockSpace!.upperBlock;
     }
 
     internal void EnterLoop(string? label, ILoopStatement statement) {
         loops.Add(statement);
         if (label != null) {
-            space.AddLoop(label, statement);
+            blockSpace!.AddLoop(label, statement);
         }
     }
 

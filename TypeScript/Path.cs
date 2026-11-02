@@ -1,6 +1,7 @@
 ﻿using TypeScript.Expression;
 using TypeScript.GenericArgument;
 using TypeScript.GenericArgumentNode;
+using TypeScript.NameSpace;
 using TypeScript.PathSegment;
 using TypeScript.Symbol;
 using TypeScript.Type;
@@ -37,7 +38,7 @@ public class Path : IPlaceExpression, ITypeNode {
             return TryMonomorphize(segment.GetSymbol(compiler), compiler);
         }
 
-        internal ISymbol GetSymbolInNameSpace(NameSpace space, Compiler compiler) {
+        internal ISymbol GetSymbolInNameSpace(SymbolSpace space, Compiler compiler) {
             return TryMonomorphize(segment.GetSymbolInNameSpace(space), compiler);
         }
     }

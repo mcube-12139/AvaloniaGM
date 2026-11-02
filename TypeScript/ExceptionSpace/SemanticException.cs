@@ -34,7 +34,9 @@ public enum SemanticErrorType {
     MISSING_FUNCTION_BODY,
     MISSING_RESULT_EXPRESSION,
     CONCEPT_FUNCTION_NOT_EXIST,
-    NOT_SATISFY_CONCEPT_FUNCTION,
+    NOT_SATISFY_METHOD,
+    NOT_SATISFY_TYPE,
+    NOT_SATISFY_PARAMETER_COUNT,
     CONCEPT_NOT_IMPLEMENTED,
     GENERIC_PARAMETER_NOT_INFERRED,
 }
@@ -74,7 +76,9 @@ public class SemanticException(SemanticErrorType type, string[] parameters, Sour
         { SemanticErrorType.MISSING_FUNCTION_BODY, parameters => "缺少函数体" },
         { SemanticErrorType.MISSING_RESULT_EXPRESSION, parameters => "缺少结果式" },
         { SemanticErrorType.CONCEPT_FUNCTION_NOT_EXIST, parameters => $"概念 {parameters[0]} 没有函数 {parameters[1]}" },
-        { SemanticErrorType.NOT_SATISFY_CONCEPT_FUNCTION, parameters => $"该函数未实现概念函数 {parameters[0]}" },
+        { SemanticErrorType.NOT_SATISFY_METHOD, parameters => $"该函数不满足概念函数 {parameters[0]} 的方法性" },
+        { SemanticErrorType.NOT_SATISFY_TYPE, parameters => $"类型 {parameters[0]} 不满足概念函数的类型 {parameters[1]}" },
+        { SemanticErrorType.NOT_SATISFY_PARAMETER_COUNT, parameters => $"参数数量 {parameters[0]} 不满足概念函数的参数数量 {parameters[1]}" },
         { SemanticErrorType.CONCEPT_NOT_IMPLEMENTED, parameters => $"未实现概念项 {parameters[0]}" },
         { SemanticErrorType.GENERIC_PARAMETER_NOT_INFERRED, parameters => $"未推断出泛型参数 {parameters[0]}" },
     };

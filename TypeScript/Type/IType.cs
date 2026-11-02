@@ -3,6 +3,7 @@ using TypeScript.Expression;
 using TypeScript.Field;
 using TypeScript.GenericArgument;
 using TypeScript.Item;
+using TypeScript.NameSpace;
 using TypeScript.Symbol;
 
 namespace TypeScript.Type;
@@ -11,14 +12,14 @@ public interface IType: IGenericArgument {
     internal TypeHead GetHead() {
         throw new NotImplementedException();
     }
-    internal NameSpace GetNameSpace() => GetHead().space;
+    internal SymbolSpace GetNameSpace() => GetHead().space;
     internal void AddInherentImpl(ISymbol symbol, SourcePosition position) {
         TypeHead head = GetHead();
         head.space.AddSymbol(symbol.GetName(), symbol, position);
     }
     internal void AddConceptImpl(IConceptSymbol conceptSymbol, IEnumerable<ISymbol> symbols, SourcePosition position) {
         TypeHead head = GetHead();
-        NameSpace implSpace = new(null);
+        SymbolSpace implSpace = new(null);
         foreach (ISymbol symbol in symbols) {
             head.space.AddSymbol(symbol.GetName(), symbol, position);
             implSpace.AddSymbol(symbol.GetName(), symbol, position);
@@ -29,6 +30,14 @@ public interface IType: IGenericArgument {
     IType IGenericArgument.AsType(SourcePosition position) => this;
 
     IType GetConcreteType() {
+        return this;
+    }
+
+    /// <summary>
+    /// 如果是泛型且被代入，则返回代入类型；否则，返回自身。
+    /// </summary>
+    /// <returns></returns>
+    IType TryGetConcreteType() {
         return this;
     }
 
@@ -51,24 +60,12 @@ public interface IType: IGenericArgument {
         return other == this;
     }
 
-    void AddImpl(ISymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
-        throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
-    }
-
     void SetImplMethods(IType type, FunctionSymbol[] methods, SourcePosition position) {
-        throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
-    }
-
-    void AddFunctions(IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
         throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
     }
 
     FunctionType AsFunctionType(SourcePosition position, Compiler compiler) {
         throw new SemanticException(SemanticErrorType.NOT_CALLABLE, [GetAppearance()], position);
-    }
-
-    ISymbol GetAssociatedSymbol(string name, SourcePosition position) {
-        throw new SemanticException(SemanticErrorType.SYMBOL_NOT_EXIST, [GetAppearance(), name], position);
     }
 
     IField GetField(string name, SourcePosition position) {

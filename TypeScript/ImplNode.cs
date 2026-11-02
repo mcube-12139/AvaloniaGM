@@ -1,5 +1,6 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Item;
+using TypeScript.NameSpace;
 using TypeScript.Symbol;
 using TypeScript.Type;
 using TypeScript.TypeNode;
@@ -15,7 +16,7 @@ public class ImplNode {
 
     IType? implementedType;
     IConceptSymbol? conceptSymbol;
-    NameSpace? parameterSpace;
+    SymbolSpace? parameterSpace;
 
     internal ImplNode(SourcePosition position, ITypeNode typeNode, Path? conceptNode, FunctionItem[] functions) {
         this.position = position;
@@ -27,7 +28,7 @@ public class ImplNode {
     public IType GetImplementedType() => implementedType!;
     public IConceptSymbol? GetConceptSymbol() => conceptSymbol;
 
-    internal void AddSymbol(Compiler compiler) {
+    internal void AddImpl(Compiler compiler) {
         typeNode.SetSemantic(compiler);
         implementedType = typeNode.GetSelfType(compiler);
         if (conceptNode == null) {
@@ -41,17 +42,9 @@ public class ImplNode {
         }
     }
 
-    void EnterParameterSpace(Compiler compiler) {
-        if (parameterSpace == null) {
-            parameterSpace = compiler.EnterNewNameSpace();
-        } else {
-            compiler.space = parameterSpace;
-        }
-    }
-
     internal void SetSemantic(Compiler compiler) {
-        EnterParameterSpace(compiler);
-        compiler.thisTypeSymbol = new(implementedType!);
+        parameterSpace = compiler.EnterOrNewSymbolSpace(parameterSpace);
+        compiler.thisTypeSymbol = new ThisTypeSymbol(implementedType!);
 
         foreach (FunctionItem funItem in functions) {
             funItem.SetSemantic(compiler);
@@ -59,16 +52,18 @@ public class ImplNode {
 
         if (conceptSymbol != null) {
             // 检查是否实现了该概念
-            Dictionary<string, GenericFunctionSymbol> conceptFunctions = conceptSymbol.GetFunctions();
+            conceptSymbol.SetThisType(implementedType!, compiler);
+
+            Dictionary<string, ConceptFunction> conceptFunctions = conceptSymbol.GetFunctions(compiler);
             HashSet<string> conceptFunctionNames = [.. conceptFunctions.Keys];
 
             foreach (FunctionItem funItem in functions) {
-                if (!conceptFunctions.TryGetValue(funItem.name, out GenericFunctionSymbol? conceptFun)) {
+                if (!conceptFunctions.TryGetValue(funItem.name, out ConceptFunction? conceptFun)) {
                     throw new SemanticException(SemanticErrorType.CONCEPT_FUNCTION_NOT_EXIST, [conceptSymbol.GetName(), funItem.name], funItem.position);
                 }
 
                 if (funItem.symbol != null) {
-                    conceptFun.EnsureSatisfyConcept(funItem.symbol, funItem.position);
+                    conceptFun.EnsureSatisfy(funItem.symbol, funItem.position, compiler);
                 } else {
                     throw new NotImplementedException();
                 }

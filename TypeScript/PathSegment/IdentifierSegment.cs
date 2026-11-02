@@ -1,4 +1,5 @@
-﻿using TypeScript.Symbol;
+﻿using TypeScript.NameSpace;
+using TypeScript.Symbol;
 
 namespace TypeScript.PathSegment;
 
@@ -15,7 +16,7 @@ class IdentifierSegment: IPathSegment {
         return compiler.GetSymbol(name, position);
     }
 
-    ISymbol IPathSegment.GetSymbolInNameSpace(NameSpace space) {
+    ISymbol IPathSegment.GetSymbolInNameSpace(SymbolSpace space) {
         return space.GetSymbol(name, position);
     }
 }

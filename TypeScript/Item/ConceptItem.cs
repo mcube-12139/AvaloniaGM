@@ -34,20 +34,36 @@ public class ConceptItem : IItem {
     public ConceptSymbol GetSymbol() => symbol!;
     
     void IItem.AddItemSymbol(Compiler compiler) {
-        symbol = new ConceptSymbol(name, this);
+        symbol = new ConceptSymbol(name, compiler.GetSpaceState(), this);
         compiler.AddSymbol(name, symbol, position);
 
         compiler.conceptContext = ConceptContext.CONCEPT;
         foreach (FunctionItem funItem in functions) {
-            symbol.conceptFunctions.Add(funItem.name, (GenericFunctionSymbol)funItem.CreateSymbol(compiler));
+            symbol.conceptFunctions.Add(funItem.name, funItem.CreateConceptFunction(compiler));
         }
         compiler.conceptContext = ConceptContext.NONE;
     }
 
     void IItem.SetSemantic(Compiler compiler) {
-        compiler.thisTypeSymbol = new(new GenericType([symbol!], null));
+        if (!symbol!.resolved) {
+            symbol.resolved = true;
+            symbol.thisTypeSymbol = new(new GenericType([symbol!], null));
+        }
+
+        compiler.thisTypeSymbol = symbol.thisTypeSymbol;
         foreach (FunctionItem funItem in functions) {
-            funItem.SetConceptSemantic(compiler);
+            funItem.SetSemantic(compiler);
+        }
+        compiler.thisTypeSymbol = null;
+    }
+
+    internal void Resolve(Compiler compiler) {
+        symbol!.resolved = true;
+        symbol.thisTypeSymbol = new(new GenericType([symbol!], null));
+
+        compiler.thisTypeSymbol = symbol.thisTypeSymbol;
+        foreach (FunctionItem funItem in functions) {
+            funItem.ResolveType(compiler);
         }
         compiler.thisTypeSymbol = null;
     }

@@ -1,6 +1,7 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
 using TypeScript.Item;
+using TypeScript.NameSpace;
 using TypeScript.Type;
 
 namespace TypeScript.Symbol;
@@ -8,15 +9,15 @@ namespace TypeScript.Symbol;
 public class FunctionSymbol : IValueSymbol {
     public readonly string name;
     internal FunctionType? type;
-    internal readonly NameSpace itemSpace;
+    internal readonly SpaceState itemState;
     public readonly bool method;
     readonly FunctionItem? item;
     public readonly string? hostName;
 
-    internal FunctionSymbol(string name, FunctionType? type, NameSpace itemSpace, bool method, FunctionItem? item, string? hostName) {
+    internal FunctionSymbol(string name, FunctionType? type, SpaceState itemState, bool method, FunctionItem? item, string? hostName) {
         this.name = name;
         this.type = type;
-        this.itemSpace = itemSpace;
+        this.itemState = itemState;
         this.method = method;
         this.item = item;
         this.hostName = hostName;
@@ -29,9 +30,9 @@ public class FunctionSymbol : IValueSymbol {
     internal FunctionType LazyGetValueType(SourcePosition position, Compiler compiler) {
         // 不能调用 SetSemantic，会无限递归
         if (type == null) {
-            compiler.PushNameSpace(itemSpace);
+            compiler.PushSpaceState(itemState);
             item!.ResolveType(compiler);
-            compiler.PopNameSpace();
+            compiler.PopSpaceState();
         }
         return type!;
     }

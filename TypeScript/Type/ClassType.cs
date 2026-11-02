@@ -1,6 +1,7 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Field;
 using TypeScript.Item;
+using TypeScript.NameSpace;
 using TypeScript.Symbol;
 
 namespace TypeScript.Type;
@@ -11,8 +12,6 @@ public class ClassType : IType {
     public readonly StructField[] fields;
 
     readonly Dictionary<string, StructField> fieldDict;
-    internal readonly NameSpace space = new(null);
-    readonly List<ISymbol> implSymbols = [];
     readonly Dictionary<IType, FunctionSymbol[]?> implTypes = [];
 
     internal ClassType(string name, StructField[] fields) {
@@ -34,24 +33,7 @@ public class ClassType : IType {
 
     public string GetAppearance() => name;
 
-    public ISymbol GetSymbol(string name) => space.GetSymbolOrException(name);
-
-    void IType.AddFunctions(IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
-        foreach (FunctionItem funItem in functions) {
-            funItem.AddSymbolToSpace(space, compiler);
-        }
-    }
-
-    void IType.AddImpl(ISymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
-        implSymbols.Add(symbol);
-        if (symbol is InterfaceSymbol interfaceSymbol) {
-            implTypes.Add(interfaceSymbol.type, null);
-        }
-        
-        foreach (FunctionItem funItem in functions) {
-            funItem.AddSymbolToSpace(space, compiler);
-        }
-    }
+    public ISymbol GetSymbol(string name) => head.space.GetSymbolOrException(name);
 
     void IType.SetImplMethods(IType type, FunctionSymbol[] methods, SourcePosition position) {
         implTypes[type] = methods;
@@ -67,9 +49,5 @@ public class ClassType : IType {
 
     IField IType.GetField(string name, SourcePosition position) {
         return InternalGetField(name, position);
-    }
-
-    ISymbol IType.GetAssociatedSymbol(string name, SourcePosition position) {
-        return space.GetSymbol(name, position);
     }
 }

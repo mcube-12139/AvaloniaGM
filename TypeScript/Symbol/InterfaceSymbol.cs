@@ -8,17 +8,14 @@ public class InterfaceSymbol(string name, InterfaceItem item) : ITypeSymbol, ICo
     internal InterfaceItem item = item;
 
     internal InterfaceType type = new(name);
-    internal Dictionary<string, ConceptFunctionSymbol> conceptFunctions = [];
 
     string ISymbol.GetName() => name;
-
-    Dictionary<string, ConceptFunctionSymbol> ISymbol.GetConceptFunctions(SourcePosition position) => conceptFunctions;
 
     IType ITypeSymbol.GetSelfType() => type;
 
     IType ITypeSymbol.LazyGetSelfType(SourcePosition position, Compiler compiler) => type;
 
-    Dictionary<string, GenericFunctionSymbol> IConceptSymbol.GetFunctions() {
+    Dictionary<string, ConceptFunction> IConceptSymbol.GetFunctions(Compiler compiler) {
         throw new NotImplementedException();
     }
 }

@@ -1,6 +1,7 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
 using TypeScript.GenericArgument;
+using TypeScript.NameSpace;
 using TypeScript.Symbol;
 
 namespace TypeScript.Type;
@@ -8,9 +9,7 @@ namespace TypeScript.Type;
 public class InterfaceType : IType {
     public readonly string name;
 
-    internal readonly NameSpace space;
-
-    public ConceptFunctionSymbol GetConceptFunction(string name) => (ConceptFunctionSymbol)space.GetSymbolOrException(name);
+    internal readonly SymbolSpace space;
 
     internal InterfaceType(string name) {
         this.name = name;
@@ -19,10 +18,6 @@ public class InterfaceType : IType {
     }
 
     string IGenericArgument.GetAppearance() => name;
-
-    ISymbol IType.GetAssociatedSymbol(string name, SourcePosition position) {
-        return space.GetSymbol(name, position);
-    }
 
     void IType.EnsureCanAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);

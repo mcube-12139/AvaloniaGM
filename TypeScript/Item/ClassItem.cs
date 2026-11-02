@@ -31,7 +31,7 @@ public class ClassItem(SourcePosition position, string name, ClassItem.Field[] f
     public ClassSymbol GetSymbol() => symbol!;
     
     void IItem.AddItemSymbol(Compiler compiler) {
-        symbol = new ClassSymbol(name, compiler.space, this);
+        symbol = new ClassSymbol(name, compiler.GetSpaceState(), this);
         compiler.AddSymbol(name, symbol, position);
     }
 

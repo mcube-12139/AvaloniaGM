@@ -24,7 +24,7 @@ internal class CodeGenerator {
     readonly Dictionary<string, UndertaleVariable> selfVariables = [];
     // 因为存在泛型函数，一个 LocalSymbol 可能存在于多个 FunctionSymbol 中，不能单独作为键
     readonly Dictionary<(FunctionSymbol fun, LocalSymbol local), UndertaleVariable> localVariables = [];
-    readonly Dictionary<IValueSymbol, UndertaleVariable> variables = [];
+    readonly Dictionary<IValueSymbol, UndertaleVariable> parameterVariables = [];
     readonly HashSet<ClassType> classTypes = [];
     readonly Dictionary<StructField, short> fieldIndices = [];
     readonly Dictionary<FunctionSymbol, UserFunction> userFunctions = [];
@@ -477,13 +477,13 @@ internal class CodeGenerator {
     }
 
     UndertaleVariable AddParameterVariable(IValueSymbol symbol) {
-        if (!variables.TryGetValue(symbol, out UndertaleVariable? result)) {
+        if (!parameterVariables.TryGetValue(symbol, out UndertaleVariable? result)) {
             uint index = nextParameterIndex;
             ++nextParameterIndex;
 
             result = GetSelfVariable($"argument{index}", true);
 
-            variables.Add(symbol, result);
+            parameterVariables.Add(symbol, result);
         }
 
         return result;
@@ -555,7 +555,7 @@ internal class CodeGenerator {
                 break;
             }
             case ParameterSymbol parameterSymbol: {
-                UndertaleVariable variable = variables.GetValueOrDefault(parameterSymbol)!;
+                UndertaleVariable variable = parameterVariables.GetValueOrDefault(parameterSymbol)!;
                 Store(variable, VariableType.Normal);
                 break;
             }
@@ -579,12 +579,12 @@ internal class CodeGenerator {
                 break;
             }
             case ParameterSymbol parameterSymbol: {
-                UndertaleVariable variable = variables.GetValueOrDefault(parameterSymbol)!;
+                UndertaleVariable variable = parameterVariables.GetValueOrDefault(parameterSymbol)!;
                 Load(variable, VariableType.Normal);
                 break;
             }
             case ThisParameterSymbol thisParameterSymbol: {
-                UndertaleVariable variable = variables.GetValueOrDefault(thisParameterSymbol)!;
+                UndertaleVariable variable = parameterVariables.GetValueOrDefault(thisParameterSymbol)!;
                 Load(variable, VariableType.Normal);
                 break;
             }
@@ -808,6 +808,8 @@ internal class CodeGenerator {
             }
             case InterfaceType interfaceType: {
                 // interfaceObject.methods[methodIndex](interfaceObject.classObject, parameter0, parameter1...)
+                // TODO
+                /*
                 ConceptFunctionSymbol symbol = interfaceType.GetConceptFunction(name);
                 IType[] parameterTypes = symbol.GetParameterTypes();
                 for (int i = parameters.Length - 1; i != -1; --i) {
@@ -835,6 +837,7 @@ internal class CodeGenerator {
                 Load(methodsVariable, VariableType.Array);
 
                 CallBuiltin("script_execute", parameters.Length + 2);
+                */
                 break;
             }
             default:
@@ -1299,9 +1302,13 @@ internal class CodeGenerator {
 
     UndertaleVariable EvaluateExpressionToVariable(IExpression expression, string name) {
         switch (expression) {
-            case Path pathExpression: {
-                IValueSymbol symbol = (IValueSymbol)pathExpression.GetSymbol();
-                return variables[symbol];
+            case Path path: {
+                ISymbol symbol = path.GetSymbol();
+                return symbol switch {
+                    LocalSymbol localSymbol => localVariables[(nowFunction!, localSymbol)],
+                    ParameterSymbol parameterSymbol => parameterVariables[parameterSymbol],
+                    _ => throw new Exception("wtf"),
+                };
             }
             case ArrayExpression arrayExpression: {
                 UndertaleVariable variable = AddLocalVariable(name);
@@ -1954,7 +1961,7 @@ internal class CodeGenerator {
         stringIds.Clear();
         selfVariables.Clear();
         globalVariables.Clear();
-        variables.Clear();
+        parameterVariables.Clear();
         classTypes.Clear();
         fieldIndices.Clear();
         userFunctions.Clear();

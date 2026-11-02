@@ -1,4 +1,5 @@
-﻿using TypeScript.Symbol;
+﻿using TypeScript.NameSpace;
+using TypeScript.Symbol;
 
 namespace TypeScript.Item;
 
@@ -11,7 +12,7 @@ public class NameSpaceItem(SourcePosition position, string name, IItem[] items, 
     NameSpaceSymbol? symbol;
     
     void IItem.AddItemSymbol(Compiler compiler) {
-        NameSpace space = compiler.EnterNewNameSpace();
+        SymbolSpace space = compiler.EnterNewSymbolSpace();
         symbol = new NameSpaceSymbol(name, space);
 
         foreach (IItem item in items) {
@@ -22,14 +23,14 @@ public class NameSpaceItem(SourcePosition position, string name, IItem[] items, 
         compiler.AddSymbol(name, symbol, position);
     }
 
-    void IItem.AddImplSymbol(Compiler compiler) {
+    void IItem.AddImpl(Compiler compiler) {
         compiler.space = symbol!.space;
 
         foreach (IItem item in items) {
-            item.AddImplSymbol(compiler);
+            item.AddImpl(compiler);
         }
         foreach (ImplNode impl in impls) {
-            impl.AddSymbol(compiler);
+            impl.AddImpl(compiler);
         }
 
         compiler.LeaveNameSpace();

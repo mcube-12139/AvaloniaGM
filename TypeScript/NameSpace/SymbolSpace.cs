@@ -2,21 +2,26 @@
 using TypeScript.Statement;
 using TypeScript.Symbol;
 
-namespace TypeScript;
+namespace TypeScript.NameSpace;
 
-internal class NameSpace {
-    readonly internal NameSpace? upper;
+internal class SymbolSpace: INameSpace {
+    readonly internal INameSpace? upper;
     readonly Dictionary<string, ISymbol> symbols = [];
-    readonly Dictionary<string, ILoopStatement> loops = [];
 
-    internal NameSpace(NameSpace? upper) {
+    INameSpace? INameSpace.GetUpper() => upper;
+
+    internal SymbolSpace(INameSpace? upper) {
         this.upper = upper;
     }
 
     internal void Clear() {
         symbols.Clear();
-        loops.Clear();
     }
+
+    void INameSpace.AddSymbol(string name, ISymbol symbol, SourcePosition position) => AddSymbol(name, symbol, position);
+    ISymbol? INameSpace.TryGetSymbol(string name) => TryGetSymbol(name);
+    ISymbol INameSpace.GetSymbol(string name, SourcePosition position) => GetSymbol(name, position);
+    ISymbol INameSpace.GetSymbolOrException(string name) => GetSymbolOrException(name);
 
     internal void AddSymbol(string name, ISymbol symbol, SourcePosition position) {
         if (!symbols.TryAdd(name, symbol)) {
@@ -24,18 +29,8 @@ internal class NameSpace {
         }
     }
 
-    internal void AddLoop(string name, ILoopStatement statement) {
-        if (!loops.TryAdd(name, statement)) {
-            throw new SemanticException(SemanticErrorType.SYMBOL_EXIST, [name], statement.GetPosition());
-        }
-    }
-
     internal ISymbol? TryGetSymbol(string name) {
         return symbols.GetValueOrDefault(name) ?? null;
-    }
-
-    internal ILoopStatement? TryGetLoop(string name) {
-        return loops.GetValueOrDefault(name) ?? null;
     }
 
     internal ISymbol GetSymbol(string name, SourcePosition position) {

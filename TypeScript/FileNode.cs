@@ -14,10 +14,10 @@ public class FileNode(IItem[] items, ImplNode[] impls) {
 
     internal void AddImplSymbol(Compiler compiler) {
         foreach (IItem item in items) {
-            item.AddImplSymbol(compiler);
+            item.AddImpl(compiler);
         }
         foreach (ImplNode impl in impls) {
-            impl.AddSymbol(compiler);
+            impl.AddImpl(compiler);
         }
     }
 

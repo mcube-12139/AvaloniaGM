@@ -19,6 +19,8 @@ public class InterfaceItem : IItem {
     public InterfaceSymbol GetSymbol() => symbol!;
     
     void IItem.AddItemSymbol(Compiler compiler) {
+        // TODO
+        /*
         NameSpace space = compiler.space;
         symbol = new InterfaceSymbol(name, this);
         compiler.AddSymbol(name, symbol, position);
@@ -34,12 +36,13 @@ public class InterfaceItem : IItem {
             ++index;
         }
         compiler.conceptContext = ConceptContext.NONE;
+        */
     }
 
     void IItem.SetSemantic(Compiler compiler) {
         compiler.EnterThisType(symbol!.type);
         foreach (FunctionItem funItem in functions) {
-            funItem.SetConceptSemantic(compiler);
+            funItem.SetSemantic(compiler);
         }
         compiler.LeaveThisType();
     }

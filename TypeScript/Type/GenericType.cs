@@ -4,7 +4,7 @@ using TypeScript.Symbol;
 namespace TypeScript.Type;
 
 public class GenericType: IType {
-    IConceptSymbol[] bounds;
+    readonly IConceptSymbol[] bounds;
 
     public IType? concreteType;
 
@@ -14,10 +14,14 @@ public class GenericType: IType {
     }
 
     public string GetAppearance() {
-        return string.Join(" & ", bounds);
+        return concreteType?.GetAppearance() ?? string.Join(" & ", bounds.Select(concept => concept.GetName()));
     }
 
     IType IType.GetConcreteType() => concreteType!.GetConcreteType();
+
+    IType IType.TryGetConcreteType() {
+        return concreteType?.GetConcreteType() ?? this;
+    }
 
     void IType.InferGenericByArgument(IExpression argument, GenericInferContext context) {
         argument.SetSemantic(null, context.compiler);

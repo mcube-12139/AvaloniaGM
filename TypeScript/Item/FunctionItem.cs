@@ -5,6 +5,7 @@ using TypeScript.Symbol;
 using TypeScript.TypeNode;
 using TypeScript.Type;
 using TypeScript.GenericParameter;
+using TypeScript.NameSpace;
 
 namespace TypeScript.Item;
 
@@ -18,7 +19,12 @@ public class FunctionItem : IItem {
     public readonly BlockStatement? body;
     public readonly string? hostName;
 
-    NameSpace? parameterSpace;
+    SymbolSpace? parameterSpace;
+    readonly bool method;
+    public FunctionSymbol? symbol;
+    public GenericFunctionSymbol? genericSymbol;
+    ConceptFunction? conceptFun;
+    bool typeResolved = false;
 
     internal FunctionItem(
         SourcePosition position,
@@ -42,13 +48,6 @@ public class FunctionItem : IItem {
         method = thisParameter != null;
     }
 
-    readonly bool method;
-    public FunctionSymbol? symbol;
-    public GenericFunctionSymbol? genericSymbol;
-    ConceptFunctionSymbol? conceptSymbol;
-    bool typeResolved = false;
-    bool conceptTypeResolved = false;
-
     public bool IsGeneric() => genericParameters != null;
 
     void IItem.AddItemSymbol(Compiler compiler) {
@@ -58,9 +57,9 @@ public class FunctionItem : IItem {
         }
     }
 
-    void IItem.AddImplSymbol(Compiler compiler) {
+    void IItem.AddImpl(Compiler compiler) {
         if (body != null) {
-            ((IItem)body).AddImplSymbol(compiler);
+            ((IItem)body).AddImpl(compiler);
         }
     }
 
@@ -81,44 +80,38 @@ public class FunctionItem : IItem {
         }
 
         if (genericParameters == null && compiler.conceptContext == ConceptContext.NONE) {
-            symbol = new(name, null, compiler.space, method, this, hostName);
+            symbol = new(name, null, compiler.GetSpaceState(), method, this, hostName);
             return symbol;
         } else {
             // 接口函数或带泛型参数的是泛型函数
-            genericSymbol = new(name, compiler.space, method, this);
+            genericSymbol = new(name, compiler.GetSpaceState(), method, this);
             return genericSymbol;
         }
     }
 
-    internal void AddSymbolToSpace(NameSpace space, Compiler compiler) {
-        space.AddSymbol(name, CreateSymbol(compiler), position);
+    internal ConceptFunction CreateConceptFunction(Compiler compiler) {
+        conceptFun = new(name, method);
+        return conceptFun;
     }
 
-    internal ConceptFunctionSymbol CreateConceptSymbol(NameSpace space, uint index) {
-        conceptSymbol = new(name, space, method, index, this);
-        return conceptSymbol;
+    internal void AddSymbolToSpace(SymbolSpace space, Compiler compiler) {
+        space.AddSymbol(name, CreateSymbol(compiler), position);
     }
 
     void IItem.SetSemantic(Compiler compiler) => SetSemantic(compiler);
 
-    void EnterParameterSpace(Compiler compiler) {
-        if (parameterSpace == null) {
-            parameterSpace = compiler.EnterNewNameSpace();
-        } else {
-            compiler.space = parameterSpace;
-        }
-    }
-
     internal void SetSemantic(Compiler compiler) {
-        EnterParameterSpace(compiler);
+        parameterSpace = compiler.EnterOrNewSymbolSpace(parameterSpace);
         ResolveTypeInSpace(compiler);
 
         if (body != null) {
             IType resultType;
             if (symbol != null) {
                 resultType = symbol.type!.resultType;
+            } else if (genericSymbol != null) {
+                resultType = genericSymbol.type!.resultType;
             } else {
-                resultType = genericSymbol!.type!.resultType;
+                resultType = conceptFun!.resultType!;
             }
 
             compiler.EnterFunction(resultType);
@@ -139,10 +132,6 @@ public class FunctionItem : IItem {
         }
 
         compiler.LeaveNameSpace();
-    }
-
-    internal void SetConceptSemantic(Compiler compiler) {
-        // 无事发生
     }
 
     /// <summary>
@@ -177,8 +166,11 @@ public class FunctionItem : IItem {
 
             if (symbol != null) {
                 symbol.type = FunctionType.Instantiate(parameterTypes, resultType);
+            } else if (genericSymbol != null) {
+                genericSymbol.type = FunctionType.Instantiate(parameterTypes, resultType);
             } else {
-                genericSymbol!.type = FunctionType.Instantiate(parameterTypes, resultType);
+                conceptFun!.parameterTypes = parameterTypes;
+                conceptFun.resultType = resultType;
             }
 
             typeResolved = true;
@@ -186,24 +178,10 @@ public class FunctionItem : IItem {
     }
 
     internal void ResolveType(Compiler compiler) {
-        EnterParameterSpace(compiler);
+        parameterSpace = compiler.EnterOrNewSymbolSpace(parameterSpace);
 
         ResolveTypeInSpace(compiler);
 
         compiler.LeaveNameSpace();
-    }
-
-    internal void ResolveConceptType(Compiler compiler) {
-        if (!conceptTypeResolved) {
-            foreach (IParameter parameter in parameters) {
-                parameter.SetTypeSemantic(compiler);
-            }
-            resultNode?.SetSemantic(compiler);
-
-            conceptSymbol!.parameterTypes = [.. parameters.Select(parameter => parameter.GetParameterType())];
-            conceptSymbol!.resultType = resultNode?.GetSelfType(compiler) ?? TupleType.EMPTY;
-
-            conceptTypeResolved = true;
-        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using TypeScript.ExceptionSpace;
+using TypeScript.NameSpace;
 using TypeScript.Symbol;
 
 namespace TypeScript.PathSegment;
@@ -18,7 +19,7 @@ public class ThisSegment: IPathSegment {
         throw new SemanticException(SemanticErrorType.INVALID_THIS, [], position);
     }
 
-    ISymbol IPathSegment.GetSymbolInNameSpace(NameSpace space) {
+    ISymbol IPathSegment.GetSymbolInNameSpace(SymbolSpace space) {
         throw new SemanticException(SemanticErrorType.INVALID_THIS, [], position);
     }
 }

@@ -1,15 +1,17 @@
-﻿namespace TypeScript.Symbol;
+﻿using TypeScript.NameSpace;
+
+namespace TypeScript.Symbol;
 
 public class NameSpaceSymbol : ISymbol {
     public readonly string name;
-    internal readonly NameSpace space;
+    internal readonly SymbolSpace space;
 
-    internal NameSpaceSymbol(string name, NameSpace space) {
+    internal NameSpaceSymbol(string name, SymbolSpace space) {
         this.name = name;
         this.space = space;
     }
 
     string ISymbol.GetName() => name;
 
-    NameSpace ISymbol.GetNameSpace(SourcePosition position) => space;
+    SymbolSpace ISymbol.GetNameSpace(SourcePosition position) => space;
 }

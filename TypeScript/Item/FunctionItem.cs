@@ -52,14 +52,18 @@ public class FunctionItem : IItem {
 
     void IItem.AddItemSymbol(Compiler compiler) {
         compiler.AddSymbol(name, CreateSymbol(compiler), position);
+        parameterSpace = compiler.EnterOrNewSymbolSpace(parameterSpace);
         if (body != null) {
             ((IItem)body).AddItemSymbol(compiler);
         }
+        compiler.LeaveNameSpace();
     }
 
     void IItem.AddImpl(Compiler compiler) {
         if (body != null) {
+            parameterSpace = compiler.EnterOrNewSymbolSpace(parameterSpace);
             ((IItem)body).AddImpl(compiler);
+            compiler.LeaveNameSpace();
         }
     }
 
@@ -90,12 +94,10 @@ public class FunctionItem : IItem {
     }
 
     internal ConceptFunction CreateConceptFunction(Compiler compiler) {
+        parameterSpace = compiler.EnterOrNewSymbolSpace(parameterSpace);
         conceptFun = new(name, method);
+        compiler.LeaveNameSpace();
         return conceptFun;
-    }
-
-    internal void AddSymbolToSpace(SymbolSpace space, Compiler compiler) {
-        space.AddSymbol(name, CreateSymbol(compiler), position);
     }
 
     void IItem.SetSemantic(Compiler compiler) => SetSemantic(compiler);

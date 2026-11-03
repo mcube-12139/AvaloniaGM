@@ -66,7 +66,7 @@ public class Path : IPlaceExpression, ITypeNode {
 
     FunctionType IExpression.SetCallSemantic(IType? target, IExpression[] parameters, Compiler compiler) {
         ISymbol maybeGenericSymbol = FindSymbol(compiler);
-        IValueSymbol valueSymbol = maybeGenericSymbol.GetGenericOmittedCallSymbol(type, parameters, head.position, compiler);
+        IValueSymbol valueSymbol = maybeGenericSymbol.GetGenericOmittedCallSymbol(target, parameters, head.position, compiler);
         symbol = valueSymbol;
         FunctionType funType = valueSymbol.LazyGetValueType(head.position, compiler).AsFunctionType(head.position, compiler);
         type = funType;
@@ -76,7 +76,7 @@ public class Path : IPlaceExpression, ITypeNode {
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         symbol = FindSymbol(compiler);
-        IValueSymbol valueSymbol = symbol!.AsValue(head.position);
+        IValueSymbol valueSymbol = symbol.AsValue(head.position);
         type = valueSymbol.LazyGetValueType(head.position, compiler);
         valueSymbol.EnsureCanLoad(head.position);
     }

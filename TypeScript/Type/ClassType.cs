@@ -1,7 +1,5 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Field;
-using TypeScript.Item;
-using TypeScript.NameSpace;
 using TypeScript.Symbol;
 
 namespace TypeScript.Type;
@@ -24,9 +22,6 @@ public class ClassType : IType {
 
     TypeHead IType.GetHead() => head;
 
-    public bool EqualType(IType other) {
-        return other == this;
-    }
     bool IType.IsType(IType other) {
         return other == this || implTypes.ContainsKey(other);
     }
@@ -35,11 +30,7 @@ public class ClassType : IType {
 
     public ISymbol GetSymbol(string name) => head.space.GetSymbolOrException(name);
 
-    void IType.SetImplMethods(IType type, FunctionSymbol[] methods, SourcePosition position) {
-        implTypes[type] = methods;
-    }
-
-    internal StructField InternalGetField(string name, SourcePosition position) {
+    internal StructField GetField(string name, SourcePosition position) {
         if (fieldDict.TryGetValue(name, out StructField? result)) {
             return result;
         }
@@ -47,7 +38,5 @@ public class ClassType : IType {
         throw new SemanticException(SemanticErrorType.FIELD_NOT_EXIST, [GetAppearance(), name], position);
     }
 
-    IField IType.GetField(string name, SourcePosition position) {
-        return InternalGetField(name, position);
-    }
+    IField IType.GetField(string name, SourcePosition position) => GetField(name, position);
 }

@@ -615,6 +615,11 @@ internal class CodeGenerator {
 
     void CallSymbol(IValueSymbol valueSymbol, int parameterCount) {
         switch (valueSymbol) {
+            case ConceptFunctionSymbol conceptFunctionSymbol: {
+                var concreteFunSymbol = (IValueSymbol)conceptFunctionSymbol.genericType.concreteType!.GetImplSymbol(conceptFunctionSymbol.conceptSymbol, conceptFunctionSymbol.name);
+                CallSymbol(concreteFunSymbol, parameterCount);
+                break;
+            }
             case FunctionSymbol functionSymbol: {
                 UndertaleFunction fun;
                 if (functionSymbol.hostName != null) {

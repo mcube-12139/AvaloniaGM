@@ -2,7 +2,6 @@
 using TypeScript.Expression;
 using TypeScript.Field;
 using TypeScript.GenericArgument;
-using TypeScript.Item;
 using TypeScript.NameSpace;
 using TypeScript.Symbol;
 
@@ -25,6 +24,9 @@ public interface IType: IGenericArgument {
             implSpace.AddSymbol(symbol.GetName(), symbol, position);
         }
         head.impls.Add(conceptSymbol, implSpace);
+    }
+    ISymbol GetImplSymbol(IConceptSymbol conceptSymbol, string name) {
+        return GetHead().impls[conceptSymbol].GetSymbolOrException(name);
     }
 
     IType IGenericArgument.AsType(SourcePosition position) => this;
@@ -58,10 +60,6 @@ public interface IType: IGenericArgument {
 
     bool IsType(IType other) {
         return other == this;
-    }
-
-    void SetImplMethods(IType type, FunctionSymbol[] methods, SourcePosition position) {
-        throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
     }
 
     FunctionType AsFunctionType(SourcePosition position, Compiler compiler) {

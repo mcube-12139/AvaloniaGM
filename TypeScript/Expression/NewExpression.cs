@@ -18,7 +18,7 @@ public class NewExpression(SourcePosition position, Path pathType, NewExpression
         public IType GetValueType() => valueType!;
 
         internal void SetSemantic(ClassType type, Compiler compiler) {
-            classField = type.InternalGetField(name, position);
+            classField = type.GetField(name, position);
             value.SetSemantic(classField.type, compiler);
             value.SetTargetType(classField.type);
             valueType = value.GetResultType();

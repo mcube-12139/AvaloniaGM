@@ -46,8 +46,7 @@ public class ConceptItem : IItem {
 
     void IItem.SetSemantic(Compiler compiler) {
         if (!symbol!.resolved) {
-            symbol.resolved = true;
-            symbol.thisTypeSymbol = new(new GenericType([symbol!], null));
+            Resolve(compiler);
         }
 
         compiler.thisTypeSymbol = symbol.thisTypeSymbol;
@@ -59,12 +58,15 @@ public class ConceptItem : IItem {
 
     internal void Resolve(Compiler compiler) {
         symbol!.resolved = true;
-        symbol.thisTypeSymbol = new(new GenericType([symbol!], null));
+        var unresolved = GenericType.Unresolved([symbol!]);
+        symbol.thisTypeSymbol = new(unresolved);
 
         compiler.thisTypeSymbol = symbol.thisTypeSymbol;
         foreach (FunctionItem funItem in functions) {
             funItem.ResolveType(compiler);
         }
         compiler.thisTypeSymbol = null;
+
+        unresolved.ResolveBounds(position, compiler);
     }
 }

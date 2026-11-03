@@ -1,4 +1,5 @@
 ﻿using TypeScript.Symbol;
+using TypeScript.Type;
 using TypeScript.TypeNode;
 
 namespace TypeScript.GenericParameter;
@@ -21,11 +22,14 @@ public class TypeParameter: IGenericParameter {
     IGenericParameterSymbol IGenericParameter.AddSymbol(Compiler compiler) {
         IConceptSymbol[] typeBounds;
         if (bounds != null) {
+            foreach (Path bound in bounds) {
+                ((ITypeNode)bound).SetSemantic(compiler);
+            }
             typeBounds = [.. bounds.Select(bound => bound.GetSymbol().AsConcept(position))];
         } else {
             typeBounds = [];
         }
-        symbol = new(name, new(typeBounds, null));
+        symbol = new(name, GenericType.WithBounds(typeBounds, position, compiler));
         compiler.AddSymbol(name, symbol, position);
 
         return symbol;

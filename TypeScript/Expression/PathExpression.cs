@@ -1,4 +1,4 @@
-﻿using TypeScript.ExceptionSpace;
+﻿using TypeScript.GenerateContext;
 using TypeScript.PathSegment;
 using TypeScript.Symbol;
 using TypeScript.Type;
@@ -42,5 +42,10 @@ public class PathExpression(SourcePosition position, IPathSegment[] segments, bo
     void IPlaceExpression.SetAssignSemantic(Compiler compiler) {
         SetSymbolAndType(compiler);
         symbol!.Store(position, compiler);
+    }
+
+    void IExpression.GenerateCall(CallExpression call, StatementContext context) {
+        call.GenerateParameters(context);
+        symbol!.GenerateCall(call, context);
     }
 }

@@ -1,4 +1,5 @@
-﻿using TypeScript.Type;
+﻿using TypeScript.GenerateContext;
+using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
@@ -29,4 +30,14 @@ public class CallExpression: IExpression {
     }
 
     IType IExpression.GetResultType() => type!;
+
+    internal void GenerateParameters(StatementContext context) {
+        foreach (IExpression parameter in parameters) {
+            parameter.Generate(context);
+        }
+    }
+
+    void IExpression.Generate(StatementContext context) {
+        callee.GenerateCall(this, context);
+    }
 }

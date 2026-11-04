@@ -7,6 +7,7 @@ using TypeScript.Type;
 using TypeScript.GenerateContext;
 using TypeScript.Intermediate.FunctionBody;
 using TypeScript.Intermediate;
+using System.Collections.Immutable;
 
 namespace TypeScript.Item;
 
@@ -63,6 +64,9 @@ public class FunctionItem(
     internal void SetSemantic(Compiler compiler) {
         if (body != null) {
             FunctionType funType = ResolveType(compiler);
+            if (symbol!.type == null) {
+                symbol.type = funType;
+            }
 
             IType resultType = funType.resultType;
 
@@ -126,15 +130,26 @@ public class FunctionItem(
     }
 
     void IItem.Generate(IItemContext context) {
+        ParameterContext parameterContext = new();
+        foreach (IParameter parameter in parameters) {
+            parameter.Generate(parameterContext);
+        }
+        ImmutableArray<Intermediate.Parameter> interParameters = [.. parameterContext.GetParameters()];
+
+        Intermediate.Type.IType interResultType = symbol!.type!.resultType.ToIntermediate();
+
+        Function result;
         if (hostName != null) {
-            context.AddFunction(new(name, new HostBody(hostName)));
+            result = new(name, interParameters, interResultType, new HostBody(hostName));
         } else {
             StatementContext statementContext = new();
             ((IStatement)body!).Generate(statementContext);
-            context.AddFunction(new(name, new GuestBody(statementContext.GetInstructions())));
+            result = new(name, interParameters, interResultType, new GuestBody(statementContext.GetInstructions()));
             foreach (Function fun in statementContext.GetFunctions()) {
                 context.AddFunction(fun);
             }
         }
+        context.AddFunction(result);
+        symbol!.ResolveInterFunction(result);
     }
 }

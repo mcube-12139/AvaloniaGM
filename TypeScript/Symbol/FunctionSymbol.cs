@@ -1,5 +1,8 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.GenerateContext;
+using TypeScript.Intermediate;
+using TypeScript.Intermediate.Instruction;
 using TypeScript.Item;
 using TypeScript.Type;
 
@@ -13,6 +16,9 @@ public class FunctionSymbol : IValueSymbol {
     public readonly string? hostName;
 
     internal FunctionType? type;
+
+    readonly List<CallInstruction> promises = [];
+    Function? intermediateFun;
 
     internal FunctionSymbol(string name, NameSpace itemSpace, bool method, FunctionItem? item, string? hostName) {
         this.name = name;
@@ -56,5 +62,20 @@ public class FunctionSymbol : IValueSymbol {
 
     void IValueSymbol.EnsureCanLoad(SourcePosition position) {
         // 无事发生
+    }
+
+    internal void ResolveInterFunction(Function fun) {
+        intermediateFun = fun;
+        foreach (CallInstruction instruction in promises) {
+            instruction.fun = fun;
+        }
+    }
+
+    void IValueSymbol.GenerateCall(CallExpression call, StatementContext context) {
+        CallInstruction instruction = new(intermediateFun);
+        if (intermediateFun == null) {
+            promises.Add(instruction);
+        }
+        context.AddInstruction(instruction, call.position);
     }
 }

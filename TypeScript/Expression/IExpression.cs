@@ -12,4 +12,5 @@ public interface IExpression {
         throw new SemanticException(SemanticErrorType.NOT_PLACE, [], GetPosition());
     }
     internal void Generate(StatementContext context) => throw new NotImplementedException();
+    internal void GenerateCall(CallExpression call, StatementContext context) => throw new NotImplementedException();
 }

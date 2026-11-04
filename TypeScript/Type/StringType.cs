@@ -14,6 +14,10 @@ public class StringType : IType {
         return other == this;
     }
 
+    Intermediate.Type.IType IType.ToIntermediate() {
+        return Intermediate.Type.PrimitiveType.STRING;
+    }
+
     IField IType.GetField(string name, SourcePosition position) {
         if (fields.TryGetValue(name, out IField? result)) {
             return result;

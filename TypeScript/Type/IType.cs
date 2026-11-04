@@ -12,6 +12,7 @@ public interface IType {
     bool IsType(IType other) {
         return EqualType(other);
     }
+    internal Intermediate.Type.IType ToIntermediate() => throw new NotImplementedException();
 
     void AddImpl(ISymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
         throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);

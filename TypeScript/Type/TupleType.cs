@@ -26,4 +26,8 @@ public class TupleType(IType[] elementTypes): IType {
 
         return true;
     }
+
+    Intermediate.Type.IType IType.ToIntermediate() {
+        return Intermediate.Type.TupleType.Instantiate([.. elementTypes.Select(type => type.ToIntermediate())]);
+    }
 }

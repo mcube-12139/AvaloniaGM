@@ -17,7 +17,7 @@ public class ExpressionStatement(IExpression expression): IStatement {
     void IStatement.Generate(StatementContext context) {
         expression.Generate(context);
         if (expression.GetResultType() != TupleType.EMPTY) {
-            context.AddInstruction(StaticInstruction.POP, expression.GetPosition());
+            context.AddInstruction(new PopInstruction(expression.GetResultType().ToIntermediate()), expression.GetPosition());
         }
     }
 }

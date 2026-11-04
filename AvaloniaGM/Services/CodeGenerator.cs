@@ -2,14 +2,15 @@
 using System;
 using System.Collections.Generic;
 using TypeScript;
+using TypeScript.Expression;
 using TypeScript.Field;
 using TypeScript.Intermediate;
 using TypeScript.Intermediate.FunctionBody;
 using TypeScript.Intermediate.Instruction;
+using TypeScript.Intermediate.Type;
 using TypeScript.Item;
 using TypeScript.Statement;
 using TypeScript.Symbol;
-using TypeScript.Type;
 using UndertaleModLib;
 using UndertaleModLib.Models;
 using static UndertaleModLib.Models.UndertaleInstruction;
@@ -19,12 +20,10 @@ namespace AvaloniaGM.Services;
 internal class CodeGenerator {
     readonly Dictionary<string, UndertaleCode> funCodes = [];
     UndertaleData? data;
-    readonly Dictionary<(IType, IType), UndertaleVariable> methodsVariables = [];
     readonly Dictionary<string, int> stringIds = [];
     readonly Dictionary<string, UndertaleVariable> globalVariables = [];
     readonly Dictionary<string, UndertaleVariable> selfVariables = [];
     readonly Dictionary<IValueSymbol, UndertaleVariable> variables = [];
-    readonly HashSet<ClassType> classTypes = [];
     readonly Dictionary<StructField, short> fieldIndices = [];
     readonly Dictionary<Function, UserFunction> userFunctions = [];
     uint nextFunctionIndex = 0;
@@ -38,6 +37,47 @@ internal class CodeGenerator {
     uint nextGlobalIndex = 0;
     UndertaleCodeLocals? codeLocals;
     readonly Dictionary<ILoopStatement, LoopContext> loopContexts = [];
+
+    void Convert(DataType target) {
+        DataType source = types.Pop();
+
+        if (source != target) {
+            instructions.Add(new() {
+                Kind = Opcode.Conv,
+                Type1 = source,
+                Type2 = target
+            });
+            byteCount += 4;
+        }
+
+        types.Push(target);
+    }
+
+    void Call(UndertaleFunction fun, int parameterCount) {
+        if (parameterCount == 1) {
+            Convert(DataType.Variable);
+        } else {
+            throw new NotImplementedException();
+        }
+
+        for (int i = parameterCount; i != 0; --i) {
+            types.Pop();
+        }
+
+        instructions.Add(new() {
+            Kind = Opcode.Call,
+            Type1 = DataType.Int32,
+            ArgumentsCount = (ushort)parameterCount,
+            ValueFunction = fun
+        });
+        byteCount += 8;
+
+        types.Push(DataType.Variable);
+    }
+
+    void CallBuiltin(string name, int parameterCount) {
+        Call(data!.Functions.EnsureDefined(name, data.Strings), parameterCount);
+    }
 
     void PopUnused() {
         DataType type = types.Pop();
@@ -78,6 +118,21 @@ internal class CodeGenerator {
         types.Push(DataType.Int32);
     }
 
+    (UndertaleString gameString, int id) GetString(string value) {
+        UndertaleString gameString;
+
+        if (!stringIds.TryGetValue(value, out int id)) {
+            gameString = new(value);
+            id = data!.Strings.Count;
+            stringIds.Add(value, id);
+            data.Strings.Add(gameString);
+        } else {
+            gameString = data!.Strings[id];
+        }
+
+        return (gameString, id);
+    }
+
     internal void Generate(UndertaleData data, TypeScript.Intermediate.Program program, Dictionary<string, UndertaleCode> funCodes) {
         this.data = data;
         foreach ((string name, UndertaleCode code) in funCodes) {
@@ -86,6 +141,9 @@ internal class CodeGenerator {
 
         foreach (Function fun in program.functions) {
             switch (fun.body) {
+                case HostBody:
+                    // 无事发生
+                    break;
                 case GuestBody guest: {
                     UndertaleCode? code = funCodes.GetValueOrDefault(fun.name);
                     if (code == null) {
@@ -112,8 +170,34 @@ internal class CodeGenerator {
 
                     foreach (IInstruction instruction in guest.instructions) {
                         switch (instruction) {
+                            case CallInstruction call: {
+                                if (call.fun!.body is HostBody host) {
+                                    CallBuiltin(host.hostName, call.fun.parameters.Length);
+                                } else {
+                                    Call(userFunctions[call.fun].fun, call.fun.parameters.Length);
+                                }
+                                if (call.fun.resultType == TupleType.EMPTY) {
+                                    // fuck Game Maker
+                                    // 无法实现返回零大小类型的函数，函数只能返回 variable，所以对()特殊处理。
+                                    PopUnused();
+                                }
+                                break;
+                            }
                             case ConstIntInstruction constInt: {
                                 PushInt(constInt.value);
+                                break;
+                            }
+                            case ConstStringInstruction constString: {
+                                (UndertaleString gameString, int id) = GetString(constString.value);
+
+                                instructions.Add(new() {
+                                    Kind = Opcode.Push,
+                                    Type1 = DataType.String,
+                                    ValueString = new UndertaleResourceById<UndertaleString, UndertaleChunkSTRG>(gameString, id)
+                                });
+                                byteCount += 8;
+
+                                types.Push(DataType.String);
                                 break;
                             }
                             case PopInstruction: {
@@ -144,7 +228,6 @@ internal class CodeGenerator {
         selfVariables.Clear();
         globalVariables.Clear();
         variables.Clear();
-        classTypes.Clear();
         fieldIndices.Clear();
         userFunctions.Clear();
     }

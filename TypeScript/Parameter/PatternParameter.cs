@@ -1,4 +1,5 @@
-﻿using TypeScript.Pattern;
+﻿using TypeScript.GenerateContext;
+using TypeScript.Pattern;
 using TypeScript.Type;
 using TypeScript.TypeNode;
 
@@ -20,5 +21,9 @@ public class PatternParameter(SourcePosition position, IPattern pattern, ITypeNo
 
     void IParameter.AddSymbol(Compiler compiler) {
         pattern.AddParameter(type!, compiler);
+    }
+
+    void IParameter.Generate(ParameterContext context) {
+        pattern.GenerateParameter(type!, context);
     }
 }

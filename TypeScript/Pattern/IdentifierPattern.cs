@@ -1,4 +1,5 @@
-﻿using TypeScript.Symbol;
+﻿using TypeScript.GenerateContext;
+using TypeScript.Symbol;
 using TypeScript.Type;
 
 namespace TypeScript.Pattern;
@@ -18,5 +19,9 @@ public class IdentifierPattern(SourcePosition position, string name) : IPattern 
     void IPattern.AddParameter(IType type, Compiler compiler) {
         symbol = new ParameterSymbol(name, type);
         compiler.AddSymbol(name, symbol, position);
+    }
+
+    void IPattern.GenerateParameter(IType type, ParameterContext context) {
+        context.AddParameter(new(name, type.ToIntermediate()));
     }
 }

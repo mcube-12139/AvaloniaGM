@@ -10,6 +10,10 @@ public class IntegerType : IType {
         return other == this;
     }
 
+    Intermediate.Type.IType IType.ToIntermediate() {
+        return Intermediate.Type.PrimitiveType.INTEGER;
+    }
+
     IType IType.GetNegativeResultType(SourcePosition position, Compiler compiler) {
         return this;
     }

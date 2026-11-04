@@ -136,9 +136,9 @@ public class DataWinSerializer
             }
         }
         Compiler compiler = new();
-        FileNode[] nodes = compiler.Compile(files);
+        TypeScript.Intermediate.Program program = compiler.Compile(files);
 
-        new CodeGenerator().Generate(data, nodes, funCodes);
+        new CodeGenerator().Generate(data, program, funCodes);
 
         UpdateGeneralInfoCounters(data);
         return data;

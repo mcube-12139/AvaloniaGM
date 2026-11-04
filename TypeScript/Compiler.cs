@@ -2,6 +2,8 @@
 using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
 using TypeScript.FlowContext;
+using TypeScript.GenerateContext;
+using TypeScript.Intermediate;
 using TypeScript.Item;
 using TypeScript.Parameter;
 using TypeScript.PathSegment;
@@ -1359,7 +1361,7 @@ public class Compiler {
 
     internal IType GetResultType() => resultType;
 
-    public FileNode[] Compile(ICollection<(string name, string content)> files) {
+    public Program Compile(ICollection<(string name, string content)> files) {
         this.files.AddRange(files);
 
         space.AddSymbol("int", new PrimitiveTypeSymbol("int", PrimitiveType.INTEGER), tokenPosition);
@@ -1389,7 +1391,12 @@ public class Compiler {
             node.SetSemantic(this);
         }
 
+        ProgramContext context = new();
+        foreach (FileNode node in nodes) {
+            node.Generate(context);
+        }
+
         this.files.Clear();
-        return [.. nodes];
+        return new([.. context.GetFunctions()]);
     }
 }

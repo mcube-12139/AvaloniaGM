@@ -1,4 +1,5 @@
-﻿using TypeScript.Item;
+﻿using TypeScript.GenerateContext;
+using TypeScript.Item;
 
 namespace TypeScript.Statement;
 
@@ -43,4 +44,13 @@ public class BlockStatement(SourcePosition position, IItem[] items, ImplNode[] i
     }
 
     void IStatement.SetSemantic(Compiler compiler) => SetSemantic(compiler);
+
+    void IStatement.Generate(StatementContext context) {
+        foreach (IItem item in items) {
+            item.Generate(context);
+        }
+        foreach (IStatement statement in statements) {
+            statement.Generate(context);
+        }
+    }
 }

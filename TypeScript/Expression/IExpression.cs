@@ -1,4 +1,5 @@
 ﻿using TypeScript.ExceptionSpace;
+using TypeScript.GenerateContext;
 using TypeScript.Type;
 
 namespace TypeScript.Expression;
@@ -10,4 +11,5 @@ public interface IExpression {
     internal IPlaceExpression AsPlace(Compiler compiler) {
         throw new SemanticException(SemanticErrorType.NOT_PLACE, [], GetPosition());
     }
+    internal void Generate(StatementContext context) => throw new NotImplementedException();
 }

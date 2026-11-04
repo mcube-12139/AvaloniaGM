@@ -1,4 +1,6 @@
-﻿using TypeScript.Type;
+﻿using TypeScript.GenerateContext;
+using TypeScript.Intermediate.Instruction;
+using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
@@ -28,4 +30,12 @@ public class IntegerExpression(SourcePosition position, string valueStr) : IExpr
     }
 
     IType IExpression.GetResultType() => type!;
+
+    void IExpression.Generate(StatementContext context) {
+        if (type == PrimitiveType.INTEGER) {
+            context.AddInstruction(new ConstIntInstruction(int.Parse(valueStr)), position);
+        } else {
+            throw new NotImplementedException();
+        }
+    }
 }

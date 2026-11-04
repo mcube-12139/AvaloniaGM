@@ -1,4 +1,6 @@
-﻿namespace TypeScript.Item;
+﻿using TypeScript.GenerateContext;
+
+namespace TypeScript.Item;
 
 public interface IItem {
     void AddItemSymbol(Compiler compiler);
@@ -6,4 +8,5 @@ public interface IItem {
         // 默认无事发生
     }
     void SetSemantic(Compiler compiler);
+    internal void Generate(IItemContext context) => throw new NotImplementedException();
 }

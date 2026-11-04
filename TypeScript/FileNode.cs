@@ -1,4 +1,5 @@
-﻿using TypeScript.Item;
+﻿using TypeScript.GenerateContext;
+using TypeScript.Item;
 
 namespace TypeScript;
 
@@ -27,6 +28,12 @@ public class FileNode(IItem[] items, ImplNode[] impls) {
         }
         foreach (ImplNode impl in impls) {
             impl.SetSemantic(compiler);
+        }
+    }
+
+    internal void Generate(ProgramContext context) {
+        foreach (IItem item in items) {
+            item.Generate(context);
         }
     }
 }

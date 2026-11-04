@@ -4,6 +4,9 @@ using TypeScript.Statement;
 using TypeScript.Symbol;
 using TypeScript.TypeNode;
 using TypeScript.Type;
+using TypeScript.GenerateContext;
+using TypeScript.Intermediate.FunctionBody;
+using TypeScript.Intermediate;
 
 namespace TypeScript.Item;
 
@@ -120,5 +123,18 @@ public class FunctionItem(
         }
 
         return (parameterTypes, resultType);
+    }
+
+    void IItem.Generate(IItemContext context) {
+        if (hostName != null) {
+            context.AddFunction(new(name, new HostBody(hostName)));
+        } else {
+            StatementContext statementContext = new();
+            ((IStatement)body!).Generate(statementContext);
+            context.AddFunction(new(name, new GuestBody(statementContext.GetInstructions())));
+            foreach (Function fun in statementContext.GetFunctions()) {
+                context.AddFunction(fun);
+            }
+        }
     }
 }

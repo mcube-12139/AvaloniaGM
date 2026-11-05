@@ -5,11 +5,11 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class StringExpression(SourcePosition position, string value) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly string value = value;
 
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     IType IExpression.GetResultType() => PrimitiveType.STRING;
 
@@ -18,6 +18,7 @@ public class StringExpression(SourcePosition position, string value) : IExpressi
     }
 
     void IExpression.Generate(StatementContext context) {
-        context.AddInstruction(new ConstStringInstruction(value), position);
+        context.AddInstructionWithPosition(new ConstStringInstruction(value), position);
     }
 }
+

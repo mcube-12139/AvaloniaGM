@@ -138,17 +138,22 @@ public class FunctionItem(
 
         Intermediate.Type.IType interResultType = symbol!.type!.resultType.ToIntermediate();
 
-        Function result;
+        IFunctionBody funBody;
+        ImmutableArray<Intermediate.Type.IType> localTypes;
         if (hostName != null) {
-            result = new(name, interParameters, interResultType, new HostBody(hostName));
+            funBody = new HostBody(hostName);
+            localTypes = [];
         } else {
             StatementContext statementContext = new();
             ((IStatement)body!).Generate(statementContext);
-            result = new(name, interParameters, interResultType, new GuestBody(statementContext.GetInstructions()));
+            funBody = new GuestBody(statementContext.GetInstructions());
+            localTypes = statementContext.GetLocalTypes();
+
             foreach (Function fun in statementContext.GetFunctions()) {
                 context.AddFunction(fun);
             }
         }
+        Function result = new(name, interParameters, interResultType, localTypes, funBody);
         context.AddFunction(result);
         symbol!.ResolveInterFunction(result);
     }

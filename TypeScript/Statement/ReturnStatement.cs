@@ -1,5 +1,7 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.GenerateContext;
+using TypeScript.Intermediate.Instruction;
 using TypeScript.Type;
 
 namespace TypeScript.Statement;
@@ -8,21 +10,30 @@ public class ReturnStatement(SourcePosition position, IExpression? value) : ISta
     public readonly SourcePosition position = position;
     public readonly IExpression? value = value;
 
-    IType? targetType;
-
     SourcePosition IStatement.GetPosition() => position;
 
-    public IType GetTargetType() => targetType!;
-
     void IStatement.SetSemantic(Compiler compiler) {
-        targetType = compiler.GetResultType();
+        IType? targetType = compiler.GetResultType();
 
-        value?.SetSemantic(targetType, compiler);
-        IType type = value?.GetResultType() ?? TupleType.EMPTY;
-        if (!TypeHelp.IsType(type, targetType)) {
-            throw new SemanticException(SemanticErrorType.WRONG_TYPE, [type.GetAppearance(), targetType.GetAppearance()], position);
+        if (value != null) {
+            value.SetSemantic(targetType, compiler);
+            value.SetTargetType(targetType);
+        } else {
+            // 只有返回类型是()可以没有返回式
+            if (targetType != TupleType.EMPTY) {
+                throw new SemanticException(SemanticErrorType.MISSING_RESULT_EXPRESSION, [], position);
+            }
         }
 
         compiler.SetReturned();
+    }
+
+    void IStatement.Generate(StatementContext context) {
+        if (value != null) {
+            ExpressionHelp.Generate(value, context);
+            context.AddInstructionWithPosition(ReturnInstruction.Instantiate(value.GetTargetType().ToIntermediate()), position);
+        } else {
+            context.AddInstructionWithPosition(ReturnInstruction.Instantiate(((IType)TupleType.EMPTY).ToIntermediate()), position);
+        }
     }
 }

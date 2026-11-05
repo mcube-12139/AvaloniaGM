@@ -15,9 +15,9 @@ public class ExpressionStatement(IExpression expression): IStatement {
     }
 
     void IStatement.Generate(StatementContext context) {
-        expression.Generate(context);
+        ExpressionHelp.Generate(expression, context);
         if (expression.GetResultType() != TupleType.EMPTY) {
-            context.AddInstruction(new PopInstruction(expression.GetResultType().ToIntermediate()), expression.GetPosition());
+            context.AddInstructionWithPosition(new PopInstruction(expression.GetResultType().ToIntermediate()), expression.GetPosition());
         }
     }
 }

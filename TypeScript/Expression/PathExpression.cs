@@ -1,4 +1,5 @@
 ﻿using TypeScript.GenerateContext;
+using TypeScript.Intermediate.Instruction;
 using TypeScript.PathSegment;
 using TypeScript.Symbol;
 using TypeScript.Type;
@@ -6,14 +7,14 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class PathExpression(SourcePosition position, IPathSegment[] segments, bool fromTop) : IPlaceExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IPathSegment[] segments = segments;
     public readonly bool fromTop = fromTop;
 
     IType? type;
     IValueSymbol? symbol;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     void SetSymbolAndType(Compiler compiler) {
         ISymbol nowSymbol;
@@ -44,8 +45,26 @@ public class PathExpression(SourcePosition position, IPathSegment[] segments, bo
         symbol!.Store(position, compiler);
     }
 
+    void IExpression.Generate(StatementContext context) {
+        symbol!.GenerateLoad(position, context);
+    }
+
+    void IPlaceExpression.GenerateAssign(IExpression expression, StatementContext context) {
+        ExpressionHelp.Generate(expression, context);
+        symbol!.GenerateStore(position, context);
+    }
+
+    void IPlaceExpression.GenerateCompoundAssignStart(StatementContext context) {
+        symbol!.GenerateLoad(position, context);
+    }
+
+    void IPlaceExpression.GenerateCompoundAssign(StatementContext context) {
+        symbol!.GenerateStore(position, context);
+    }
+
     void IExpression.GenerateCall(CallExpression call, StatementContext context) {
         call.GenerateParameters(context);
         symbol!.GenerateCall(call, context);
     }
 }
+

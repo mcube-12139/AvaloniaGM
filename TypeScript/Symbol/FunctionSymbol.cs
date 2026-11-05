@@ -76,6 +76,6 @@ public class FunctionSymbol : IValueSymbol {
         if (intermediateFun == null) {
             promises.Add(instruction);
         }
-        context.AddInstruction(instruction, call.position);
+        context.AddInstructionWithPosition(instruction, call.head.position);
     }
 }

@@ -3,14 +3,14 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class MethodCallExpression(SourcePosition position, IExpression callee, string name, IExpression[] parameters) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IExpression callee = callee;
     public readonly string name = name;
     public readonly IExpression[] parameters = parameters;
 
     IType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IType GetResultType() => type!;
 
@@ -22,3 +22,4 @@ public class MethodCallExpression(SourcePosition position, IExpression callee, s
             .GetMethodCallResultType(parameters, position, compiler);
     }
 }
+

@@ -1,18 +1,26 @@
+using TypeScript.GenerateContext;
 using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
 public class DivideAssignExpression(SourcePosition position, IPlaceExpression left, IExpression right) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IPlaceExpression left = left;
     public readonly IExpression right = right;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IType GetResultType() => TupleType.EMPTY;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         left.SetSemantic(null, compiler);
         left.GetResultType().EnsureCanDivideAssign(right, position, compiler);
+    }
+
+    void IExpression.Generate(StatementContext context) {
+        left.GenerateCompoundAssignStart(context);
+        ExpressionHelp.Generate(right, context);
+        left.GetResultType().GenerateDivideAssign(position, context);
+        left.GenerateCompoundAssign(context);
     }
 }

@@ -1,4 +1,5 @@
-﻿using TypeScript.GenerateContext;
+﻿using TypeScript.Expression;
+using TypeScript.GenerateContext;
 using TypeScript.Symbol;
 using TypeScript.Type;
 
@@ -21,7 +22,21 @@ public class IdentifierPattern(SourcePosition position, string name) : IPattern 
         compiler.AddSymbol(name, symbol, position);
     }
 
+    void IPattern.GenerateLocal(IExpression? initializer, StatementContext context) {
+        var localSymbol = (LocalSymbol)symbol!;
+        localSymbol.index = context.GetLocalCount();
+        context.AddLocalType(localSymbol.type.ToIntermediate());
+        if (initializer != null) {
+            ExpressionHelp.Generate(initializer, context);
+            ((IValueSymbol)localSymbol).GenerateStore(position, context);
+        }
+    }
+
     void IPattern.GenerateParameter(IType type, ParameterContext context) {
-        context.AddParameter(new(name, type.ToIntermediate()));
+        Intermediate.Parameter interParameter = new(name, type.ToIntermediate());
+        if (symbol != null) {
+            ((ParameterSymbol)symbol).interParameter = interParameter;
+        }
+        context.AddParameter(interParameter);
     }
 }

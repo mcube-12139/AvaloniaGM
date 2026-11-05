@@ -1,4 +1,6 @@
 ﻿using TypeScript.ExceptionSpace;
+using TypeScript.GenerateContext;
+using TypeScript.Intermediate.Instruction;
 using TypeScript.Type;
 
 namespace TypeScript.Symbol;
@@ -12,6 +14,8 @@ public class LocalSymbol(
     public readonly IType type = type;
 
     internal bool initialized = initialized;
+
+    internal int index;
 
     string ISymbol.GetName() => name;
 
@@ -32,5 +36,13 @@ public class LocalSymbol(
         if (!initialized) {
             throw new SemanticException(SemanticErrorType.MAY_NOT_INITIALIZED, [name], position);
         }
+    }
+
+    void IValueSymbol.GenerateStore(SourcePosition position, StatementContext context) {
+        context.AddInstructionWithPosition(new StoreLocalInstruction(index), position);
+    }
+
+    void IValueSymbol.GenerateLoad(SourcePosition position, StatementContext context) {
+        context.AddInstructionWithPosition(new LoadLocalInstruction(index), position);
     }
 }

@@ -1,15 +1,17 @@
 using TypeScript.ExceptionSpace;
+using TypeScript.GenerateContext;
+using TypeScript.Intermediate.Instruction;
 using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
 public class ArrayExpression(SourcePosition position, IExpression[] elements) : IExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IExpression[] elements = elements;
 
-    IType? type;
+    ArrayType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IType GetResultType() => type!;
 
@@ -19,11 +21,8 @@ public class ArrayExpression(SourcePosition position, IExpression[] elements) : 
             IType firstType = elements[0].GetResultType();
             for (int i = 1; i != elements.Length; ++i) {
                 IExpression expression = elements[i];
-                expression.SetSemantic(null, compiler);
-                IType elementType = expression.GetResultType();
-                if (!TypeHelp.IsType(elementType, firstType)) {
-                    throw new SemanticException(SemanticErrorType.WRONG_TYPE, [elementType.GetAppearance(), firstType.GetAppearance()], expression.GetPosition());
-                }
+                expression.SetSemantic(firstType, compiler);
+                expression.SetTargetType(firstType);
             }
 
             type = ArrayType.Monomorphize(firstType);
@@ -31,10 +30,18 @@ public class ArrayExpression(SourcePosition position, IExpression[] elements) : 
             if (target == null) {
                 throw new SemanticException(SemanticErrorType.UNKNOWN_TYPE, [], position);
             }
-            if (target is not ArrayType) {
-                throw new SemanticException(SemanticErrorType.WRONG_TYPE, ["[]", target.GetAppearance()], position);
+            if (target is ArrayType arrayType) {
+                type = arrayType;
             }
-            type = target;
+            throw new SemanticException(SemanticErrorType.WRONG_TYPE, ["[]", target.GetAppearance()], position);
         }
     }
+
+    void IExpression.Generate(StatementContext context) {
+        foreach (IExpression element in elements) {
+            ExpressionHelp.Generate(element, context);
+        }
+        context.AddInstruction(new NewArrayInstruction(type!.elementType.ToIntermediate(), elements.Length));
+    }
 }
+

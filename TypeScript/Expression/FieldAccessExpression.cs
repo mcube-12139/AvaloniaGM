@@ -4,14 +4,14 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class FieldAccessExpression(SourcePosition position, IExpression accessed, string name) : IPlaceExpression {
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly IExpression accessed = accessed;
     public readonly string name = name;
 
     IField? field;
     IType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IField GetField() => field!;
 
@@ -30,3 +30,4 @@ public class FieldAccessExpression(SourcePosition position, IExpression accessed
         type = field.GetFieldType();
     }
 }
+

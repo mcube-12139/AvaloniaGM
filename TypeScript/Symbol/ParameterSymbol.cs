@@ -1,4 +1,5 @@
-﻿using TypeScript.ExceptionSpace;
+﻿using TypeScript.GenerateContext;
+using TypeScript.Intermediate.Instruction;
 using TypeScript.Type;
 
 namespace TypeScript.Symbol;
@@ -9,6 +10,8 @@ public class ParameterSymbol(
 ) : IValueSymbol {
     public readonly string name = name;
     public readonly IType type = type;
+
+    internal Intermediate.Parameter? interParameter;
 
     string ISymbol.GetName() => name;
 
@@ -22,5 +25,13 @@ public class ParameterSymbol(
 
     void IValueSymbol.EnsureCanLoad(SourcePosition position) {
         // 无事发生
+    }
+
+    void IValueSymbol.GenerateStore(SourcePosition position, StatementContext context) {
+        context.AddInstructionWithPosition(new StoreArgumentInstruction(interParameter!), position);
+    }
+
+    void IValueSymbol.GenerateLoad(SourcePosition position, StatementContext context) {
+        context.AddInstructionWithPosition(new LoadArgumentInstruction(interParameter!), position);
     }
 }

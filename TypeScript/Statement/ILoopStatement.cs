@@ -1,4 +1,8 @@
-﻿namespace TypeScript.Statement;
+﻿using TypeScript.Intermediate.Instruction;
 
-public interface ILoopStatement: IStatement {
+namespace TypeScript.Statement;
+
+internal interface ILoopStatement: IStatement {
+    int GetStart();
+    void PromiseBreak(JumpInstruction instruction);
 }

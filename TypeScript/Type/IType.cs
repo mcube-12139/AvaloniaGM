@@ -1,6 +1,7 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
 using TypeScript.Field;
+using TypeScript.GenerateContext;
 using TypeScript.Item;
 using TypeScript.Symbol;
 
@@ -157,4 +158,33 @@ public interface IType {
     void EnsureCanRightShiftAssign(IExpression right, SourcePosition position, Compiler compiler) {
         throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"{GetAppearance()} >>= {right.GetResultType().GetAppearance()}"], position);
     }
+
+    internal void GenerateSetIndex(SourcePosition position, StatementContext context) { }
+    internal void GenerateGetIndex(SourcePosition position, StatementContext context) { }
+    internal void GenerateMultiply(SourcePosition position, StatementContext context) { }
+    internal void GenerateDivide(SourcePosition position, StatementContext context) { }
+    internal void GenerateModulo(SourcePosition position, StatementContext context) { }
+    internal void GenerateAdd(SourcePosition position, StatementContext context) { }
+    internal void GenerateSubtract(SourcePosition position, StatementContext context) { }
+    internal void GenerateLeftShift(SourcePosition position, StatementContext context) { }
+    internal void GenerateRightShift(SourcePosition position, StatementContext context) { }
+    internal void GenerateBitAnd(SourcePosition position, StatementContext context) { }
+    internal void GenerateBitXor(SourcePosition position, StatementContext context) { }
+    internal void GenerateBitOr(SourcePosition position, StatementContext context) { }
+    internal void GenerateGreater(SourcePosition position, StatementContext context) { }
+    internal void GenerateGreaterEqual(SourcePosition position, StatementContext context) { }
+    internal void GenerateLess(SourcePosition position, StatementContext context) { }
+    internal void GenerateLessEqual(SourcePosition position, StatementContext context) { }
+    internal void GenerateEqual(SourcePosition position, StatementContext context) { }
+    internal void GenerateNotEqual(SourcePosition position, StatementContext context) { }
+    internal void GenerateAddAssign(SourcePosition position, StatementContext context) { }
+    internal void GenerateSubtractAssign(SourcePosition position, StatementContext context) { }
+    internal void GenerateMultiplyAssign(SourcePosition position, StatementContext context) { }
+    internal void GenerateDivideAssign(SourcePosition position, StatementContext context) { }
+    internal void GenerateModuloAssign(SourcePosition position, StatementContext context) { }
+    internal void GenerateBitAndAssign(SourcePosition position, StatementContext context) { }
+    internal void GenerateBitOrAssign(SourcePosition position, StatementContext context) { }
+    internal void GenerateBitXorAssign(SourcePosition position, StatementContext context) { }
+    internal void GenerateLeftShiftAssign(SourcePosition position, StatementContext context) { }
+    internal void GenerateRightShiftAssign(SourcePosition position, StatementContext context) { }
 }

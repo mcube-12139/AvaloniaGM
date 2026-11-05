@@ -1,4 +1,5 @@
-﻿using TypeScript.GenerateContext;
+﻿using TypeScript.Expression;
+using TypeScript.GenerateContext;
 using TypeScript.Type;
 
 namespace TypeScript.Pattern;
@@ -6,5 +7,6 @@ namespace TypeScript.Pattern;
 public interface IPattern {
     internal void AddLocal(IType type, bool initialized, Compiler compiler);
     internal void AddParameter(IType type, Compiler compiler);
+    internal void GenerateLocal(IExpression? initializer, StatementContext context);
     internal void GenerateParameter(IType type, ParameterContext context);
 }

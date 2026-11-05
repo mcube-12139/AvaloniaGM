@@ -1,6 +1,8 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
 using TypeScript.Field;
+using TypeScript.GenerateContext;
+using TypeScript.Intermediate.Instruction;
 
 namespace TypeScript.Type;
 
@@ -39,6 +41,10 @@ public class ArrayType: IType {
         }
 
         return true;
+    }
+
+    Intermediate.Type.IType IType.ToIntermediate() {
+        return Intermediate.Type.ArrayType.Instantiate(elementType.ToIntermediate());
     }
 
     IType IType.GetIndexResultType(IExpression index, SourcePosition position, Compiler compiler) {
@@ -81,5 +87,13 @@ public class ArrayType: IType {
         if (TypeHelp.IsType(rightType, this)) {
             throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"{GetAppearance()} = {rightType.GetAppearance()}"], position);
         }
+    }
+
+    void IType.GenerateSetIndex(SourcePosition position, StatementContext context) {
+        context.AddInstructionWithPosition(StoreElementInstruction.Instantiate(elementType.ToIntermediate()), position);
+    }
+
+    void IType.GenerateGetIndex(SourcePosition position, StatementContext context) {
+        context.AddInstructionWithPosition(LoadElementInstruction.Instantiate(elementType.ToIntermediate()), position);
     }
 }

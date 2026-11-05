@@ -1,20 +1,27 @@
+using TypeScript.GenerateContext;
 using TypeScript.Type;
 
 namespace TypeScript.Expression;
 
-public class RightShiftExpression(SourcePosition position, IExpression left, IExpression right) : IExpression {
-    public readonly SourcePosition position = position;
-    public readonly IExpression left = left;
-    public readonly IExpression right = right;
+internal class RightShiftExpression(SourcePosition position, IExpression left, IExpression right) : IExpression {
+    internal readonly ExpressionHead head = new(position);
+    internal readonly IExpression left = left;
+    internal readonly IExpression right = right;
 
     IType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     public IType GetResultType() => type!;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         left.SetSemantic(null, compiler);
         type = left.GetResultType().GetRightShiftResultType(right, position, compiler);
+    }
+
+    void IExpression.Generate(StatementContext context) {
+        ExpressionHelp.Generate(left, context);
+        ExpressionHelp.Generate(right, context);
+        left.GetResultType().GenerateRightShift(position, context);
     }
 }

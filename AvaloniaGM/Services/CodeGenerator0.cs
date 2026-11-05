@@ -30,7 +30,6 @@ internal class CodeGenerator0 {
     readonly Dictionary<FunctionSymbol, UserFunction> userFunctions = [];
     uint nextFunctionIndex = 0;
 
-    readonly Stack<FunctionGenerationState> functionGenerationStates = [];
     uint byteCount;
     List<UndertaleInstruction> instructions = [];
     Stack<DataType> types = [];
@@ -39,7 +38,6 @@ internal class CodeGenerator0 {
     uint nextGlobalIndex = 0;
     uint nextParameterIndex = 0;
     UndertaleCodeLocals? codeLocals;
-    readonly Dictionary<ILoopStatement, LoopContext> loopContexts = [];
 
     void Convert(DataType target) {
         DataType source = types.Pop();
@@ -1441,86 +1439,6 @@ internal class CodeGenerator0 {
                 NotByType(notExpression.expression.GetResultType());
                 break;
             }
-            case MultiplyExpression multiplyExpression: {
-                EvaluateExpression(multiplyExpression.left, null);
-                MultiplyByType(multiplyExpression.left.GetResultType(), multiplyExpression.right);
-                break;
-            }
-            case DivideExpression divideExpression: {
-                EvaluateExpression(divideExpression.left, null);
-                DivideByType(divideExpression.left.GetResultType(), divideExpression.right);
-                break;
-            }
-            case ModuloExpression moduloExpression: {
-                EvaluateExpression(moduloExpression.left, null);
-                ModuloByType(moduloExpression.left.GetResultType(), moduloExpression.right);
-                break;
-            }
-            case AddExpression addExpression: {
-                EvaluateExpression(addExpression.left, null);
-                AddByType(addExpression.left.GetResultType(), addExpression.right);
-                break;
-            }
-            case SubtractExpression subtractExpression: {
-                EvaluateExpression(subtractExpression.left, null);
-                SubtractByType(subtractExpression.left.GetResultType(), subtractExpression.right);
-                break;
-            }
-            case LeftShiftExpression leftShiftExpression: {
-                EvaluateExpression(leftShiftExpression.left, null);
-                LeftShiftByType(leftShiftExpression.left.GetResultType(), leftShiftExpression.right);
-                break;
-            }
-            case RightShiftExpression rightShiftExpression: {
-                EvaluateExpression(rightShiftExpression.left, null);
-                RightShiftByType(rightShiftExpression.left.GetResultType(), rightShiftExpression.right);
-                break;
-            }
-            case BitAndExpression bitAndExpression: {
-                EvaluateExpression(bitAndExpression.left, null);
-                BitAndByType(bitAndExpression.left.GetResultType(), bitAndExpression.right);
-                break;
-            }
-            case BitXorExpression bitXorExpression: {
-                EvaluateExpression(bitXorExpression.left, null);
-                BitXorByType(bitXorExpression.left.GetResultType(), bitXorExpression.right);
-                break;
-            }
-            case BitOrExpression bitOrExpression: {
-                EvaluateExpression(bitOrExpression.left, null);
-                BitOrByType(bitOrExpression.left.GetResultType(), bitOrExpression.right);
-                break;
-            }
-            case GreaterExpression greaterExpression: {
-                EvaluateExpression(greaterExpression.left, null);
-                GreaterByType(greaterExpression.left.GetResultType(), greaterExpression.right);
-                break;
-            }
-            case GreaterEqualExpression greaterEqualExpression: {
-                EvaluateExpression(greaterEqualExpression.left, null);
-                GreaterEqualByType(greaterEqualExpression.left.GetResultType(), greaterEqualExpression.right);
-                break;
-            }
-            case LessExpression lessExpression: {
-                EvaluateExpression(lessExpression.left, null);
-                LessByType(lessExpression.left.GetResultType(), lessExpression.right);
-                break;
-            }
-            case LessEqualExpression lessEqualExpression: {
-                EvaluateExpression(lessEqualExpression.left, null);
-                LessEqualByType(lessEqualExpression.left.GetResultType(), lessEqualExpression.right);
-                break;
-            }
-            case EqualExpression equalExpression: {
-                EvaluateExpression(equalExpression.left, null);
-                EqualByType(equalExpression.left.GetResultType(), equalExpression.right);
-                break;
-            }
-            case NotEqualExpression notEqualExpression: {
-                EvaluateExpression(notEqualExpression.left, null);
-                NotEqualByType(notEqualExpression.left.GetResultType(), notEqualExpression.right);
-                break;
-            }
             case AndExpression andExpression: {
                 EvaluateExpression(andExpression.left, null);
                 Convert(DataType.Boolean);
@@ -1664,56 +1582,6 @@ internal class CodeGenerator0 {
                 }
                 break;
             }
-            case WhileStatement whileStatement: {
-                uint start = byteCount;
-                LoopContext context = new(start);
-
-                EvaluateExpression(whileStatement.condition, null);
-                uint bfStart = byteCount;
-                UndertaleInstruction bfInstruction = BranchFalse();
-
-                loopContexts.Add(whileStatement, context);
-                ExecuteBlockStatement(whileStatement.body);
-
-                uint branchStart = byteCount;
-                UndertaleInstruction branchInstruction = Branch();
-                branchInstruction.JumpOffset = (int)(start - branchStart) / 4;
-
-                uint endOffset = byteCount;
-                bfInstruction.JumpOffset = (int)(endOffset - bfStart) / 4;
-                foreach ((uint instructionStart, UndertaleInstruction instruction) in context.IteratePromise()) {
-                    instruction.JumpOffset = (int)(endOffset - instructionStart) / 4;
-                }
-
-                loopContexts.Remove(whileStatement);
-                break;
-            }
-            case ContinueStatement continueStatement: {
-                uint loopStart = loopContexts[continueStatement.GetLoop()].start;
-                uint branchStart = byteCount;
-                UndertaleInstruction branch = Branch();
-                branch.JumpOffset = (int)(loopStart - branchStart) / 4;
-                break;
-            }
-            case BreakStatement breakStatement: {
-                uint branchStart = byteCount;
-                UndertaleInstruction branch = Branch();
-                loopContexts[breakStatement.GetLoop()].AddPromise(branchStart, branch);
-                break;
-            }
-            case ReturnStatement returnStatement: {
-                if (returnStatement.value != null) {
-                    EvaluateExpression(returnStatement.value, returnStatement.GetTargetType());
-                    if (returnStatement.value.GetResultType() != TupleType.EMPTY) {
-                        Return();
-                    } else {
-                        Exit();
-                    }
-                } else {
-                    Exit();
-                }
-                break;
-            }
             case BlockStatement blockStatement: {
                 ExecuteBlockStatement(blockStatement);
                 break;
@@ -1781,7 +1649,6 @@ internal class CodeGenerator0 {
             return;
         }
 
-        functionGenerationStates.Push(new(byteCount, instructions, types, nextLocalIndex, nextParameterIndex, codeLocals!, loopContexts));
         byteCount = 0;
         instructions = [];
         types = [];
@@ -1819,13 +1686,6 @@ internal class CodeGenerator0 {
         code.Offset = 0;
         code.ArgumentsCount = 0;
         code.LocalsCount = nextLocalIndex;
-
-        FunctionGenerationState state = functionGenerationStates.Pop();
-        byteCount = state.byteCount;
-        instructions = state.instructions;
-        types = state.types;
-        nextLocalIndex = state.nextLocalIndex;
-        nextParameterIndex = state.nextParameterIndex;
     }
 
     void GenerateItem(IItem item) {

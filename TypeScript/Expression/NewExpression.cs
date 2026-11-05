@@ -29,13 +29,13 @@ public class NewExpression(SourcePosition position, PathType pathType, NewExpres
         }
     }
 
-    public readonly SourcePosition position = position;
+    internal readonly ExpressionHead head = new(position);
     public readonly PathType pathType = pathType;
     public readonly Field[] fields = fields;
 
     ClassType? type;
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     IType IExpression.GetResultType() => type!;
 
@@ -57,3 +57,4 @@ public class NewExpression(SourcePosition position, PathType pathType, NewExpres
         }
     }
 }
+

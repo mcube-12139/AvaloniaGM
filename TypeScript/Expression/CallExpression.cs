@@ -4,7 +4,7 @@ using TypeScript.Type;
 namespace TypeScript.Expression;
 
 public class CallExpression: IExpression {
-    public readonly SourcePosition position;
+    internal readonly ExpressionHead head;
     public readonly IExpression callee;
     public readonly IExpression[] parameters;
 
@@ -14,17 +14,17 @@ public class CallExpression: IExpression {
     public FunctionType GetCalleeType() => calleeType!;
 
     internal CallExpression(SourcePosition position, IExpression callee, IExpression[] parameters) {
-        this.position = position;
+        this.head = new(position);
         this.callee = callee;
         this.parameters = parameters;
     }
 
-    SourcePosition IExpression.GetPosition() => position;
+    ExpressionHead IExpression.GetHead() => head;
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         callee.SetSemantic(null, compiler);
-        calleeType = callee.GetResultType().AsFunctionType(position, compiler);
-        calleeType.EnsureCanCall(parameters, position, compiler);
+        calleeType = callee.GetResultType().AsFunctionType(head.position, compiler);
+        calleeType.EnsureCanCall(parameters, head.position, compiler);
 
         type = calleeType.resultType;
     }
@@ -33,7 +33,7 @@ public class CallExpression: IExpression {
 
     internal void GenerateParameters(StatementContext context) {
         foreach (IExpression parameter in parameters) {
-            parameter.Generate(context);
+            ExpressionHelp.Generate(parameter, context);
         }
     }
 
@@ -41,3 +41,4 @@ public class CallExpression: IExpression {
         callee.GenerateCall(this, context);
     }
 }
+

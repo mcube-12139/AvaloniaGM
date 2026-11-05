@@ -12,5 +12,7 @@ public interface IValueSymbol: ISymbol {
     internal IType LazyGetValueType(SourcePosition position, Compiler compiler);
     internal void Store(SourcePosition position, Compiler compiler);
     internal void EnsureCanLoad(SourcePosition position);
+    internal void GenerateStore(SourcePosition position, StatementContext context) => throw new NotImplementedException();
+    internal void GenerateLoad(SourcePosition position, StatementContext context) => throw new NotImplementedException();
     internal void GenerateCall(CallExpression call, StatementContext context) => throw new NotImplementedException();
 }

@@ -1,17 +1,10 @@
-﻿using Microsoft.VisualBasic;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using TypeScript;
-using TypeScript.Expression;
 using TypeScript.Field;
 using TypeScript.Intermediate;
 using TypeScript.Intermediate.FunctionBody;
 using TypeScript.Intermediate.Instruction;
 using TypeScript.Intermediate.Type;
-using TypeScript.Item;
-using TypeScript.Statement;
-using TypeScript.Symbol;
-using Underanalyzer.Mock;
 using UndertaleModLib;
 using UndertaleModLib.Models;
 using static UndertaleModLib.Models.UndertaleInstruction;
@@ -25,6 +18,7 @@ internal class CodeGenerator {
     readonly Dictionary<string, UndertaleVariable> globalVariables = [];
     readonly Dictionary<string, UndertaleVariable> selfVariables = [];
     readonly Dictionary<Parameter, UndertaleVariable> parameterVariables = [];
+    readonly List<(bool used, UndertaleVariable variable)> hiddenLocalVariables = [];
     // Program 定义的局域量，隐藏量不算在内。
     readonly List<UndertaleVariable> localVariables = [];
     readonly Dictionary<StructField, short> fieldIndices = [];
@@ -63,17 +57,15 @@ internal class CodeGenerator {
         } else {
             // fuck Game Maker
             // 中间层实参正序入栈，而目标机实参倒序入栈，为了不用把所有 API 的参数倒过来写，导致被用户打死，做处理。
-            // 创建隐藏量
-            var arguments = new UndertaleVariable[parameterCount];
-            for (int i = 0; i != parameterCount; ++i) {
-                UndertaleVariable argument = AddLocalVariable($"arg_{i}");
-                Store(argument, VariableType.Normal);
-                arguments[i] = argument;
-            }
+            UseHiddenVariables(parameterCount, variables => {
+                foreach (UndertaleVariable variable in variables) {
+                    Store(variable, VariableType.Normal);
+                }
 
-            for (int i = 0; i != parameterCount; ++i) {
-                Load(arguments[i], VariableType.Normal);
-            }
+                foreach (UndertaleVariable variable in variables) {
+                    Load(variable, VariableType.Normal);
+                }
+            });
         }
 
         for (int i = parameterCount; i != 0; --i) {
@@ -329,12 +321,13 @@ internal class CodeGenerator {
             types.Push(leftType);
             types.Push(rightType);
 
-            UndertaleVariable rightVariable = AddLocalVariable("right");
-            Store(rightVariable, VariableType.Normal);
+            UseHiddenVariables(1, variables => {
+                Store(variables[0], VariableType.Normal);
 
-            Convert(DataType.Int64);
-            Load(rightVariable, VariableType.Normal);
-            Convert(DataType.Int64);
+                Convert(DataType.Int64);
+                Load(variables[0], VariableType.Normal);
+                Convert(DataType.Int64);
+            });
 
             types.Pop();
             types.Pop();
@@ -476,11 +469,11 @@ internal class CodeGenerator {
         return (gameString, id);
     }
 
-    UndertaleVariable AddLocalVariable(string name) {
-        (UndertaleString gameString, int id) = GetString(name);
-
+    UndertaleVariable AddLocalVariable() {
         uint variableId = nextLocalIndex;
         ++nextLocalIndex;
+
+        (UndertaleString gameString, int id) = GetString($"loc_{variableId}");
 
         UndertaleVariable variable = data!.Variables.DefineLocal(data, (int)variableId, gameString, id);
         codeLocals!.Locals.Add(new() {
@@ -493,6 +486,46 @@ internal class CodeGenerator {
         }
 
         return variable;
+    }
+
+    void UseHiddenVariables(int count, Action<UndertaleVariable[]> useFun) {
+        var variables = new UndertaleVariable[count];
+        Span<int> indices = stackalloc int[count];
+        int foundCount = 0;
+        // 查找当前未使用的隐藏量
+        for (int i = 0; i != hiddenLocalVariables.Count; ++i) {
+            (bool used, UndertaleVariable variable) = hiddenLocalVariables[i];
+            if (!used) {
+                hiddenLocalVariables[i] = (true, variable);
+                variables[foundCount] = variable;
+                indices[foundCount] = i;
+                ++foundCount;
+
+                if (foundCount == count) {
+                    break;
+                }
+            }
+        }
+
+        if (foundCount < count) {
+            // 分配不够的隐藏量
+            int leftCount = count - foundCount;
+            for (int i = 0; i != leftCount; ++i) {
+                UndertaleVariable variable = AddLocalVariable();
+                variables[foundCount] = variable;
+                indices[foundCount] = hiddenLocalVariables.Count;
+                ++foundCount;
+
+                hiddenLocalVariables.Add((true, variable));
+            }
+        }
+
+        useFun(variables);
+        // 释放
+        for (int i = 0; i != count; ++i) {
+            int index = indices[i];
+            hiddenLocalVariables[index] = (false, variables[i]);
+        }
     }
 
     UndertaleVariable GetSelfVariable(string name, bool builtin) {
@@ -558,7 +591,7 @@ internal class CodeGenerator {
                     }
 
                     for (int i = 0; i != fun.localTypes.Length; ++i) {
-                        localVariables.Add(AddLocalVariable($"loc_{i}"));
+                        localVariables.Add(AddLocalVariable());
                     }
 
                     for (int i = 0; i != guest.instructions.Length; ++i) {
@@ -614,21 +647,22 @@ internal class CodeGenerator {
                                 break;
                             }
                             case NewArrayInstruction newArray: {
-                                // TODO：优化 array 本来就是 variable 的情况。
-                                UndertaleVariable variable = AddLocalVariable("arr");
-                                if (newArray.length == 0) {
-                                    PushShort(0);
-                                    Convert(DataType.Variable);
-                                    CallBuiltin("array_create", 1);
-                                    Store(variable, VariableType.Normal);
-                                } else {
-                                    for (int elementIndex = newArray.length - 1; elementIndex != -1; --elementIndex) {
-                                        PushShort((short)InstanceType.Local);
-                                        PushInt(elementIndex);
-                                        Store(variable, VariableType.Array);
+                                UseHiddenVariables(1, variables => {
+                                    UndertaleVariable variable = variables[0];
+                                    if (newArray.length == 0) {
+                                        PushShort(0);
+                                        Convert(DataType.Variable);
+                                        CallBuiltin("array_create", 1);
+                                        Store(variable, VariableType.Normal);
+                                    } else {
+                                        for (int elementIndex = newArray.length - 1; elementIndex != -1; --elementIndex) {
+                                            PushShort((short)InstanceType.Local);
+                                            PushInt(elementIndex);
+                                            Store(variable, VariableType.Array);
+                                        }
                                     }
-                                }
-                                Load(variable, VariableType.Normal);
+                                    Load(variable, VariableType.Normal);
+                                });
                                 break;
                             }
                             case PopInstruction: {
@@ -662,38 +696,24 @@ internal class CodeGenerator {
                                 break;
                             }
                             case StoreElementInstruction: {
-                                // TODO：优化本来就是 variable 的情况。
-                                UndertaleVariable valueVariable = AddLocalVariable("value");
-                                Store(valueVariable, VariableType.Normal);
-
-                                UndertaleVariable indexVariable = AddLocalVariable("index");
-                                Store(indexVariable, VariableType.Normal);
-
-                                UndertaleVariable arrayVariable = AddLocalVariable("arr");
-                                Store(arrayVariable, VariableType.Normal);
-
-                                Load(valueVariable, VariableType.Normal);
-
-                                PushShort((short)InstanceType.Local);
-                                Load(indexVariable, VariableType.Normal);
-                                Convert(DataType.Int32);
-
-                                Store(arrayVariable, VariableType.Array);
+                                CallBuiltin("array_set", 3);
+                                PopUnused();
                                 break;
                             }
                             case LoadElementInstruction: {
-                                // TODO：优化本来就是 variable 的情况。
-                                UndertaleVariable indexVariable = AddLocalVariable("index");
-                                Store(indexVariable, VariableType.Normal);
+                                UseHiddenVariables(2, variables => {
+                                    UndertaleVariable indexVariable = variables[0];
+                                    UndertaleVariable arrayVariable = variables[1];
 
-                                UndertaleVariable arrayVariable = AddLocalVariable("arr");
-                                Store(arrayVariable, VariableType.Normal);
+                                    Store(indexVariable, VariableType.Normal);
+                                    Store(arrayVariable, VariableType.Normal);
 
-                                PushShort((short)InstanceType.Local);
-                                Load(indexVariable, VariableType.Normal);
-                                Convert(DataType.Int32);
+                                    PushShort((short)InstanceType.Local);
+                                    Load(indexVariable, VariableType.Normal);
+                                    Convert(DataType.Int32);
 
-                                Load(arrayVariable, VariableType.Array);
+                                    Load(arrayVariable, VariableType.Array);
+                                });
                                 break;
                             }
                             case MultiplyInstruction: {
@@ -779,6 +799,7 @@ internal class CodeGenerator {
                     instructions.Clear();
                     instructionOffsets.Clear();
                     localVariables.Clear();
+                    hiddenLocalVariables.Clear();
                     break;
                 }
                 default:

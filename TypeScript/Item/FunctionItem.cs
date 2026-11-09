@@ -62,30 +62,30 @@ public class FunctionItem(
     void IItem.SetSemantic(Compiler compiler) => SetSemantic(compiler);
 
     internal void SetSemantic(Compiler compiler) {
+        FunctionType funType = ResolveType(compiler);
+        if (symbol!.type == null) {
+            symbol.type = funType;
+        }
+
+        IType resultType = funType.resultType;
+
+        compiler.EnterFunction(resultType);
+
+        thisParameter?.AddSymbol(compiler);
+        foreach (IParameter parameter in parameters) {
+            parameter.AddSymbol(compiler);
+        }
+
         if (body != null) {
-            FunctionType funType = ResolveType(compiler);
-            if (symbol!.type == null) {
-                symbol.type = funType;
-            }
-
-            IType resultType = funType.resultType;
-
-            compiler.EnterFunction(resultType);
-
-            thisParameter?.AddSymbol(compiler);
-            foreach (IParameter parameter in parameters) {
-                parameter.AddSymbol(compiler);
-            }
-
             body.SetSemantic(compiler);
 
             if (resultType != TupleType.EMPTY && !compiler.GetReturned()) {
                 // 返回类型非()，必须显式返回
                 throw new SemanticException(SemanticErrorType.MAY_NOT_RETURN, [name], position);
             }
-
-            compiler.LeaveFunction();
         }
+
+        compiler.LeaveFunction();
     }
 
     internal void SetConceptSemantic(Compiler compiler) {

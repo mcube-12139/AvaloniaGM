@@ -1,8 +1,11 @@
-﻿using TypeScript.Type;
+﻿using TypeScript.GenerateContext;
+using TypeScript.Type;
 
 namespace TypeScript.Field;
 
 public interface IField {
     IType GetFieldType();
-    void EnsureCanSet(SourcePosition position);
+    internal void EnsureCanSet(SourcePosition position);
+    internal void GenerateStore(StatementContext context) { }
+    internal void GenerateLoad(StatementContext context) { }
 }

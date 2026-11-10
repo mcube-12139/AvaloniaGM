@@ -1717,6 +1717,7 @@ internal class CodeGenerator0 {
     }
 
     void GenerateImplStatic(ImplNode impl) {
+        /*
         if (impl.methodTable != null) {
             UndertaleVariable variable = GetGlobalVariable("methods", false);
 
@@ -1733,6 +1734,7 @@ internal class CodeGenerator0 {
 
             methodsVariables.Add((impl.GetImplementedType(), impl.GetRegardedType()), variable);
         }
+        */
     }
 
     void GenerateItemStatic(IItem item) {

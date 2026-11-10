@@ -1,3 +1,5 @@
+using TypeScript.GenerateContext;
+using TypeScript.Symbol;
 using TypeScript.Type;
 
 namespace TypeScript.Expression;
@@ -8,6 +10,7 @@ public class MethodCallExpression(SourcePosition position, IExpression callee, s
     public readonly string name = name;
     public readonly IExpression[] parameters = parameters;
 
+    ISymbol? symbol;
     IType? type;
 
     ExpressionHead IExpression.GetHead() => head;
@@ -17,9 +20,18 @@ public class MethodCallExpression(SourcePosition position, IExpression callee, s
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         callee.SetSemantic(null, compiler);
 
-        type = callee.GetResultType()
-            .GetAssociatedSymbol(name, position)
-            .GetMethodCallResultType(parameters, position, compiler);
+        symbol = callee.GetResultType().GetAssociatedSymbol(name, position);
+        type = symbol.GetMethodCallResultType(parameters, position, compiler);
+    }
+
+    internal void GenerateParameters(StatementContext context) {
+        foreach (IExpression parameter in parameters) {
+            ExpressionHelp.Generate(parameter, context);
+        }
+    }
+
+    void IExpression.Generate(StatementContext context) {
+        symbol!.GenerateCallMethod(this, position, context);
     }
 }
 

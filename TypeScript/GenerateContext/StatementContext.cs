@@ -1,27 +1,32 @@
 ﻿using System.Collections.Immutable;
 using TypeScript.Intermediate;
 using TypeScript.Intermediate.Instruction;
+using TypeScript.Intermediate.Type;
 
 namespace TypeScript.GenerateContext;
 
 internal class StatementContext: IItemContext {
+    readonly ProgramContext programContext;
     readonly List<IInstruction> instructions = [];
     readonly List<Intermediate.Type.IType> localTypes = [];
-    readonly List<Function> functions = [];
+
+    ProgramContext IItemContext.GetProgramContext() => programContext;
 
     internal ImmutableArray<IInstruction> GetInstructions() => [.. instructions];
     internal ImmutableArray<Intermediate.Type.IType> GetLocalTypes() => [.. localTypes];
-    internal IEnumerable<Function> GetFunctions() => functions;
 
-    void IItemContext.AddFunction(Function fun) {
-        functions.Add(fun);
+    internal StatementContext(ProgramContext programContext) {
+        this.programContext = programContext;
     }
+
+    void IItemContext.AddClass(ClassType c) => ((IItemContext)programContext).AddClass(c);
+    void IItemContext.AddFunction(Function fun) => ((IItemContext)programContext).AddFunction(fun);
 
     internal void AddInstruction(IInstruction instruction) {
         instructions.Add(instruction);
     }
 
-    internal void AddInstructionWithPosition(IInstruction instruction, SourcePosition position) {
+    internal void AddInstructionWithPosition(IInstruction instruction, SourcePosition _1) {
         instructions.Add(instruction);
     }
 

@@ -49,6 +49,9 @@ public class BlockStatement(SourcePosition position, IItem[] items, ImplNode[] i
         foreach (IItem item in items) {
             item.Generate(context);
         }
+        foreach (ImplNode impl in impls) {
+            impl.Generate(context);
+        }
         foreach (IStatement statement in statements) {
             statement.Generate(context);
         }

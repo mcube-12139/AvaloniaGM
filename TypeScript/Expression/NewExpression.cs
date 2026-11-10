@@ -1,5 +1,7 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Field;
+using TypeScript.GenerateContext;
+using TypeScript.Intermediate.Instruction;
 using TypeScript.Type;
 using TypeScript.TypeNode;
 
@@ -43,7 +45,7 @@ public class NewExpression(SourcePosition position, PathType pathType, NewExpres
 
     void IExpression.SetSemantic(IType? target, Compiler compiler) {
         pathType.SetSemantic(compiler);
-        IType t = pathType.GetSelfType();
+        IType t = ((ITypeNode)pathType).GetSelfType(compiler);
         if (t is not ClassType classType) {
             throw new SemanticException(SemanticErrorType.NOT_CLASS, [t.GetAppearance()], pathType.position);
         }
@@ -55,6 +57,14 @@ public class NewExpression(SourcePosition position, PathType pathType, NewExpres
         foreach (Field field in fields) {
             field.SetSemantic(type, compiler);
         }
+    }
+
+    void IExpression.Generate(StatementContext context) {
+        foreach (Field field in fields) {
+            ExpressionHelp.Generate(field.value, context);
+        }
+        Intermediate.Type.ClassType c = type!.intermediateClass;
+        context.AddInstruction(new NewClassInstruction(c, [.. fields.Select(field => field.GetField().intermediateField)]));
     }
 }
 

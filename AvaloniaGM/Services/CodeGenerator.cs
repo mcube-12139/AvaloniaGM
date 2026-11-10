@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using TypeScript.Field;
 using TypeScript.Intermediate;
 using TypeScript.Intermediate.FunctionBody;
 using TypeScript.Intermediate.Instruction;
@@ -15,13 +14,13 @@ internal class CodeGenerator {
     readonly Dictionary<string, UndertaleCode> funCodes = [];
     UndertaleData? data;
     readonly Dictionary<string, int> stringIds = [];
+    readonly Dictionary<Field, int> fieldIndices = [];
     readonly Dictionary<string, UndertaleVariable> globalVariables = [];
     readonly Dictionary<string, UndertaleVariable> selfVariables = [];
     readonly Dictionary<Parameter, UndertaleVariable> parameterVariables = [];
     readonly List<(bool used, UndertaleVariable variable)> hiddenLocalVariables = [];
     // Program 定义的局域量，隐藏量不算在内。
     readonly List<UndertaleVariable> localVariables = [];
-    readonly Dictionary<StructField, short> fieldIndices = [];
     readonly Dictionary<Function, UserFunction> userFunctions = [];
     uint nextFunctionIndex = 0;
 
@@ -56,7 +55,7 @@ internal class CodeGenerator {
             Convert(DataType.Variable);
         } else {
             // fuck Game Maker
-            // 中间层实参正序入栈，而目标机实参倒序入栈，为了不用把所有 API 的参数倒过来写，导致被用户打死，做处理。
+            // 中间层实参正序入栈，而目标机实参倒序入栈，为了不用把所有 API 的参数倒过来写，导致被用户打死，使用隐藏量。
             UseHiddenVariables(parameterCount, variables => {
                 foreach (UndertaleVariable variable in variables) {
                     Store(variable, VariableType.Normal);
@@ -551,10 +550,20 @@ internal class CodeGenerator {
         }
     }
 
+    int GetFieldIndex(Field field) => fieldIndices[field];
+
     internal void Generate(UndertaleData data, TypeScript.Intermediate.Program program, Dictionary<string, UndertaleCode> funCodes) {
         this.data = data;
         foreach ((string name, UndertaleCode code) in funCodes) {
             this.funCodes.Add(name, code);
+        }
+
+        foreach (ClassType c in program.classes) {
+            int index = 0;
+            foreach (Field field in c.fields) {
+                fieldIndices[field] = index;
+                ++index;
+            }
         }
 
         foreach (Function fun in program.functions) {
@@ -590,7 +599,7 @@ internal class CodeGenerator {
                         parameterVariables.Add(fun.parameters[i], GetSelfVariable($"argument{i}", true));
                     }
 
-                    for (int i = 0; i != fun.localTypes.Length; ++i) {
+                    for (int i = 0; i != guest.localTypes.Length; ++i) {
                         localVariables.Add(AddLocalVariable());
                     }
 
@@ -608,7 +617,14 @@ internal class CodeGenerator {
                                 }
                                 if (call.fun.resultType == TupleType.EMPTY) {
                                     // fuck Game Maker
-                                    // 无法实现返回零大小类型的函数，函数只能返回 variable，所以对()特殊处理。
+                                    // 函数只能返回 variable，所以对零大小类型特殊处理。
+                                    PopUnused();
+                                }
+                                break;
+                            }
+                            case CallPointerInstruction callPointer: {
+                                CallBuiltin("script_execute", callPointer.type.parameterTypes.Length + 1);
+                                if (callPointer.type.resultType == TupleType.EMPTY) {
                                     PopUnused();
                                 }
                                 break;
@@ -617,8 +633,8 @@ internal class CodeGenerator {
                                 Store(localVariables[storeLocal.index], VariableType.Normal);
                                 break;
                             }
-                            case LoadLocalInstruction storeLocal: {
-                                Load(localVariables[storeLocal.index], VariableType.Normal);
+                            case LoadLocalInstruction loadLocal: {
+                                Load(localVariables[loadLocal.index], VariableType.Normal);
                                 break;
                             }
                             case StoreArgumentInstruction storeArgument: {
@@ -646,6 +662,14 @@ internal class CodeGenerator {
                                 types.Push(DataType.String);
                                 break;
                             }
+                            case ConstFunctionInstruction constFun: {
+                                if (!userFunctions.TryGetValue(constFun.fun!, out UserFunction? userFun)) {
+                                    throw new Exception("不能求值 host 函数");
+                                }
+
+                                PushInt(userFun.scriptId);
+                                break;
+                            }
                             case NewArrayInstruction newArray: {
                                 UseHiddenVariables(1, variables => {
                                     UndertaleVariable variable = variables[0];
@@ -665,8 +689,49 @@ internal class CodeGenerator {
                                 });
                                 break;
                             }
+                            case NewClassInstruction newClass: {
+                                UseHiddenVariables(1, variables => {
+                                    UndertaleVariable variable = variables[0];
+                                    if (newClass.fields.Length == 0) {
+                                        PushShort(0);
+                                        Convert(DataType.Variable);
+                                        CallBuiltin("array_create", 1);
+                                        Store(variable, VariableType.Normal);
+                                    } else {
+                                        for (int i = newClass.fields.Length - 1; i != -1; --i) {
+                                            PushShort((short)InstanceType.Local);
+                                            int code;
+                                            foreach (Field field in fieldIndices.Keys) {
+                                                code = field.GetHashCode();
+                                                Console.WriteLine(code);
+                                            }
+                                            code = newClass.fields[i].GetHashCode();
+                                            Console.WriteLine(code);
+                                            PushInt(GetFieldIndex(newClass.fields[i]));
+                                            Store(variable, VariableType.Array);
+                                        }
+                                    }
+                                    Load(variable, VariableType.Normal);
+                                });
+                                break;
+                            }
                             case PopInstruction: {
                                 PopUnused();
+                                break;
+                            }
+                            case DuplicateInstruction duplicate: {
+                                // dup 指令似乎不能针对 variable，使用隐藏量。
+                                UseHiddenVariables(duplicate.types.Length, variables => {
+                                    for (int i = variables.Length - 1; i != -1; --i) {
+                                        Store(variables[i], VariableType.Normal);
+                                    }
+                                    foreach (UndertaleVariable variable in variables) {
+                                        Load(variable, VariableType.Normal);
+                                    }
+                                    foreach (UndertaleVariable variable in variables) {
+                                        Load(variable, VariableType.Normal);
+                                    }
+                                });
                                 break;
                             }
                             case JumpInstruction jump: {
@@ -696,11 +761,13 @@ internal class CodeGenerator {
                                 break;
                             }
                             case StoreElementInstruction: {
+                                // push 指令不会修改原件，使用 array_set。
                                 CallBuiltin("array_set", 3);
                                 PopUnused();
                                 break;
                             }
                             case LoadElementInstruction: {
+                                // (array, index) -> (LOCAL, index)
                                 UseHiddenVariables(2, variables => {
                                     UndertaleVariable indexVariable = variables[0];
                                     UndertaleVariable arrayVariable = variables[1];
@@ -713,6 +780,33 @@ internal class CodeGenerator {
                                     Convert(DataType.Int32);
 
                                     Load(arrayVariable, VariableType.Array);
+                                });
+                                break;
+                            }
+                            case StoreFieldInstruction storeField: {
+                                // (object, value) -> (array, index, value)
+                                UseHiddenVariables(1, variables => {
+                                    UndertaleVariable variable = variables[0];
+                                    Store(variable, VariableType.Normal);
+
+                                    PushInt(GetFieldIndex(storeField.field));
+                                    Load(variable, VariableType.Normal);
+                                });
+                                CallBuiltin("array_set", 3);
+                                PopUnused();
+                                break;
+                            }
+                            case LoadFieldInstruction loadField: {
+                                // (object,) -> (LOCAL, index)
+                                UseHiddenVariables(1, variables => {
+                                    UndertaleVariable objectVariable = variables[0];
+
+                                    Store(objectVariable, VariableType.Normal);
+
+                                    PushShort((short)InstanceType.Local);
+                                    PushInt(GetFieldIndex(loadField.field));
+
+                                    Load(objectVariable, VariableType.Array);
                                 });
                                 break;
                             }
@@ -780,6 +874,8 @@ internal class CodeGenerator {
                                 Compare(ComparisonType.NEQ);
                                 break;
                             }
+                            default:
+                                throw new NotImplementedException();
                         }
 
                         if (instructionOffsetPromises.TryGetValue(i + 1, out var promises)) {
@@ -795,6 +891,7 @@ internal class CodeGenerator {
                     code.ArgumentsCount = 0;
                     code.LocalsCount = nextLocalIndex;
 
+                    nextLocalIndex = 1;
                     parameterVariables.Clear();
                     instructions.Clear();
                     instructionOffsets.Clear();
@@ -807,15 +904,14 @@ internal class CodeGenerator {
             }
         }
 
-        nextLocalIndex = 1;
         nextGlobalIndex = 0;
         nextFunctionIndex = 0;
         this.funCodes.Clear();
         this.data = null;
         stringIds.Clear();
+        fieldIndices.Clear();
         selfVariables.Clear();
         globalVariables.Clear();
-        fieldIndices.Clear();
         userFunctions.Clear();
     }
 }

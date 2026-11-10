@@ -1397,6 +1397,6 @@ public class Compiler {
         }
 
         this.files.Clear();
-        return new([.. context.GetFunctions()]);
+        return new([.. context.GetClasses()], [.. context.GetFunctions()]);
     }
 }

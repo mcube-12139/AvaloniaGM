@@ -32,6 +32,18 @@ public class IndexExpression(SourcePosition position, IExpression indexed, IExpr
         indexed.GetResultType().GenerateSetIndex(position, context);
     }
 
+    void IPlaceExpression.GenerateCompoundAssignStart(StatementContext context) {
+        ExpressionHelp.Generate(indexed, context);
+        ExpressionHelp.Generate(index, context);
+        IType indexedType = indexed.GetResultType();
+        context.AddInstruction(DuplicateInstruction.Instantiate([indexedType.ToIntermediate(), index.GetResultType().ToIntermediate()]));
+        indexedType.GenerateGetIndex(position, context);
+    }
+
+    void IPlaceExpression.GenerateCompoundAssign(StatementContext context) {
+        indexed.GetResultType().GenerateSetIndex(position, context);
+    }
+
     void IExpression.Generate(StatementContext context) {
         ExpressionHelp.Generate(indexed, context);
         ExpressionHelp.Generate(index, context);

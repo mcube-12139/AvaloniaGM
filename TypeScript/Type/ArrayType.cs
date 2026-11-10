@@ -14,8 +14,12 @@ public class ArrayType: IType {
 
     public readonly IType elementType;
 
+    readonly Intermediate.Type.ArrayType intermediateType;
+
     ArrayType(IType elementType) {
         this.elementType = elementType;
+
+        intermediateType = new Intermediate.Type.ArrayType(elementType.ToIntermediate());
     }
 
     internal static ArrayType Monomorphize(IType elementType) {
@@ -43,9 +47,7 @@ public class ArrayType: IType {
         return true;
     }
 
-    Intermediate.Type.IType IType.ToIntermediate() {
-        return Intermediate.Type.ArrayType.Instantiate(elementType.ToIntermediate());
-    }
+    Intermediate.Type.IType IType.ToIntermediate() => intermediateType;
 
     IType IType.GetIndexResultType(IExpression index, SourcePosition position, Compiler compiler) {
         index.SetSemantic(PrimitiveType.INTEGER, compiler);

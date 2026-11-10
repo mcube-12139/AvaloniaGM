@@ -1,4 +1,6 @@
 using TypeScript.Field;
+using TypeScript.GenerateContext;
+using TypeScript.Intermediate.Instruction;
 using TypeScript.Type;
 
 namespace TypeScript.Expression;
@@ -28,6 +30,27 @@ public class FieldAccessExpression(SourcePosition position, IExpression accessed
         field = accessed.GetResultType().GetField(name, position);
         field.EnsureCanSet(position);
         type = field.GetFieldType();
+    }
+
+    void IPlaceExpression.GenerateAssign(IExpression expression, StatementContext context) {
+        ExpressionHelp.Generate(accessed, context);
+        ExpressionHelp.Generate(expression, context);
+        field!.GenerateStore(context);
+    }
+
+    void IPlaceExpression.GenerateCompoundAssignStart(StatementContext context) {
+        ExpressionHelp.Generate(accessed, context);
+        context.AddInstruction(DuplicateInstruction.Instantiate([accessed.GetResultType().ToIntermediate()]));
+        field!.GenerateLoad(context);
+    }
+
+    void IPlaceExpression.GenerateCompoundAssign(StatementContext context) {
+        field!.GenerateStore(context);
+    }
+
+    void IExpression.Generate(StatementContext context) {
+        ExpressionHelp.Generate(accessed, context);
+        field!.GenerateLoad(context);
     }
 }
 

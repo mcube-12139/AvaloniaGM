@@ -1,4 +1,5 @@
 ﻿using TypeScript.ExceptionSpace;
+using TypeScript.Expression;
 using TypeScript.GenerateContext;
 using TypeScript.Intermediate.Instruction;
 using TypeScript.Type;

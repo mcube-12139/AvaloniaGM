@@ -33,10 +33,6 @@ public class IdentifierPattern(SourcePosition position, string name) : IPattern 
     }
 
     void IPattern.GenerateParameter(IType type, ParameterContext context) {
-        Intermediate.Parameter interParameter = new(name, type.ToIntermediate());
-        if (symbol != null) {
-            ((ParameterSymbol)symbol).interParameter = interParameter;
-        }
-        context.AddParameter(interParameter);
+        context.AddParameter(((ParameterSymbol)symbol!).interParameter);
     }
 }

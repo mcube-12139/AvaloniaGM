@@ -9,9 +9,13 @@ public class FunctionType : IType {
     public readonly IType[] parameterTypes;
     public readonly IType resultType;
 
+    internal readonly Intermediate.Type.FunctionType intermediateType;
+
     FunctionType(IType[] parameterTypes, IType resultType) {
         this.parameterTypes = parameterTypes;
         this.resultType = resultType;
+
+        intermediateType = new([.. parameterTypes.Select(type => type.ToIntermediate())], resultType.ToIntermediate());
     }
 
     internal static FunctionType Monomorphize(IType[] parameterTypes, IType resultType) {
@@ -50,6 +54,8 @@ public class FunctionType : IType {
     }
 
     bool IType.IsType(IType other) => IsType(other);
+
+    Intermediate.Type.IType IType.ToIntermediate() => intermediateType;
 
     internal bool IsType(IType other) {
         if (other is not FunctionType otherFun) {
@@ -97,9 +103,8 @@ public class FunctionType : IType {
         return true;
     }
 
-    FunctionType IType.AsFunctionType(SourcePosition position, Compiler compiler) {
-        return this;
-    }
+    FunctionType IType.AsFunctionType(SourcePosition position, Compiler compiler) => this;
+    FunctionType IType.AsFunctionTypeOrThrow() => this;
 
     internal void EnsureCanCall(IExpression[] parameters, SourcePosition position, Compiler compiler) {
         if (parameters.Length != parameterTypes.Length) {

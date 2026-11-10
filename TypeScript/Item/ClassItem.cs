@@ -1,6 +1,8 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Field;
+using TypeScript.GenerateContext;
 using TypeScript.Symbol;
+using TypeScript.Type;
 using TypeScript.TypeNode;
 
 namespace TypeScript.Item;
@@ -11,13 +13,13 @@ public class ClassItem(SourcePosition position, string name, ClassItem.Field[] f
         public readonly string name = name;
         public readonly ITypeNode typeNode = typeNode;
 
-        StructField? type;
+        StructField? classField;
 
-        public StructField GetFieldType() => type!;
+        public StructField GetField() => classField!;
 
         internal void ResolveType(Compiler compiler) {
             typeNode.SetSemantic(compiler);
-            type = new(name, typeNode.GetSelfType());
+            classField = new(name, typeNode.GetSelfType(compiler));
         }
     }
 
@@ -36,7 +38,14 @@ public class ClassItem(SourcePosition position, string name, ClassItem.Field[] f
     }
 
     void IItem.SetSemantic(Compiler compiler) {
-        // 无事发生，因为 classFields 是惰性求值的
+        ResolveFields(compiler);
+    }
+
+    void IItem.Generate(IItemContext context) {
+        context.AddClass(new(
+            name,
+            [.. classFields!.Select(field => field.intermediateField)]
+        ));
     }
 
     internal StructField[] ResolveFields(Compiler compiler) {
@@ -49,7 +58,7 @@ public class ClassItem(SourcePosition position, string name, ClassItem.Field[] f
                 }
 
                 field.ResolveType(compiler);
-                classFieldList.Add(field.GetFieldType());
+                classFieldList.Add(field.GetField());
             }
             classFields = [.. classFieldList];
         }

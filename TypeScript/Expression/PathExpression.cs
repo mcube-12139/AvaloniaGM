@@ -63,8 +63,7 @@ public class PathExpression(SourcePosition position, IPathSegment[] segments, bo
     }
 
     void IExpression.GenerateCall(CallExpression call, StatementContext context) {
-        call.GenerateParameters(context);
-        symbol!.GenerateCall(call, context);
+        symbol!.GenerateCall(call, position, context);
     }
 }
 

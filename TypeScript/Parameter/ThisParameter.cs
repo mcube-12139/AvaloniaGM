@@ -1,4 +1,5 @@
 ﻿using TypeScript.ExceptionSpace;
+using TypeScript.GenerateContext;
 using TypeScript.Symbol;
 using TypeScript.Type;
 
@@ -21,5 +22,9 @@ public class ThisParameter(SourcePosition position) {
     internal void AddSymbol(Compiler compiler) {
         symbol = new(type!);
         compiler.thisParameterSymbol = symbol;
+    }
+
+    internal void Generate(ParameterContext context) {
+        context.AddParameter(symbol!.interParameter);
     }
 }

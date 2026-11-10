@@ -11,7 +11,7 @@ public class ParameterSymbol(
     public readonly string name = name;
     public readonly IType type = type;
 
-    internal Intermediate.Parameter? interParameter;
+    internal Intermediate.Parameter interParameter = new(name, type.ToIntermediate());
 
     string ISymbol.GetName() => name;
 
@@ -28,10 +28,10 @@ public class ParameterSymbol(
     }
 
     void IValueSymbol.GenerateStore(SourcePosition position, StatementContext context) {
-        context.AddInstructionWithPosition(new StoreArgumentInstruction(interParameter!), position);
+        context.AddInstructionWithPosition(new StoreArgumentInstruction(interParameter), position);
     }
 
     void IValueSymbol.GenerateLoad(SourcePosition position, StatementContext context) {
-        context.AddInstructionWithPosition(new LoadArgumentInstruction(interParameter!), position);
+        context.AddInstructionWithPosition(new LoadArgumentInstruction(interParameter), position);
     }
 }

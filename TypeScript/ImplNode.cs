@@ -1,4 +1,5 @@
 ﻿using TypeScript.ExceptionSpace;
+using TypeScript.GenerateContext;
 using TypeScript.Item;
 using TypeScript.Symbol;
 using TypeScript.Type;
@@ -14,27 +15,24 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
     public readonly FunctionItem[] functions = functions;
 
     IType? implementedType;
-    IType? regardedType;
+    IConceptSymbol? conceptSymbol;
     public FunctionSymbol[]? methodTable;
-
-    public IType GetImplementedType() => implementedType!;
-    public IType GetRegardedType() => regardedType!;
 
     internal void AddSymbol(Compiler compiler) {
         typeNode.SetSemantic(compiler);
-        implementedType = typeNode.GetSelfType();
+        implementedType = typeNode.GetSelfType(compiler);
 
         if (regardedTypeNode == null) {
             implementedType.AddFunctions(functions, position, compiler);
         } else {
             regardedTypeNode.SetSemantic(compiler);
-            regardedType = regardedTypeNode.GetSelfType();
-            implementedType.AddImpl(regardedTypeNode.GetSymbol(), functions, position, compiler);
+            conceptSymbol = regardedTypeNode.GetSymbol().AsConcept(position);
+            implementedType.AddImpl(conceptSymbol, functions, position, compiler);
         }
     }
 
     internal void SetSemantic(Compiler compiler) {
-        compiler.EnterThisType(typeNode.GetSelfType());
+        compiler.EnterThisType(typeNode.GetSelfType(compiler));
         foreach (FunctionItem funItem in functions) {
             funItem.SetSemantic(compiler);
         }
@@ -62,8 +60,14 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
                 throw new SemanticException(SemanticErrorType.CONCEPT_NOT_IMPLEMENTED, [string.Join(", ", conceptFunctionNames)], position);
             }
 
-            implementedType!.SetImplMethods(regardedType!, methodTable, position);
+            implementedType!.SetImplMethods(conceptSymbol!, methodTable, position);
         }
         compiler.LeaveThisType();
+    }
+
+    internal void Generate(IItemContext context) {
+        foreach (FunctionItem funItem in functions) {
+            ((IItem)funItem).Generate(context);
+        }
     }
 }

@@ -107,7 +107,7 @@ public class FunctionItem(
                 parameterTypes = [.. parameters.Select(parameter => parameter.GetParameterType())];
             }
 
-            IType resultType = resultNode?.GetSelfType() ?? TupleType.EMPTY;
+            IType resultType = resultNode?.GetSelfType(compiler) ?? TupleType.EMPTY;
 
             functionType = FunctionType.Monomorphize(parameterTypes, resultType);
         }
@@ -123,14 +123,19 @@ public class FunctionItem(
             resultNode?.SetSemantic(compiler);
 
             parameterTypes = [.. parameters.Select(parameter => parameter.GetParameterType())];
-            resultType = resultNode?.GetSelfType() ?? TupleType.EMPTY;
+            resultType = resultNode?.GetSelfType(compiler) ?? TupleType.EMPTY;
         }
 
         return (parameterTypes, resultType);
     }
 
     void IItem.Generate(IItemContext context) {
+        if (hostName == null && body == null) {
+            return;
+        }
+
         ParameterContext parameterContext = new();
+        thisParameter?.Generate(parameterContext);
         foreach (IParameter parameter in parameters) {
             parameter.Generate(parameterContext);
         }
@@ -139,21 +144,14 @@ public class FunctionItem(
         Intermediate.Type.IType interResultType = symbol!.type!.resultType.ToIntermediate();
 
         IFunctionBody funBody;
-        ImmutableArray<Intermediate.Type.IType> localTypes;
         if (hostName != null) {
             funBody = new HostBody(hostName);
-            localTypes = [];
         } else {
-            StatementContext statementContext = new();
+            StatementContext statementContext = new(context.GetProgramContext());
             ((IStatement)body!).Generate(statementContext);
-            funBody = new GuestBody(statementContext.GetInstructions());
-            localTypes = statementContext.GetLocalTypes();
-
-            foreach (Function fun in statementContext.GetFunctions()) {
-                context.AddFunction(fun);
-            }
+            funBody = new GuestBody(statementContext.GetLocalTypes(), statementContext.GetInstructions());
         }
-        Function result = new(name, interParameters, interResultType, localTypes, funBody);
+        Function result = new(name, interParameters, interResultType, funBody);
         context.AddFunction(result);
         symbol!.ResolveInterFunction(result);
     }

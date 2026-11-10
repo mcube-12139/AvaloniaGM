@@ -11,21 +11,26 @@ public class ClassType : IType {
 
     readonly Dictionary<string, StructField> fieldDict;
     internal readonly NameSpace space = new(null);
-    readonly List<ISymbol> implSymbols = [];
-    readonly Dictionary<IType, FunctionSymbol[]?> implTypes = [];
+    readonly HashSet<IType> implTypes = [];
+    readonly Dictionary<IConceptSymbol, FunctionSymbol[]?> implConcepts = [];
+
+    internal Intermediate.Type.ClassType intermediateClass;
+
+    Intermediate.Type.IType IType.ToIntermediate() => intermediateClass!;
 
     internal ClassType(string name, StructField[] fields) {
         this.name = name;
         this.fields = fields;
 
         fieldDict = new(fields.Select(field => new KeyValuePair<string, StructField>(field.name, field)));
+        intermediateClass = new(name, [.. fields.Select(field => field.intermediateField)]);
     }
 
     public bool EqualType(IType other) {
         return other == this;
     }
     bool IType.IsType(IType other) {
-        return other == this || implTypes.ContainsKey(other);
+        return other == this || implTypes.Contains(other);
     }
 
     public string GetAppearance() => name;
@@ -38,10 +43,9 @@ public class ClassType : IType {
         }
     }
 
-    void IType.AddImpl(ISymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
-        implSymbols.Add(symbol);
+    void IType.AddImpl(IConceptSymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
         if (symbol is InterfaceSymbol interfaceSymbol) {
-            implTypes.Add(interfaceSymbol.type, null);
+            implTypes.Add(interfaceSymbol.type);
         }
         
         foreach (FunctionItem funItem in functions) {
@@ -49,8 +53,8 @@ public class ClassType : IType {
         }
     }
 
-    void IType.SetImplMethods(IType type, FunctionSymbol[] methods, SourcePosition position) {
-        implTypes[type] = methods;
+    void IType.SetImplMethods(IConceptSymbol conceptSymbol, FunctionSymbol[] methods, SourcePosition position) {
+        implConcepts[conceptSymbol] = methods;
     }
 
     internal StructField InternalGetField(string name, SourcePosition position) {

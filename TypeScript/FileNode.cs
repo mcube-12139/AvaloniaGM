@@ -35,5 +35,8 @@ public class FileNode(IItem[] items, ImplNode[] impls) {
         foreach (IItem item in items) {
             item.Generate(context);
         }
+        foreach (ImplNode impl in impls) {
+            impl.Generate(context);
+        }
     }
 }

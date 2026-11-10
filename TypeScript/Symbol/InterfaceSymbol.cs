@@ -3,7 +3,7 @@ using TypeScript.Type;
 
 namespace TypeScript.Symbol;
 
-public class InterfaceSymbol(string name, InterfaceItem item) : ITypeSymbol {
+public class InterfaceSymbol(string name, InterfaceItem item) : ITypeSymbol, IConceptSymbol {
     public readonly string name = name;
     internal InterfaceItem item = item;
 

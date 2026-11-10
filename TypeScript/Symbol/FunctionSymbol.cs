@@ -17,7 +17,8 @@ public class FunctionSymbol : IValueSymbol {
 
     internal FunctionType? type;
 
-    readonly List<CallInstruction> promises = [];
+    readonly List<CallInstruction> callPromises = [];
+    readonly List<ConstFunctionInstruction> constPromises = [];
     Function? intermediateFun;
 
     internal FunctionSymbol(string name, NameSpace itemSpace, bool method, FunctionItem? item, string? hostName) {
@@ -66,16 +67,40 @@ public class FunctionSymbol : IValueSymbol {
 
     internal void ResolveInterFunction(Function fun) {
         intermediateFun = fun;
-        foreach (CallInstruction instruction in promises) {
+        foreach (CallInstruction instruction in callPromises) {
+            instruction.fun = fun;
+        }
+        foreach (ConstFunctionInstruction instruction in constPromises) {
             instruction.fun = fun;
         }
     }
 
-    void IValueSymbol.GenerateCall(CallExpression call, StatementContext context) {
+    void IValueSymbol.GenerateLoad(SourcePosition position, StatementContext context) {
+        ConstFunctionInstruction instruction = new(intermediateFun);
+        if (intermediateFun == null) {
+            constPromises.Add(instruction);
+        }
+        context.AddInstructionWithPosition(instruction, position);
+    }
+
+    void IValueSymbol.GenerateCall(CallExpression call, SourcePosition position, StatementContext context) {
+        call.GenerateParameters(context);
+
         CallInstruction instruction = new(intermediateFun);
         if (intermediateFun == null) {
-            promises.Add(instruction);
+            callPromises.Add(instruction);
         }
-        context.AddInstructionWithPosition(instruction, call.head.position);
+        context.AddInstructionWithPosition(instruction, position);
+    }
+
+    void ISymbol.GenerateCallMethod(MethodCallExpression expression, SourcePosition position, StatementContext context) {
+        ExpressionHelp.Generate(expression.callee, context);
+        expression.GenerateParameters(context);
+
+        CallInstruction instruction = new(intermediateFun);
+        if (intermediateFun == null) {
+            callPromises.Add(instruction);
+        }
+        context.AddInstructionWithPosition(instruction, position);
     }
 }

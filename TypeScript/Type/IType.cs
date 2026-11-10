@@ -15,11 +15,11 @@ public interface IType {
     }
     internal Intermediate.Type.IType ToIntermediate() => throw new NotImplementedException();
 
-    void AddImpl(ISymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
+    void AddImpl(IConceptSymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
         throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
     }
 
-    void SetImplMethods(IType type, FunctionSymbol[] methods, SourcePosition position) {
+    void SetImplMethods(IConceptSymbol conceptSymbol, FunctionSymbol[] methods, SourcePosition position) {
         throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
     }
 
@@ -29,6 +29,10 @@ public interface IType {
 
     FunctionType AsFunctionType(SourcePosition position, Compiler compiler) {
         throw new SemanticException(SemanticErrorType.NOT_CALLABLE, [GetAppearance()], position);
+    }
+
+    FunctionType AsFunctionTypeOrThrow() {
+        throw new Exception("WTF");
     }
 
     ISymbol GetAssociatedSymbol(string name, SourcePosition position) {

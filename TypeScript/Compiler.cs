@@ -947,9 +947,6 @@ public class Compiler {
 
         if (IsPathTypeStart()) {
             result = ParsePathType();
-        } else if (token == FixedToken.UNKNOWN) {
-            result = new UnknownNode(position);
-            NextToken();
         } else {
             throw TokenCannotBeHere();
         }
@@ -1397,6 +1394,11 @@ public class Compiler {
         }
 
         this.files.Clear();
-        return new([.. context.GetClasses()], [.. context.GetFunctions()]);
+        return new(
+            [.. context.GetInterfaces()],
+            [.. context.GetClasses()],
+            context.GetImpls(),
+            [.. context.GetFunctions()]
+        );
     }
 }

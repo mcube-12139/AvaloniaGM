@@ -19,7 +19,7 @@ public class FunctionSymbol : IValueSymbol {
 
     readonly List<CallInstruction> callPromises = [];
     readonly List<ConstFunctionInstruction> constPromises = [];
-    Function? intermediateFun;
+    internal Function? intermediateFun;
 
     internal FunctionSymbol(string name, NameSpace itemSpace, bool method, FunctionItem? item, string? hostName) {
         this.name = name;
@@ -47,13 +47,13 @@ public class FunctionSymbol : IValueSymbol {
 
     public FunctionType GetFunctionType() => type!;
 
-    IType ISymbol.GetMethodCallResultType(IExpression[] parameterTypes, SourcePosition position, Compiler compiler) {
+    IType ISymbol.GetMethodCallResultType(IExpression[] parameters, SourcePosition position, Compiler compiler) {
         if (!method) {
             throw new SemanticException(SemanticErrorType.NOT_METHOD, [name], position);
         }
 
         var funType = LazyGetValueType(position, compiler);
-        funType.EnsureCanCallMethod(parameterTypes, position, compiler);
+        funType.EnsureCanCallMethod(parameters, position, compiler);
         return funType.resultType;
     }
 
@@ -93,10 +93,7 @@ public class FunctionSymbol : IValueSymbol {
         context.AddInstructionWithPosition(instruction, position);
     }
 
-    void ISymbol.GenerateCallMethod(MethodCallExpression expression, SourcePosition position, StatementContext context) {
-        ExpressionHelp.Generate(expression.callee, context);
-        expression.GenerateParameters(context);
-
+    void ISymbol.GenerateCallMethod(SourcePosition position, StatementContext context) {
         CallInstruction instruction = new(intermediateFun);
         if (intermediateFun == null) {
             callPromises.Add(instruction);

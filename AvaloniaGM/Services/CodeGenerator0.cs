@@ -801,6 +801,7 @@ internal class CodeGenerator0 {
                 CallSymbol(symbol, parameters.Length + 1);
                 break;
             }
+            /*
             case InterfaceType interfaceType: {
                 // interfaceObject.methods[methodIndex](interfaceObject.classObject, parameter0, parameter1...)
                 ConceptFunctionSymbol symbol = interfaceType.GetConceptFunction(name);
@@ -832,6 +833,7 @@ internal class CodeGenerator0 {
                 CallBuiltin("script_execute", parameters.Length + 2);
                 break;
             }
+            */
             default:
                 throw new NotImplementedException();
         }

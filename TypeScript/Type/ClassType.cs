@@ -12,11 +12,11 @@ public class ClassType : IType {
     readonly Dictionary<string, StructField> fieldDict;
     internal readonly NameSpace space = new(null);
     readonly HashSet<IType> implTypes = [];
-    readonly Dictionary<IConceptSymbol, FunctionSymbol[]?> implConcepts = [];
+    readonly Dictionary<IConceptSymbol, NameSpace> implConcepts = [];
 
     internal Intermediate.Type.ClassType intermediateClass;
 
-    Intermediate.Type.IType IType.ToIntermediate() => intermediateClass!;
+    Intermediate.Type.IType IType.ToIntermediate() => intermediateClass;
 
     internal ClassType(string name, StructField[] fields) {
         this.name = name;
@@ -44,17 +44,17 @@ public class ClassType : IType {
     }
 
     void IType.AddImpl(IConceptSymbol symbol, IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
+        NameSpace implSpace = new(null);
+        implConcepts.Add(symbol, implSpace);
         if (symbol is InterfaceSymbol interfaceSymbol) {
             implTypes.Add(interfaceSymbol.type);
         }
         
         foreach (FunctionItem funItem in functions) {
-            funItem.AddSymbolToSpace(space, compiler);
+            FunctionSymbol funSymbol = funItem.CreateSymbol(compiler);
+            space.AddSymbol(funItem.name, funSymbol, position);
+            implSpace.AddSymbol(funItem.name, funSymbol, position);
         }
-    }
-
-    void IType.SetImplMethods(IConceptSymbol conceptSymbol, FunctionSymbol[] methods, SourcePosition position) {
-        implConcepts[conceptSymbol] = methods;
     }
 
     internal StructField InternalGetField(string name, SourcePosition position) {

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Avalonia.Controls.Documents;
+using System;
 using System.Collections.Generic;
 using TypeScript.Intermediate;
 using TypeScript.Intermediate.FunctionBody;
@@ -15,7 +16,8 @@ internal class CodeGenerator {
     UndertaleData? data;
     readonly Dictionary<string, int> stringIds = [];
     readonly Dictionary<Field, int> fieldIndices = [];
-    readonly Dictionary<string, UndertaleVariable> globalVariables = [];
+    readonly Dictionary<VirtualFunction, int> virtualFunctionIndices = [];
+    readonly Dictionary<Implementation, UndertaleVariable> metaObjectVariables = [];
     readonly Dictionary<string, UndertaleVariable> selfVariables = [];
     readonly Dictionary<Parameter, UndertaleVariable> parameterVariables = [];
     readonly List<(bool used, UndertaleVariable variable)> hiddenLocalVariables = [];
@@ -468,6 +470,14 @@ internal class CodeGenerator {
         return (gameString, id);
     }
 
+    UndertaleVariable AddGlobalVariable(string prefix, bool builtin) {
+        string name = $"{prefix}_{nextGlobalIndex}";
+        ++nextGlobalIndex;
+        (UndertaleString gameString, int id) = GetString(name);
+
+        return data!.Variables.Define(gameString, id, InstanceType.Global, builtin, data);
+    }
+
     UndertaleVariable AddLocalVariable() {
         uint variableId = nextLocalIndex;
         ++nextLocalIndex;
@@ -485,6 +495,30 @@ internal class CodeGenerator {
         }
 
         return variable;
+    }
+
+    UserFunction GetUserFunction(Function fun) {
+        if (!userFunctions.TryGetValue(fun, out UserFunction? result)) {
+            string funName = $"{fun.name}_{nextFunctionIndex}";
+            ++nextFunctionIndex;
+
+            UndertaleCode code = UndertaleCode.CreateEmptyEntry(data, $"gml_Script_{funName}");
+            UndertaleString nameStr = data!.Strings.MakeString(funName);
+            int scriptId = data.Scripts.Count;
+            UndertaleScript script = new() {
+                Name = nameStr,
+                Code = code
+            };
+
+            data.Scripts.Add(script);
+
+            UndertaleFunction underFun = data.Functions.EnsureDefined(funName, data.Strings);
+
+            result = new(scriptId, script, underFun, code);
+            userFunctions.Add(fun, result);
+        }
+
+        return result;
     }
 
     void UseHiddenVariables(int count, Action<UndertaleVariable[]> useFun) {
@@ -552,6 +586,20 @@ internal class CodeGenerator {
 
     int GetFieldIndex(Field field) => fieldIndices[field];
 
+    bool IsZeroSized(IType type) {
+        if (type is TupleType tupleType) {
+            foreach (IType elementType in tupleType.elementTypes) {
+                if (!IsZeroSized(elementType)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
     internal void Generate(UndertaleData data, TypeScript.Intermediate.Program program, Dictionary<string, UndertaleCode> funCodes) {
         this.data = data;
         foreach ((string name, UndertaleCode code) in funCodes) {
@@ -566,34 +614,42 @@ internal class CodeGenerator {
             }
         }
 
+        foreach (InterfaceType i in program.interfaces) {
+            int index = 1;
+            foreach (VirtualFunction fun in i.functions) {
+                virtualFunctionIndices[fun] = index;
+                ++index;
+            }
+        }
+
         foreach (Function fun in program.functions) {
             switch (fun.body) {
                 case HostBody:
                     // 无事发生
                     break;
                 case GuestBody guest: {
-                    UndertaleCode? code = funCodes.GetValueOrDefault(fun.name);
-                    if (code == null) {
-                        // 自定义函数
-                        string funName = $"{fun.name}_{nextFunctionIndex}";
-                        ++nextFunctionIndex;
-
-                        code = UndertaleCode.CreateEmptyEntry(data, $"gml_Script_{funName}");
-                        UndertaleString nameStr = data!.Strings.MakeString(funName);
-                        int scriptId = data.Scripts.Count;
-                        UndertaleScript script = new() {
-                            Name = nameStr,
-                            Code = code
-                        };
-
-                        data.Scripts.Add(script);
-
-                        UndertaleFunction underFun = data.Functions.EnsureDefined(funName, data.Strings);
-
-                        UserFunction userFun = new(scriptId, script, underFun, code);
-                        userFunctions.Add(fun, userFun);
-                    }
+                    UndertaleCode? gmCode = funCodes.GetValueOrDefault(fun.name);
+                    // 自定义函数
+                    UndertaleCode code = gmCode ?? GetUserFunction(fun).code;
                     codeLocals = data.CodeLocals.For(code);
+
+                    if (gmCode != null) {
+                        // todo: 确定静态期代码位置
+                        // 生成元对象
+                        foreach (Implementation impl in program.implementations.Values) {
+                            UndertaleVariable variable = AddGlobalVariable("meta", false);
+                            metaObjectVariables[impl] = variable;
+                            foreach ((VirtualFunction virtualFun, Function implFun) in impl.functions) {
+                                int index = virtualFunctionIndices[virtualFun];
+                                UserFunction userFun = GetUserFunction(implFun);
+
+                                PushInt(userFun.scriptId);
+                                PushShort((short)InstanceType.Global);
+                                PushInt(index);
+                                Store(variable, VariableType.Array);
+                            }
+                        }
+                    }
 
                     for (int i = 0; i != fun.parameters.Length; ++i) {
                         parameterVariables.Add(fun.parameters[i], GetSelfVariable($"argument{i}", true));
@@ -615,7 +671,7 @@ internal class CodeGenerator {
                                 } else {
                                     Call(userFunctions[call.fun].fun, call.fun.parameters.Length);
                                 }
-                                if (call.fun.resultType == TupleType.EMPTY) {
+                                if (IsZeroSized(call.fun.resultType)) {
                                     // fuck Game Maker
                                     // 函数只能返回 variable，所以对零大小类型特殊处理。
                                     PopUnused();
@@ -624,7 +680,57 @@ internal class CodeGenerator {
                             }
                             case CallPointerInstruction callPointer: {
                                 CallBuiltin("script_execute", callPointer.type.parameterTypes.Length + 1);
-                                if (callPointer.type.resultType == TupleType.EMPTY) {
+                                if (IsZeroSized(callPointer.type.resultType)) {
+                                    PopUnused();
+                                }
+                                break;
+                            }
+                            case CallVirtualInstruction callVirtual: {
+                                // 0: 元对象
+                                // 1: 接口对象
+                                // 2..: 参数
+                                int parameterCount = callVirtual.fun!.parameters.Length + 1;
+                                UseHiddenVariables(parameterCount, variables => {
+                                    for (int variableIndex = parameterCount - 1; variableIndex != 0; --variableIndex) {
+                                        Store(variables[variableIndex], VariableType.Normal);
+                                    }
+
+                                    for (int variableIndex = parameterCount - 1; variableIndex != 1; --variableIndex) {
+                                        Load(variables[variableIndex], VariableType.Normal);
+                                    }
+
+                                    // 载入类对象
+                                    PushShort((short)InstanceType.Local);
+                                    PushShort(0);
+                                    Load(variables[1], VariableType.Array);
+
+                                    // 载入元对象
+                                    PushShort((short)InstanceType.Local);
+                                    PushShort(1);
+                                    Load(variables[1], VariableType.Array);
+                                    Store(variables[0], VariableType.Normal);
+
+                                    // 载入 script id
+                                    PushShort((short)InstanceType.Local);
+                                    PushInt(virtualFunctionIndices[callVirtual.fun]);
+                                    Load(variables[0], VariableType.Array);
+                                });
+
+                                for (int parameterIndex = 0; parameterIndex != parameterCount; ++parameterIndex) {
+                                    types.Pop();
+                                }
+
+                                instructions.Add(new() {
+                                    Kind = Opcode.Call,
+                                    Type1 = DataType.Int32,
+                                    ArgumentsCount = (ushort)parameterCount,
+                                    ValueFunction = data!.Functions.EnsureDefined("script_execute", data.Strings)
+                                });
+                                byteCount += 8;
+
+                                types.Push(DataType.Variable);
+
+                                if (IsZeroSized(callVirtual.fun.resultType)) {
                                     PopUnused();
                                 }
                                 break;
@@ -671,48 +777,41 @@ internal class CodeGenerator {
                                 break;
                             }
                             case NewArrayInstruction newArray: {
-                                UseHiddenVariables(1, variables => {
-                                    UndertaleVariable variable = variables[0];
-                                    if (newArray.length == 0) {
-                                        PushShort(0);
-                                        Convert(DataType.Variable);
-                                        CallBuiltin("array_create", 1);
-                                        Store(variable, VariableType.Normal);
-                                    } else {
-                                        for (int elementIndex = newArray.length - 1; elementIndex != -1; --elementIndex) {
-                                            PushShort((short)InstanceType.Local);
-                                            PushInt(elementIndex);
-                                            Store(variable, VariableType.Array);
-                                        }
-                                    }
-                                    Load(variable, VariableType.Normal);
-                                });
+                                CallBuiltin("@@NewGMLArray@@", newArray.length);
                                 break;
                             }
                             case NewClassInstruction newClass: {
                                 UseHiddenVariables(1, variables => {
                                     UndertaleVariable variable = variables[0];
-                                    if (newClass.fields.Length == 0) {
-                                        PushShort(0);
-                                        Convert(DataType.Variable);
-                                        CallBuiltin("array_create", 1);
+
+                                    PushInt(newClass.fields.Length);
+                                    CallBuiltin("array_create", 1);
+                                    if (newClass.fields.Length != 0) {
                                         Store(variable, VariableType.Normal);
-                                    } else {
+
                                         for (int i = newClass.fields.Length - 1; i != -1; --i) {
                                             PushShort((short)InstanceType.Local);
-                                            int code;
-                                            foreach (Field field in fieldIndices.Keys) {
-                                                code = field.GetHashCode();
-                                                Console.WriteLine(code);
-                                            }
-                                            code = newClass.fields[i].GetHashCode();
-                                            Console.WriteLine(code);
                                             PushInt(GetFieldIndex(newClass.fields[i]));
                                             Store(variable, VariableType.Array);
                                         }
+
+                                        Load(variable, VariableType.Normal);
                                     }
-                                    Load(variable, VariableType.Normal);
                                 });
+                                break;
+                            }
+                            case UpcastInstruction upcast: {
+                                if (
+                                    upcast.source is ClassType classType
+                                    && upcast.target is InterfaceType interfaceType
+                                ) {
+                                    // interfaceObject: [classObject, metaObject]
+                                    Implementation impl = program.implementations[(interfaceType, classType)];
+                                    UndertaleVariable variable = metaObjectVariables[impl];
+                                    Load(variable, VariableType.Normal);
+
+                                    CallBuiltin("@@NewGMLArray@@", 2);
+                                }
                                 break;
                             }
                             case PopInstruction: {
@@ -753,7 +852,7 @@ internal class CodeGenerator {
                                 break;
                             }
                             case ReturnInstruction ret: {
-                                if (ret.type != TupleType.EMPTY) {
+                                if (!IsZeroSized(ret.type)) {
                                     Return();
                                 } else {
                                     Exit();
@@ -885,7 +984,7 @@ internal class CodeGenerator {
                         }
                     }
 
-                    code.Replace(instructions);
+                    code!.Replace(instructions);
                     code.Length = byteCount;
                     code.Offset = 0;
                     code.ArgumentsCount = 0;
@@ -911,7 +1010,7 @@ internal class CodeGenerator {
         stringIds.Clear();
         fieldIndices.Clear();
         selfVariables.Clear();
-        globalVariables.Clear();
+        metaObjectVariables.Clear();
         userFunctions.Clear();
     }
 }

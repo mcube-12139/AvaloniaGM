@@ -31,7 +31,7 @@ public class FunctionItem(
     readonly bool method = thisParameter != null;
     FunctionSymbol? symbol;
     FunctionType? functionType;
-    ConceptFunctionSymbol? conceptSymbol;
+    internal ConceptFunctionSymbol? conceptSymbol;
     IType[]? parameterTypes;
     IType? resultType;
 
@@ -63,8 +63,10 @@ public class FunctionItem(
 
     internal void SetSemantic(Compiler compiler) {
         FunctionType funType = ResolveType(compiler);
-        if (symbol!.type == null) {
+        if (symbol != null && symbol.type == null) {
             symbol.type = funType;
+        } else if (conceptSymbol != null && conceptSymbol.type == null) {
+            conceptSymbol.type = funType;
         }
 
         IType resultType = funType.resultType;
@@ -86,10 +88,6 @@ public class FunctionItem(
         }
 
         compiler.LeaveFunction();
-    }
-
-    internal void SetConceptSemantic(Compiler compiler) {
-        // 无事发生
     }
 
     internal FunctionType ResolveType(Compiler compiler) {
@@ -130,10 +128,6 @@ public class FunctionItem(
     }
 
     void IItem.Generate(IItemContext context) {
-        if (hostName == null && body == null) {
-            return;
-        }
-
         ParameterContext parameterContext = new();
         thisParameter?.Generate(parameterContext);
         foreach (IParameter parameter in parameters) {
@@ -141,18 +135,27 @@ public class FunctionItem(
         }
         ImmutableArray<Intermediate.Parameter> interParameters = [.. parameterContext.GetParameters()];
 
-        Intermediate.Type.IType interResultType = symbol!.type!.resultType.ToIntermediate();
-
-        IFunctionBody funBody;
-        if (hostName != null) {
-            funBody = new HostBody(hostName);
+        Intermediate.Type.IType interResultType;
+        if (symbol != null) {
+            interResultType = symbol.type!.resultType.ToIntermediate();
         } else {
-            StatementContext statementContext = new(context.GetProgramContext());
-            ((IStatement)body!).Generate(statementContext);
-            funBody = new GuestBody(statementContext.GetLocalTypes(), statementContext.GetInstructions());
+            interResultType = conceptSymbol!.type!.resultType.ToIntermediate();
         }
-        Function result = new(name, interParameters, interResultType, funBody);
-        context.AddFunction(result);
-        symbol!.ResolveInterFunction(result);
+
+        if (symbol != null) {
+            IFunctionBody funBody;
+            if (hostName != null) {
+                funBody = new HostBody(hostName);
+            } else {
+                StatementContext statementContext = new(context.GetProgramContext());
+                ((IStatement)body!).Generate(statementContext);
+                funBody = new GuestBody(statementContext.GetLocalTypes(), statementContext.GetInstructions());
+            }
+            Function result = new(name, interParameters, interResultType, funBody);
+            context.AddFunction(result);
+            symbol.ResolveInterFunction(result);
+        } else {
+            conceptSymbol!.ResolveVirtualFunction(new(name, interParameters, interResultType));
+        }
     }
 }

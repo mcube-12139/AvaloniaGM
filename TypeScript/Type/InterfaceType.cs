@@ -9,6 +9,8 @@ public class InterfaceType : IType {
 
     internal readonly NameSpace space;
 
+    internal Intermediate.Type.InterfaceType? intermediateType;
+
     public ConceptFunctionSymbol GetConceptFunction(string name) => (ConceptFunctionSymbol)space.GetSymbolOrException(name);
 
     internal InterfaceType(string name) {
@@ -23,15 +25,14 @@ public class InterfaceType : IType {
 
     string IType.GetAppearance() => name;
 
+    Intermediate.Type.IType IType.ToIntermediate() => intermediateType!;
+
     ISymbol IType.GetAssociatedSymbol(string name, SourcePosition position) {
         return space.GetSymbol(name, position);
     }
 
     void IType.EnsureCanAssign(IExpression right, SourcePosition position, Compiler compiler) {
         right.SetSemantic(this, compiler);
-        IType rightType = right.GetResultType();
-        if (!TypeHelp.IsType(rightType, this)) {
-            throw new SemanticException(SemanticErrorType.OPERATION_NOT_EXIST, [$"{name} = {rightType.GetAppearance()}"], position);
-        }
+        right.SetTargetType(this);
     }
 }

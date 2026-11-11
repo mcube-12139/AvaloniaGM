@@ -1,5 +1,8 @@
 ﻿using TypeScript.ExceptionSpace;
 using TypeScript.Expression;
+using TypeScript.GenerateContext;
+using TypeScript.Intermediate;
+using TypeScript.Intermediate.Instruction;
 using TypeScript.Item;
 using TypeScript.Type;
 
@@ -10,9 +13,11 @@ public class ConceptFunctionSymbol : ISymbol {
     internal readonly NameSpace itemSpace;
     public readonly bool method;
     public readonly uint index;
-    internal IType[]? parameterTypes;
-    internal IType? resultType;
+    internal FunctionType? type;
     readonly FunctionItem? item;
+
+    readonly List<CallVirtualInstruction> callPromises = [];
+    internal VirtualFunction? virtualFun;
 
     internal ConceptFunctionSymbol(string name, NameSpace itemSpace, bool method, uint index, FunctionItem? item) {
         this.name = name;
@@ -24,41 +29,24 @@ public class ConceptFunctionSymbol : ISymbol {
 
     string ISymbol.GetName() => name;
 
-    public IType[] GetParameterTypes() => parameterTypes!;
-
-    public IType GetResultType() => resultType!;
-
     internal void LazyGetValueType(Compiler compiler) {
         // 不能调用 SetSemantic，会无限递归
-        if (parameterTypes == null && resultType == null) {
+        if (type == null) {
             compiler.PushNameSpace(itemSpace);
-            (parameterTypes, resultType) = item!.ResolveConceptType(compiler);
+            type = item!.ResolveType(compiler);
             compiler.PopNameSpace();
         }
     }
 
-    IType ISymbol.GetMethodCallResultType(IExpression[] parameterTypes, SourcePosition position, Compiler compiler) {
+    IType ISymbol.GetMethodCallResultType(IExpression[] parameters, SourcePosition position, Compiler compiler) {
         if (!method) {
             throw new SemanticException(SemanticErrorType.NOT_METHOD, [name], position);
         }
 
         LazyGetValueType(compiler);
+        type!.EnsureCanCallMethod(parameters, position, compiler);
 
-        if (parameterTypes.Length != this.parameterTypes!.Length) {
-            throw new SemanticException(SemanticErrorType.WRONG_PARAMETER_COUNT, [parameterTypes.Length.ToString(), this.parameterTypes.Length.ToString()], position);
-        }
-        for (int i = 0; i != parameterTypes.Length; ++i) {
-            IExpression parameter = parameterTypes[i];
-            IType definedType = this.parameterTypes[i];
-            parameter.SetSemantic(definedType, compiler);
-
-            IType parameterType = parameter.GetResultType();
-            if (!TypeHelp.IsType(parameterType, definedType)) {
-                throw new SemanticException(SemanticErrorType.WRONG_TYPE, [parameterType.GetAppearance(), definedType.GetAppearance()], position);
-            }
-        }
-
-        return resultType!;
+        return type!.resultType!;
     }
 
     internal void EnsureSatisfySelf(FunctionSymbol funSymbol, SourcePosition position, Compiler compiler) {
@@ -69,19 +57,33 @@ public class ConceptFunctionSymbol : ISymbol {
         FunctionType funType = funSymbol.LazyGetValueType(position, compiler);
         LazyGetValueType(compiler);
 
-        if (!TypeHelp.IsType(resultType!, funType.resultType)) {
+        if (type!.resultType != funType.resultType) {
             throw new SemanticException(SemanticErrorType.NOT_SATISFY_CONCEPT_FUNCTION, [name], position);
         }
 
-        if (parameterTypes!.Length + 1 != funType.parameterTypes.Length) {
+        if (type!.parameterTypes.Length != funType.parameterTypes.Length) {
             throw new SemanticException(SemanticErrorType.NOT_SATISFY_CONCEPT_FUNCTION, [name], position);
         }
 
-        // 参数逆变
-        for (int i = 0; i < parameterTypes.Length; ++i) {
-            if (!TypeHelp.IsType(funType.parameterTypes[i + 1], parameterTypes[i])) {
+        for (int i = 1; i < type!.parameterTypes.Length; ++i) {
+            if (funType.parameterTypes[i] != type!.parameterTypes[i]) {
                 throw new SemanticException(SemanticErrorType.NOT_SATISFY_CONCEPT_FUNCTION, [name], position);
             }
         }
+    }
+
+    internal void ResolveVirtualFunction(VirtualFunction fun) {
+        virtualFun = fun;
+        foreach (CallVirtualInstruction instruction in callPromises) {
+            instruction.fun = fun;
+        }
+    }
+
+    void ISymbol.GenerateCallMethod(SourcePosition position, StatementContext context) {
+        CallVirtualInstruction instruction = new(virtualFun);
+        if (virtualFun == null) {
+            callPromises.Add(instruction);
+        }
+        context.AddInstructionWithPosition(instruction, position);
     }
 }

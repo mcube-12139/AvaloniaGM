@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using TypeScript.GenerateContext;
 using TypeScript.Symbol;
 using TypeScript.Type;
@@ -24,14 +25,12 @@ public class MethodCallExpression(SourcePosition position, IExpression callee, s
         type = symbol.GetMethodCallResultType(parameters, position, compiler);
     }
 
-    internal void GenerateParameters(StatementContext context) {
+    void IExpression.Generate(StatementContext context) {
+        ExpressionHelp.Generate(callee, context);
         foreach (IExpression parameter in parameters) {
             ExpressionHelp.Generate(parameter, context);
         }
-    }
-
-    void IExpression.Generate(StatementContext context) {
-        symbol!.GenerateCallMethod(this, position, context);
+        symbol!.GenerateCallMethod(position, context);
     }
 }
 

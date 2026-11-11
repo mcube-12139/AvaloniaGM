@@ -19,10 +19,6 @@ public interface IType {
         throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
     }
 
-    void SetImplMethods(IConceptSymbol conceptSymbol, FunctionSymbol[] methods, SourcePosition position) {
-        throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
-    }
-
     void AddFunctions(IEnumerable<FunctionItem> functions, SourcePosition position, Compiler compiler) {
         throw new SemanticException(SemanticErrorType.EXTERNAL_TYPE_IMPLEMENTED, [GetAppearance()], position);
     }

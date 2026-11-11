@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using TypeScript.GenerateContext;
 using TypeScript.Symbol;
 
 namespace TypeScript.Item;
@@ -39,8 +40,16 @@ public class InterfaceItem : IItem {
     void IItem.SetSemantic(Compiler compiler) {
         compiler.EnterThisType(symbol!.type);
         foreach (FunctionItem funItem in functions) {
-            funItem.SetConceptSemantic(compiler);
+            funItem.SetSemantic(compiler);
         }
         compiler.LeaveThisType();
+    }
+
+    void IItem.Generate(IItemContext context) {
+        foreach (FunctionItem funItem in functions) {
+            ((IItem)funItem).Generate(context);
+        }
+        symbol!.type.intermediateType = new(name, [.. functions.Select(fun => fun.conceptSymbol!.virtualFun!)]);
+        context.AddInterface(symbol!.type.intermediateType);
     }
 }

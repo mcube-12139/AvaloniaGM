@@ -8,18 +8,20 @@ namespace TypeScript.GenerateContext;
 internal class StatementContext: IItemContext {
     readonly ProgramContext programContext;
     readonly List<IInstruction> instructions = [];
-    readonly List<Intermediate.Type.IType> localTypes = [];
+    readonly List<IType> localTypes = [];
 
     ProgramContext IItemContext.GetProgramContext() => programContext;
 
     internal ImmutableArray<IInstruction> GetInstructions() => [.. instructions];
-    internal ImmutableArray<Intermediate.Type.IType> GetLocalTypes() => [.. localTypes];
+    internal ImmutableArray<IType> GetLocalTypes() => [.. localTypes];
 
     internal StatementContext(ProgramContext programContext) {
         this.programContext = programContext;
     }
 
+    void IItemContext.AddInterface(InterfaceType i) => ((IItemContext)programContext).AddInterface(i);
     void IItemContext.AddClass(ClassType c) => ((IItemContext)programContext).AddClass(c);
+    void IItemContext.AddImpl((InterfaceType, ClassType) typePair, Implementation impl) => ((IItemContext)programContext).AddImpl(typePair, impl);
     void IItemContext.AddFunction(Function fun) => ((IItemContext)programContext).AddFunction(fun);
 
     internal void AddInstruction(IInstruction instruction) {

@@ -25,5 +25,5 @@ public interface ISymbol {
     internal IType GetMethodCallResultType(IExpression[] parameterTypes, SourcePosition position, Compiler compiler) {
         throw new SemanticException(SemanticErrorType.METHOD_NOT_EXIST, [GetName()], position);
     }
-    internal void GenerateCallMethod(MethodCallExpression expression, SourcePosition position, StatementContext context) { }
+    internal void GenerateCallMethod(SourcePosition position, StatementContext context) { }
 }

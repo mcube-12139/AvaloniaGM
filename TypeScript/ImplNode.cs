@@ -1,5 +1,7 @@
-﻿using TypeScript.ExceptionSpace;
+﻿using System.Collections.Immutable;
+using TypeScript.ExceptionSpace;
 using TypeScript.GenerateContext;
+using TypeScript.Intermediate;
 using TypeScript.Item;
 using TypeScript.Symbol;
 using TypeScript.Type;
@@ -16,7 +18,7 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
 
     IType? implementedType;
     IConceptSymbol? conceptSymbol;
-    public FunctionSymbol[]? methodTable;
+    Dictionary<ConceptFunctionSymbol, FunctionSymbol> implFunctions = [];
 
     internal void AddSymbol(Compiler compiler) {
         typeNode.SetSemantic(compiler);
@@ -32,7 +34,12 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
     }
 
     internal void SetSemantic(Compiler compiler) {
-        compiler.EnterThisType(typeNode.GetSelfType(compiler));
+        IType thisType = typeNode.GetSelfType(compiler);
+        if (thisType is not ClassType) {
+            throw new SemanticException(SemanticErrorType.NOT_CLASS, [thisType.GetAppearance()], position);
+        }
+
+        compiler.EnterThisType(thisType);
         foreach (FunctionItem funItem in functions) {
             funItem.SetSemantic(compiler);
         }
@@ -43,7 +50,6 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
             Dictionary<string, ConceptFunctionSymbol> conceptFunctions = symbol.GetConceptFunctions(position);
             HashSet<string> conceptFunctionNames = [.. conceptFunctions.Keys];
 
-            methodTable = new FunctionSymbol[functions.Length];
             foreach (FunctionItem funItem in functions) {
                 if (!conceptFunctions.TryGetValue(funItem.name, out ConceptFunctionSymbol? conceptFun)) {
                     throw new SemanticException(SemanticErrorType.CONCEPT_FUNCTION_NOT_EXIST, [symbol.GetName(), funItem.name], funItem.position);
@@ -51,7 +57,7 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
 
                 FunctionSymbol funSymbol = funItem.GetSymbol();
                 conceptFun.EnsureSatisfySelf(funSymbol, funItem.position, compiler);
-                methodTable[conceptFun.index] = funSymbol;
+                implFunctions[conceptFun] = funSymbol;
 
                 conceptFunctionNames.Remove(funItem.name);
             }
@@ -59,8 +65,6 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
             if (conceptFunctionNames.Count != 0) {
                 throw new SemanticException(SemanticErrorType.CONCEPT_NOT_IMPLEMENTED, [string.Join(", ", conceptFunctionNames)], position);
             }
-
-            implementedType!.SetImplMethods(conceptSymbol!, methodTable, position);
         }
         compiler.LeaveThisType();
     }
@@ -68,6 +72,15 @@ public class ImplNode(SourcePosition position, ITypeNode typeNode, PathType? reg
     internal void Generate(IItemContext context) {
         foreach (FunctionItem funItem in functions) {
             ((IItem)funItem).Generate(context);
+        }
+        if (conceptSymbol is InterfaceSymbol interfaceSymbol) {
+            // 生成实现表
+            context.AddImpl(
+                (interfaceSymbol.type.intermediateType!, ((ClassType)implementedType!).intermediateClass),
+                new(ImmutableDictionary.CreateRange(implFunctions.Select(
+                    kv => KeyValuePair.Create(kv.Key.virtualFun!, kv.Value.intermediateFun!)
+                )))
+            );
         }
     }
 }
